@@ -34,11 +34,14 @@ A `venv/` already exists at the repo root — activate it with `source venv/bin/
 Tests (unittest-based, no pytest):
 
 ```
-python setup.py test                                    # full suite
+python -m unittest discover bormeparser.tests           # offline suite (default)
+BORMEPARSER_LIVE=1 python -m unittest discover bormeparser.tests   # also hits boe.es
 python -m unittest bormeparser.tests.test_borme         # single module
-python -m unittest bormeparser.tests.test_borme.BormeTestCase.test_method  # single test
-coverage run --source=bormeparser setup.py test         # with coverage (matches CI)
+python -m unittest bormeparser.tests.test_borme.BormeXMLTestCase.test_get_provincias  # single test
+coverage run --source=bormeparser -m unittest discover bormeparser.tests  # with coverage
 ```
+
+The default offline suite uses the `bormeparser/examples/BORME-S-20150924.xml` fixture (new datosabiertos schema). Tests that actually call `boe.es` are decorated `@require_live` (`BormeparserLive*`, `test_from_date*`, etc.) and only run when `BORMEPARSER_LIVE=1` is set. The fixture must stay in sync with the API schema — regenerate it with `curl -H 'Accept: application/xml' https://www.boe.es/datosabiertos/api/borme/sumario/20150924 -o bormeparser/examples/BORME-S-20150924.xml` if the BOE changes its response shape.
 
 CI (`.github/workflows/bormeparser_ci.yml`) has four jobs: `docs`, `lint` (ruff/black/mypy/bandit/pip-audit), `hadolint`, `actionlint`, and `test` (matrix across Python 3.13 and 3.14). All must pass before merge.
 

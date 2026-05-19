@@ -76,17 +76,18 @@ class PyPDFParser(BormeAParserBackend):
 
         with open(self.filename, 'rb') as fp:
             reader = PdfReader(fp)
-            pages = list(reader.pages)
-        for page in pages:
-            contents = page.get_contents()
-            if contents is None:
-                continue
-            content = contents.get_data()
-            logger.debug('---- BEGIN OF PAGE ----')
+            page_contents = []
+            for page in reader.pages:
+                contents = page.get_contents()
+                if contents is None:
+                    continue
+                raw = contents.get_data()
+                if isinstance(raw, bytes):
+                    raw = raw.decode('unicode_escape')
+                page_contents.append(raw)
 
-            # Python 3
-            if isinstance(content, bytes):
-                content = content.decode('unicode_escape')
+        for content in page_contents:
+            logger.debug('---- BEGIN OF PAGE ----')
 
             for line in content.split('\n'):
                 logger.debug('### LINE: %s' % line)
@@ -273,12 +274,11 @@ class PyPDFParser(BormeAParserBackend):
                 'Actos': self.actos
             }
 
-        fp.close()
         return DATA
 
     def _clean_data(self, data):
         """ Unscape parenthesis and removes double spaces """
-        return data.replace('\(', '(').replace('\)', ')').replace('  ', ' ').strip()
+        return data.replace(r'\(', '(').replace(r'\)', ')').replace('  ', ' ').strip()
 
     def _parse_acto(self, nombreacto, data, prefix=''):
         data = self._clean_data(data)

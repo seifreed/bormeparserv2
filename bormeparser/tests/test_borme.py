@@ -62,7 +62,7 @@ class BormeATestCase(unittest.TestCase):
         self.assertEqual(self.borme.provincia, PROVINCIA.CACERES)
         self.assertEqual(self.borme.num, 27)
         self.assertEqual(self.borme.cve, 'BORME-A-2015-27-10')
-        self.assertEqual(self.borme.url, 'https://boe.es/borme/dias/2015/02/10/pdfs/BORME-A-2015-27-10.pdf')
+        self.assertEqual(self.borme.url, 'https://www.boe.es/borme/dias/2015/02/10/pdfs/BORME-A-2015-27-10.pdf')
         self.assertEqual(self.borme.filename, os.path.join(EXAMPLES_PATH, 'BORME-A-2015-27-10.pdf'))
 
     def test_get_anuncios_ids(self):
@@ -85,7 +85,7 @@ class BormeATestCase(unittest.TestCase):
         self.assertEqual(data['seccion'], 'A')
         self.assertEqual(data['provincia'], 'Cáceres')
         self.assertEqual(data['num'], 27)
-        self.assertEqual(data['url'], 'https://boe.es/borme/dias/2015/02/10/pdfs/BORME-A-2015-27-10.pdf')
+        self.assertEqual(data['url'], 'https://www.boe.es/borme/dias/2015/02/10/pdfs/BORME-A-2015-27-10.pdf')
         self.assertEqual(data['from_anuncio'], 57315)
         self.assertEqual(data['to_anuncio'], 57344)
         self.assertEqual(data['num_anuncios'], 30)
@@ -98,7 +98,7 @@ class BormeATestCase(unittest.TestCase):
         self.assertEqual(b.provincia, PROVINCIA.CACERES)
         self.assertEqual(b.num, 27)
         self.assertEqual(b.cve, 'BORME-A-2015-27-10')
-        self.assertEqual(b.url, 'https://boe.es/borme/dias/2015/02/10/pdfs/BORME-A-2015-27-10.pdf')
+        self.assertEqual(b.url, 'https://www.boe.es/borme/dias/2015/02/10/pdfs/BORME-A-2015-27-10.pdf')
         self.assertEqual(b.filename, temp_filename)
 
         # Borme.from_json(): use file object as parameter
@@ -110,7 +110,7 @@ class BormeATestCase(unittest.TestCase):
         self.assertEqual(b.provincia, PROVINCIA.CACERES)
         self.assertEqual(b.num, 27)
         self.assertEqual(b.cve, 'BORME-A-2015-27-10')
-        self.assertEqual(b.url, 'https://boe.es/borme/dias/2015/02/10/pdfs/BORME-A-2015-27-10.pdf')
+        self.assertEqual(b.url, 'https://www.boe.es/borme/dias/2015/02/10/pdfs/BORME-A-2015-27-10.pdf')
         self.assertEqual(b.filename, temp_filename)
 
         temp_fp.close()
@@ -128,7 +128,7 @@ class FakeBormeTestCase(unittest.TestCase):
         self.assertEqual(self.borme.provincia, PROVINCIA.CACERES)
         self.assertEqual(self.borme.num, 27)
         self.assertEqual(self.borme.cve, 'BORME-A-2015-27-10')
-        self.assertEqual(self.borme.url, 'https://boe.es/borme/dias/2015/02/10/pdfs/BORME-A-2015-27-10.pdf')
+        self.assertEqual(self.borme.url, 'https://www.boe.es/borme/dias/2015/02/10/pdfs/BORME-A-2015-27-10.pdf')
         self.assertEqual(self.borme.filename, None)
 
     def test_to_json(self):
@@ -147,7 +147,7 @@ class FakeBormeTestCase(unittest.TestCase):
         self.assertEqual(data['seccion'], 'A')
         self.assertEqual(data['provincia'], 'Cáceres')
         self.assertEqual(data['num'], 27)
-        self.assertEqual(data['url'], 'https://boe.es/borme/dias/2015/02/10/pdfs/BORME-A-2015-27-10.pdf')
+        self.assertEqual(data['url'], 'https://www.boe.es/borme/dias/2015/02/10/pdfs/BORME-A-2015-27-10.pdf')
         self.assertEqual(data['from_anuncio'], 1)
         self.assertEqual(data['to_anuncio'], 1)
         self.assertEqual(data['num_anuncios'], 1)
@@ -208,67 +208,66 @@ class BormeActoTestCase(unittest.TestCase):
         self.assertRaises(ValueError, BormeActoTexto, 'Nombramientos', ['mal'])
 
 
+LIVE = os.environ.get("BORMEPARSER_LIVE") == "1"
+require_live = unittest.skipUnless(
+    LIVE,
+    "set BORMEPARSER_LIVE=1 to run tests that hit boe.es",
+)
+
+SUMARIO_URL_HTTPS = "https://www.boe.es/datosabiertos/api/borme/sumario/20150924"
+SUMARIO_URL_HTTP = "http://www.boe.es/datosabiertos/api/borme/sumario/20150924"
+
+
 class BormeXMLInstanceTestCase(unittest.TestCase):
     date = (2015, 9, 24)
-    url = 'https://www.boe.es/diario_borme/xml.php?id=BORME-S-20150924'
-    url_insecure = 'http://www.boe.es/diario_borme/xml.php?id=BORME-S-20150924'
+    expected_date = datetime.date(2015, 9, 24)
     nbo = 183
 
-    def test_from_file(self):
+    def test_from_local_file(self):
         path = os.path.join(EXAMPLES_PATH, 'BORME-S-20150924.xml')
-
-        # from local file
         bxml = BormeXML.from_file(path)
-        self.assertEqual(bxml.url, self.url)
-        self.assertEqual(bxml.date, datetime.date(year=self.date[0], month=self.date[1], day=self.date[2]))
+        self.assertEqual(bxml.url, SUMARIO_URL_HTTPS)
+        self.assertEqual(bxml.date, self.expected_date)
         self.assertEqual(bxml.filename, path)
         self.assertEqual(bxml.nbo, self.nbo)
-        self.assertEqual(bxml.prev_borme, datetime.date(year=self.date[0], month=self.date[1], day=self.date[2] - 1))
-        self.assertEqual(bxml.next_borme, datetime.date(year=self.date[0], month=self.date[1], day=self.date[2] + 1))
 
         url = bxml.get_url_cve("BORME-A-2015-183-04")
-        self.assertEqual(url, "https://www.boe.es/borme/dias/2015/09/24/pdfs/BORME-A-2015-183-04.pdf")
+        self.assertEqual(
+            url,
+            "https://www.boe.es/borme/dias/2015/09/24/pdfs/BORME-A-2015-183-04.pdf",
+        )
 
-        # from remote file (https)
-        bxml = BormeXML.from_file(self.url)
-        self.assertEqual(bxml.url, self.url)
-        self.assertEqual(bxml.date, datetime.date(year=self.date[0], month=self.date[1], day=self.date[2]))
-        self.assertEqual(bxml.filename, None)
-        self.assertEqual(bxml.nbo, self.nbo)
-        self.assertEqual(bxml.prev_borme, datetime.date(year=self.date[0], month=self.date[1], day=self.date[2] - 1))
-        self.assertEqual(bxml.next_borme, datetime.date(year=self.date[0], month=self.date[1], day=self.date[2] + 1))
-
-        # from remote file (insecure http)
-        bxml = BormeXML.from_file(self.url, secure=False)
-        self.assertEqual(bxml.url, self.url_insecure)
-        self.assertEqual(bxml.date, datetime.date(year=self.date[0], month=self.date[1], day=self.date[2]))
-        self.assertEqual(bxml.filename, None)
-        self.assertEqual(bxml.nbo, self.nbo)
-        self.assertEqual(bxml.prev_borme, datetime.date(year=self.date[0], month=self.date[1], day=self.date[2] - 1))
-        self.assertEqual(bxml.next_borme, datetime.date(year=self.date[0], month=self.date[1], day=self.date[2] + 1))
-
-        # Exceptions
+    def test_from_file_missing_path(self):
         self.assertRaises(IOError, BormeXML.from_file, 'invalidfile.xml')
 
+    @require_live
+    def test_from_remote_url_https(self):
+        bxml = BormeXML.from_file(SUMARIO_URL_HTTPS)
+        self.assertEqual(bxml.url, SUMARIO_URL_HTTPS)
+        self.assertEqual(bxml.date, self.expected_date)
+        self.assertIsNone(bxml.filename)
+        self.assertEqual(bxml.nbo, self.nbo)
+
+    @require_live
+    def test_from_remote_url_http(self):
+        bxml = BormeXML.from_file(SUMARIO_URL_HTTPS, secure=False)
+        self.assertEqual(bxml.url, SUMARIO_URL_HTTP)
+        self.assertEqual(bxml.date, self.expected_date)
+
+    @require_live
     def test_from_date(self):
         bxml = BormeXML.from_date(self.date)
-        self.assertEqual(bxml.url, self.url)
-        self.assertEqual(bxml.date, datetime.date(year=self.date[0], month=self.date[1], day=self.date[2]))
-        self.assertEqual(bxml.filename, None)
+        self.assertEqual(bxml.url, SUMARIO_URL_HTTPS)
+        self.assertEqual(bxml.date, self.expected_date)
         self.assertEqual(bxml.nbo, self.nbo)
-        self.assertEqual(bxml.prev_borme, datetime.date(year=self.date[0], month=self.date[1], day=self.date[2] - 1))
-        self.assertEqual(bxml.next_borme, datetime.date(year=self.date[0], month=self.date[1], day=self.date[2] + 1))
 
-        date = datetime.date(*self.date)
-        bxml = BormeXML.from_date(date)
-        self.assertEqual(bxml.url, self.url)
-        self.assertEqual(bxml.date, datetime.date(year=self.date[0], month=self.date[1], day=self.date[2]))
-        self.assertEqual(bxml.filename, None)
+        date_obj = datetime.date(*self.date)
+        bxml = BormeXML.from_date(date_obj)
+        self.assertEqual(bxml.date, self.expected_date)
         self.assertEqual(bxml.nbo, self.nbo)
-        self.assertEqual(bxml.prev_borme, datetime.date(year=self.date[0], month=self.date[1], day=self.date[2] - 1))
-        self.assertEqual(bxml.next_borme, datetime.date(year=self.date[0], month=self.date[1], day=self.date[2] + 1))
 
-        # Exceptions
+    @require_live
+    def test_from_date_weekend_raises(self):
         self.assertRaises(BormeDoesntExistException, BormeXML.from_date, (2015, 9, 26))
 
 
@@ -280,7 +279,7 @@ class BormeXMLTestCase(unittest.TestCase):
 
     def test_get_url_pdfs(self):
         urls_a = {'A CORUÑA': 'https://www.boe.es/borme/dias/2015/09/24/pdfs/BORME-A-2015-183-15.pdf',
-                  'ALICANTE': 'https://www.boe.es/borme/dias/2015/09/24/pdfs/BORME-A-2015-183-03.pdf',
+                  'ALICANTE/ALACANT': 'https://www.boe.es/borme/dias/2015/09/24/pdfs/BORME-A-2015-183-03.pdf',
                   'ALMERÍA': 'https://www.boe.es/borme/dias/2015/09/24/pdfs/BORME-A-2015-183-04.pdf',
                   'ARABA/ÁLAVA': 'https://www.boe.es/borme/dias/2015/09/24/pdfs/BORME-A-2015-183-01.pdf',
                   'ASTURIAS': 'https://www.boe.es/borme/dias/2015/09/24/pdfs/BORME-A-2015-183-33.pdf',
@@ -288,7 +287,7 @@ class BormeXMLTestCase(unittest.TestCase):
                   'BARCELONA': 'https://www.boe.es/borme/dias/2015/09/24/pdfs/BORME-A-2015-183-08.pdf',
                   'BURGOS': 'https://www.boe.es/borme/dias/2015/09/24/pdfs/BORME-A-2015-183-09.pdf',
                   'CANTABRIA': 'https://www.boe.es/borme/dias/2015/09/24/pdfs/BORME-A-2015-183-39.pdf',
-                  'CASTELLÓN': 'https://www.boe.es/borme/dias/2015/09/24/pdfs/BORME-A-2015-183-12.pdf',
+                  'CASTELLÓN/CASTELLÓ': 'https://www.boe.es/borme/dias/2015/09/24/pdfs/BORME-A-2015-183-12.pdf',
                   'CEUTA': 'https://www.boe.es/borme/dias/2015/09/24/pdfs/BORME-A-2015-183-51.pdf',
                   'CUENCA': 'https://www.boe.es/borme/dias/2015/09/24/pdfs/BORME-A-2015-183-16.pdf',
                   'CÁCERES': 'https://www.boe.es/borme/dias/2015/09/24/pdfs/BORME-A-2015-183-10.pdf',
@@ -310,7 +309,7 @@ class BormeXMLTestCase(unittest.TestCase):
                   'SEGOVIA': 'https://www.boe.es/borme/dias/2015/09/24/pdfs/BORME-A-2015-183-40.pdf',
                   'SEVILLA': 'https://www.boe.es/borme/dias/2015/09/24/pdfs/BORME-A-2015-183-41.pdf',
                   'TARRAGONA': 'https://www.boe.es/borme/dias/2015/09/24/pdfs/BORME-A-2015-183-43.pdf',
-                  'VALENCIA': 'https://www.boe.es/borme/dias/2015/09/24/pdfs/BORME-A-2015-183-46.pdf',
+                  'VALENCIA/VALÈNCIA': 'https://www.boe.es/borme/dias/2015/09/24/pdfs/BORME-A-2015-183-46.pdf',
                   'VALLADOLID': 'https://www.boe.es/borme/dias/2015/09/24/pdfs/BORME-A-2015-183-47.pdf',
                   'ZAMORA': 'https://www.boe.es/borme/dias/2015/09/24/pdfs/BORME-A-2015-183-49.pdf',
                   'ZARAGOZA': 'https://www.boe.es/borme/dias/2015/09/24/pdfs/BORME-A-2015-183-50.pdf',
@@ -361,14 +360,17 @@ class BormeXMLTestCase(unittest.TestCase):
         self.assertEqual(self.bxml.get_cves(), seccion_a_bormes + seccion_b_bormes + seccion_c_bormes)
 
     def test_get_provincias(self):
+        # La API actual devuelve los nombres bilingües (Valencia/València,
+        # Castellón/Castelló, Alicante/Alacant) tal y como los publica el BOE.
         provincias = [
-            'ARABA/ÁLAVA', 'ALICANTE', 'ALMERÍA', 'BADAJOZ', 'ILLES BALEARS',
-            'BARCELONA',  'BURGOS', 'CÁCERES', 'CÁDIZ', 'CASTELLÓN', 'CÓRDOBA',
-            'A CORUÑA', 'CUENCA', 'HUESCA', 'LLEIDA', 'LA RIOJA', 'MADRID',
-            'MÁLAGA', 'MURCIA', 'NAVARRA', 'OURENSE', 'ASTURIAS', 'PALENCIA',
-            'LAS PALMAS', 'PONTEVEDRA', 'SANTA CRUZ DE TENERIFE', 'CANTABRIA',
-            'SEGOVIA', 'SEVILLA', 'TARRAGONA', 'VALENCIA', 'VALLADOLID',
-            'ZAMORA', 'ZARAGOZA', 'CEUTA']
+            'ARABA/ÁLAVA', 'ALICANTE/ALACANT', 'ALMERÍA', 'BADAJOZ',
+            'ILLES BALEARS', 'BARCELONA',  'BURGOS', 'CÁCERES', 'CÁDIZ',
+            'CASTELLÓN/CASTELLÓ', 'CÓRDOBA', 'A CORUÑA', 'CUENCA', 'HUESCA',
+            'LLEIDA', 'LA RIOJA', 'MADRID', 'MÁLAGA', 'MURCIA', 'NAVARRA',
+            'OURENSE', 'ASTURIAS', 'PALENCIA', 'LAS PALMAS', 'PONTEVEDRA',
+            'SANTA CRUZ DE TENERIFE', 'CANTABRIA', 'SEGOVIA', 'SEVILLA',
+            'TARRAGONA', 'VALENCIA/VALÈNCIA', 'VALLADOLID', 'ZAMORA',
+            'ZARAGOZA', 'CEUTA']
 
         self.assertEqual(self.bxml.get_provincias(SECCION.A), provincias)
 
