@@ -1,35 +1,65 @@
 #!/usr/bin/env python
 #
-# bormeparser.config.py -
+# bormeparser.config - Configuración del proyecto (lectura perezosa).
 # Copyright (C) 2015-2022 Pablo Castellano <pablo@anche.no>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os.path
+"""Resuelve los parámetros de configuración del paquete.
+
+La configuración se lee la primera vez que se solicita (no al importar),
+así un test o un servicio que nunca toque disco no necesita un
+``~/.bormecfg``. El uso típico es::
+
+    from bormeparser.config import get_config
+    root = get_config()["borme_root"]
+
+El nombre histórico ``bormeparser.CONFIG`` sigue funcionando: se resuelve
+de forma diferida vía ``__getattr__`` del módulo.
+"""
 
 import configparser
-
-config = configparser.ConfigParser()
+import os
 
 CONFIG_FILE = os.path.expanduser("~/.bormecfg")
 DEFAULTS = {
-    'borme_root': os.path.expanduser("~/.bormes")
+    "borme_root": os.path.expanduser("~/.bormes"),
 }
 
-if os.path.isfile(CONFIG_FILE):
-    config.read(CONFIG_FILE)
-    CONFIG = dict(config["general"])
-else:
-    CONFIG = DEFAULTS
+_cached_config = None
 
+
+def get_config():
+    """Devuelve la configuración efectiva (defaults + ``~/.bormecfg``).
+
+    Se cachea tras la primera lectura. Llamar a :func:`reload_config`
+    para forzar una nueva lectura (útil en tests).
+    """
+    global _cached_config
+    if _cached_config is None:
+        if os.path.isfile(CONFIG_FILE):
+            parser = configparser.ConfigParser()
+            parser.read(CONFIG_FILE)
+            _cached_config = dict(parser["general"])
+        else:
+            _cached_config = dict(DEFAULTS)
+    return _cached_config
+
+
+def reload_config():
+    """Invalida el cache y vuelve a leer ``~/.bormecfg`` en la próxima llamada."""
+    global _cached_config
+    _cached_config = None
+
+
+def __getattr__(name):
+    # Backwards compatibility: ``from bormeparser.config import CONFIG``
+    # sigue funcionando, pero el fichero solo se lee si CONFIG se usa.
+    if name == "CONFIG":
+        return get_config()
+    raise AttributeError(
+        "module {!r} has no attribute {!r}".format(__name__, name)
+    )

@@ -18,17 +18,14 @@
 
 
 import datetime
-import io
-import json
 import logging
 import os
 import os.path
-import re
 
 from .acto import ACTO
 from .download import get_url_pdf
 from .exceptions import BormeAnuncioNotFound
-from .provincia import PROVINCIA, Provincia
+from .provincia import PROVINCIA
 from .regex import is_acto_cargo
 from .seccion import SECCION
 from .utils import get_borme_xml_filepath
@@ -243,124 +240,29 @@ class Borme:
         return downloaded
 
     def _to_dict(self, set_url=True):
-        doc = {
-            'cve': self.cve,
-            'date': self.date.isoformat(),
-            'seccion': self.seccion,
-            'provincia': self.provincia,
-            'num': self.num,
-            'from_anuncio': self.anuncios_rango[0],
-            'to_anuncio': self.anuncios_rango[1],
-            'anuncios': {}
-        }
+        from ._serialization import borme_to_dict
+        return borme_to_dict(self, include_url=set_url)
 
-        num_anuncios = 0
-        for id, anuncio in self.anuncios.items():
-            doc['anuncios'][anuncio.id] = {
-                'empresa': anuncio.empresa,
-                'registro': anuncio.registro,
-                'sucursal': anuncio.sucursal,
-                'liquidacion': anuncio.liquidacion,
-                'datos registrales': anuncio.datos_registrales,
-                'actos': [],
-                'num_actos': 0
-            }
-            for acto in anuncio.actos:
-                acto_dict = {acto.name: acto.value}
-                doc['anuncios'][anuncio.id]['num_actos'] += 1
-                doc['anuncios'][anuncio.id]['actos'].append(acto_dict)
-            num_anuncios += 1
-
-        doc['num_anuncios'] = num_anuncios
-
-        # For compatibility with other parsers
-        doc['raw_version'] = RAW_FILE_VERSION
-        doc['version'] = FILE_VERSION
-
-        # Note that it requires Internet connection the first time
-        if set_url:
-            doc['url'] = self.url
-
-        logger.debug(doc)
-        return doc
-
-    def to_json(self, path=None, overwrite=True, pretty=True,
-                include_url=True):
-        """Genera BORME-JSON a partir del archivo PDF
-
-        Nota: Requiere conexión a Internet si include_url=True
-        path: directorio o archivo
-        overwrite: Sobreescribe el archivo si ya existe
-        pretty: Genera el BORME-JSON con indentación para que sea más legible
-        include_url: Incluir la URL para descargar el BORME de su fuente
-                     oficial posteriormente.
-        """
-        def set_default(obj):
-            """ serialize Python sets as lists
-                http://stackoverflow.com/a/22281062
-            """
-            if isinstance(obj, set):
-                return sorted(obj)
-            elif isinstance(obj, Provincia):
-                return str(obj)
-            raise TypeError(type(obj))
-
-        if path is None:
-            path = re.sub(r'(\.pdf)$', '.json', os.path.basename(self.filename))
-        if os.path.isfile(path) and not overwrite:
-            return False
-        if os.path.isdir(path):
-            path = os.path.join(path, self.cve + '.json')
-
-        doc = self._to_dict(include_url)
-        indent = 2 if pretty else None
-        with open(path, 'w') as fp:
-            json.dump(doc, fp, default=set_default, indent=indent,
-                      sort_keys=True)
-        return path
+    def to_json(self, path=None, overwrite=True, pretty=True, include_url=True):
+        """Genera BORME-JSON. Ver :func:`bormeparser._serialization.borme_to_json`."""
+        from ._serialization import borme_to_json
+        return borme_to_json(
+            self,
+            path,
+            overwrite=overwrite,
+            pretty=pretty,
+            include_url=include_url,
+        )
 
     @classmethod
-    def from_json(self, filename):
+    def from_json(cls, filename):
         """Crea una instancia Borme a partir de un BORME-JSON.
 
-        El parámetro filename puede ser la ruta a un archivo o un objeto file
-        de un fichero JSON ya abierto.
+        El parámetro ``filename`` puede ser la ruta a un archivo o un
+        objeto file-like ya abierto.
         """
-
-        if isinstance(filename, io.IOBase):
-            d = json.loads(filename.read())
-            filename = filename.name
-        else:
-            with open(filename) as fp:
-                d = json.load(fp)
-
-        if d["version"] < FILE_VERSION:
-            logger.warning(
-                "This JSON was generated with an older version of bormeparser")
-            logger.warning(
-                "Current version is {0}, file version is {1}.".format(
-                    FILE_VERSION, d["version"]))
-        cve = d['cve']
-        date = datetime.datetime.strptime(d['date'], '%Y-%m-%d').date()
-        seccion = d['seccion']  # TODO: SECCION.from_borme()
-        provincia = PROVINCIA.from_title(d['provincia'].upper())
-        num = d['num']
-        url = d.get('url')  # No obligatorio
-        bormeanuncios = []
-        anuncios = sorted(d['anuncios'].items(), key=lambda t: t[0])
-        for id_anuncio, data in anuncios:
-            extra = {
-                "liquidacion": data["liquidacion"],
-                "sucursal": data["sucursal"],
-                "registro": data["registro"]
-            }
-            a = BormeAnuncio(int(id_anuncio), data['empresa'], data['actos'],
-                             extra, data['datos registrales'])
-            bormeanuncios.append(a)
-        borme = Borme(date, seccion, provincia, num, cve, bormeanuncios,
-                      filename)
-        borme._url = url
-        return borme
+        from ._serialization import borme_from_json
+        return borme_from_json(filename)
 
     def __lt__(self, other):
         return self.anuncios_rango[1] < other.anuncios_rango[0]
