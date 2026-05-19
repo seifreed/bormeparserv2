@@ -17,23 +17,22 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from __future__ import annotations
+
 import datetime
 import logging
 import os
 import os.path
+from typing import Iterable
 
 from .acto import ACTO
-from .download import get_url_pdf
-from .exceptions import BormeAnuncioNotFound
-from .provincia import PROVINCIA
+from .download import download_pdf, get_url_pdf, get_url_pdf_from_xml
+from .exceptions import BormeAlreadyDownloadedException, BormeAnuncioNotFound
+from .provincia import Provincia
 from .regex import is_acto_cargo
-from .seccion import SECCION
 from .utils import get_borme_xml_filepath
 
 logger = logging.getLogger(__name__)
-ch = logging.StreamHandler()
-logger.addHandler(ch)
-logger.setLevel(logging.WARN)
 
 # RAW_FILE_VERSION must be a positive integer string.
 # Each new version adds 1 if the result file can change.
@@ -47,86 +46,106 @@ FILE_VERSION = "{}".format(int(RAW_FILE_VERSION) + 1000 * int(TH_FILE_VERSION))
 
 
 class BormeActo:
-    """Representa un Acto del Registro Mercantil. Instanciar BormeActoTexto
-       o BormeActoCargo
+    """Acto del Registro Mercantil. Clase abstracta — instanciar
+    :class:`BormeActoTexto` o :class:`BormeActoCargo`.
     """
-    def __init__(self, name, value):
+
+    name: str
+
+    def __init__(self, name: str, value) -> None:
         logger.debug("new %s(%s): %s", self.__class__.__name__, name, value)
         if name not in ACTO.ALL_KEYWORDS:
             logger.warning("Invalid acto found: %s", name)
         self._set_name(name)
         self._set_value(value)
 
-    def _set_name(self, name):
+    def _set_name(self, name: str) -> None:
         raise NotImplementedError
 
-    def _set_value(self, value):
+    def _set_value(self, value) -> None:
         raise NotImplementedError
 
-    def __lt__(self, other):
+    def __lt__(self, other: "BormeActo") -> bool:
         return self.name < other.name
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<{}({}): {}>".format(
             self.__class__.__name__, self.name, self.value
         )
 
 
 class BormeActoTexto(BormeActo):
-    """
-    Representa un Acto del Registro Mercantil con atributo de cadena de texto.
-    """
+    """Acto del Registro Mercantil cuyo valor es una cadena de texto libre."""
 
-    def _set_name(self, name):
+    value: str | None
+
+    def _set_name(self, name: str) -> None:
         if is_acto_cargo(name):
             raise ValueError(
-                'No se puede BormeActoTexto con un acto de cargo: %s' % name)
+                "BormeActoTexto no admite un acto de cargo: {}".format(name)
+            )
         self.name = name
 
-    def _set_value(self, value):
+    def _set_value(self, value) -> None:
         if not (value is None or isinstance(value, str)):
-            raise ValueError('value must be str or None: %s' % value)
+            raise ValueError(
+                "value must be str or None: {!r}".format(value)
+            )
         self.value = value
 
 
 class BormeActoCargo(BormeActo):
-    """Representa un Acto del Registro Mercantil con atributo de lista de
-       cargos y nombres.
-    """
+    """Acto del Registro Mercantil que asocia cargos a conjuntos de nombres."""
 
-    def _set_name(self, name):
+    value: dict[str, set[str]]
+
+    def _set_name(self, name: str) -> None:
         if not is_acto_cargo(name):
             raise ValueError(
-                'No se puede BormeActoCargo sin un acto de cargo: %s' % name)
+                "BormeActoCargo requiere un acto de cargo: {}".format(name)
+            )
         self.name = name
 
-    def _set_value(self, value):
+    def _set_value(self, value) -> None:
         if not isinstance(value, dict):
-            raise ValueError('value must be a dictionary: %s' % value)
+            raise ValueError(
+                "value must be a dictionary: {!r}".format(value)
+            )
 
-        for k, v in value.items():
-            if not isinstance(v, set):
-                if isinstance(v, list):
-                    value[k] = set(v)
-                else:
-                    raise ValueError('v must be a set: %s' % v)
+        for cargo, nombres in value.items():
+            if isinstance(nombres, set):
+                continue
+            if isinstance(nombres, list):
+                value[cargo] = set(nombres)
+            else:
+                raise ValueError(
+                    "value[{!r}] must be a set, got {!r}".format(cargo, nombres)
+                )
 
         self.value = value
 
     @property
-    def cargos(self):
+    def cargos(self) -> dict[str, set[str]]:
         return self.value
 
-    def get_nombres_cargos(self):
+    def get_nombres_cargos(self) -> list[str]:
         return list(self.value.keys())
 
 
 class BormeAnuncio:
-    """Representa un anuncio con un conjunto de actos mercantiles
-       (Constitucion, Nombramientos, ...)
-    """
+    """Anuncio del BORME con su conjunto de actos mercantiles
+    (Constitución, Nombramientos, …)."""
 
-    def __init__(self, id, empresa, actos, extra, datos_registrales=None):
+    actos: list[BormeActo]
+
+    def __init__(
+        self,
+        id: int,
+        empresa: str,
+        actos: Iterable[dict],
+        extra: dict,
+        datos_registrales: str | None = None,
+    ) -> None:
         logger.debug("new BormeAnuncio(%s) %s (%s)", id, empresa, extra)
         self.id = id
         self.empresa = empresa
@@ -136,38 +155,54 @@ class BormeAnuncio:
         self.datos_registrales = datos_registrales or ""
         self._set_actos(actos)
 
-    def _set_actos(self, actos):
+    def _set_actos(self, actos: Iterable[dict]) -> None:
         self.actos = []
         for acto in actos:
             for acto_nombre, valor in acto.items():
-                if acto_nombre == 'Datos registrales':
+                if acto_nombre == "Datos registrales":
                     self.datos_registrales = valor
                     continue
-
                 if is_acto_cargo(acto_nombre):
-                    a = BormeActoCargo(acto_nombre, valor)
+                    self.actos.append(BormeActoCargo(acto_nombre, valor))
                 else:
-                    a = BormeActoTexto(acto_nombre, valor)
-                self.actos.append(a)
+                    self.actos.append(BormeActoTexto(acto_nombre, valor))
 
-    def get_borme_actos(self):
+    def get_borme_actos(self) -> list[BormeActo]:
         return self.actos
 
     def get_actos(self):
         for acto in self.actos:
             yield acto.name, acto.value
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<BormeAnuncio({}) {} (r:{}, s:{}, l:{}) ({})>".format(
-                    self.id, self.empresa, self.registro, self.sucursal,
-                    self.liquidacion, len(self.actos))
+            self.id,
+            self.empresa,
+            self.registro,
+            self.sucursal,
+            self.liquidacion,
+            len(self.actos),
+        )
 
 
 
 class Borme:
+    """Una publicación BORME para una (fecha, sección, provincia) concreta."""
 
-    def __init__(self, date, seccion, provincia, num, cve, anuncios=None,
-                 filename=None, lazy=True):
+    anuncios: dict[int, BormeAnuncio]
+    anuncios_rango: tuple[int, int]
+
+    def __init__(
+        self,
+        date: datetime.date | tuple[int, int, int],
+        seccion: str,
+        provincia: Provincia,
+        num: int,
+        cve: str,
+        anuncios: Iterable[BormeAnuncio] | None = None,
+        filename: str | None = None,
+        lazy: bool = True,
+    ) -> None:
         if isinstance(date, tuple):
             date = datetime.date(year=date[0], month=date[1], day=date[2])
         self.date = date
@@ -177,24 +212,21 @@ class Borme:
         self.cve = cve
         self.filename = filename
         self._set_anuncios(anuncios)
-        self._url = None
+        self._url: str | None = None
         if not lazy:
             self._set_url()
 
     @classmethod
-    def from_file(cls, filename):
-        # TODO: Create instance directly from filename
-        raise NotImplementedError
+    def from_file(cls, filename: str) -> "Borme":
+        raise NotImplementedError(
+            "Borme.from_file(pdf_path) not implemented yet; use "
+            "bormeparser.parse(pdf_path, SECCION.A) for now"
+        )
 
-    def _set_anuncios(self, anuncios):
-        """
-            anuncios: [BormeAnuncio]
-        """
-        self.anuncios = {}
-        for anuncio in anuncios:
-            self.anuncios[anuncio.id] = anuncio
-        self.anuncios_rango = (min(self.anuncios.keys()),
-                               max(self.anuncios.keys()))
+    def _set_anuncios(self, anuncios: Iterable[BormeAnuncio] | None) -> None:
+        self.anuncios = {a.id: a for a in (anuncios or [])}
+        ids = self.anuncios.keys()
+        self.anuncios_rango = (min(ids), max(ids)) if ids else (0, 0)
 
     def _set_url(self):
         xml_path = get_borme_xml_filepath(self.date)

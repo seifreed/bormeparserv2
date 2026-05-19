@@ -28,7 +28,6 @@ import logging
 import re
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARN)
 
 
 class LxmlBormeCParser(BormeCParserBackend):

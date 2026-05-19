@@ -27,8 +27,8 @@ from bormeparser.registro import REGISTROS, ALL_REGISTROS
 from bormeparser.sociedad import ALL_SOCIEDADES
 
 import logging
+
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARN)
 
 def _re_escape_keywords(keywords, *, with_parens=False):
     """Escapa metacaracteres de regex en una lista de palabras clave."""

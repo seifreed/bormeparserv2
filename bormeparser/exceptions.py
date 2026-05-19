@@ -44,3 +44,11 @@ class BormeInvalidCargoException(BormeparserException):
 
 class BormeAnuncioNotFound(BormeparserException):
     pass
+
+
+class CveNotFound(BormeparserException):
+    """El CVE (identificador BORME) buscado no aparece en el sumario."""
+
+
+class MissingFilterException(BormeparserException):
+    """Falta un filtro obligatorio (sección y/o provincia) en una consulta."""

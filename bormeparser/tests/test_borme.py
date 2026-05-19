@@ -336,7 +336,8 @@ class BormeXMLTestCase(unittest.TestCase):
         self.assertEqual(self.bxml.get_url_pdfs(seccion=SECCION.B), urls_b)
         self.assertEqual(self.bxml.get_url_pdfs(seccion=SECCION.B, provincia='ALMERÍA'), url_cve_b)
         self.assertEqual(self.bxml.get_url_pdfs(seccion=SECCION.C), urls_c)
-        self.assertRaises(AttributeError, self.bxml.get_url_pdfs)
+        from bormeparser.exceptions import MissingFilterException
+        self.assertRaises(MissingFilterException, self.bxml.get_url_pdfs)
 
     def test_get_cves(self):
         seccion_a_bormes = ['BORME-A-2015-183-%s' % x
@@ -453,10 +454,20 @@ class BormeXMLTestCase(unittest.TestCase):
         self.assertEqual(self.bxml.get_sizes(SECCION.B, 'MADRID'), {'BORME-B-2015-183-28': 153207})
         self.assertEqual(self.bxml.get_sizes(SECCION.C), seccion_c_sizes)
 
-    # get_urls_cve
-    # download_borme
-    # download_single_borme
-    # save_to_file
+    def test_get_url_cve_unknown_raises(self):
+        from bormeparser.exceptions import CveNotFound
+        self.assertRaises(
+            CveNotFound,
+            self.bxml.get_url_cve,
+            'BORME-A-2099-999-99',
+        )
+
+    def test_get_url_cve_known(self):
+        url = self.bxml.get_url_cve('BORME-A-2015-183-28')
+        self.assertEqual(
+            url,
+            'https://www.boe.es/borme/dias/2015/09/24/pdfs/BORME-A-2015-183-28.pdf',
+        )
 
 
 class BormeCTestCase1(unittest.TestCase):

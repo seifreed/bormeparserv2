@@ -20,7 +20,7 @@ from threading import Thread
 import requests
 from lxml import etree
 
-from .exceptions import BormeDoesntExistException
+from .exceptions import BormeDoesntExistException, MissingFilterException
 from .parser import parse as parse_borme
 from .seccion import SECCION
 
@@ -243,8 +243,13 @@ def get_url_pdfs(date, seccion=None, provincia=None, secure=USE_HTTPS):
     if provincia and not seccion:
         return get_url_pdfs_provincia(date, provincia, secure=secure)
     if provincia and seccion:
-        raise NotImplementedError
-    raise AttributeError("You must specify either provincia or seccion or both")
+        raise NotImplementedError(
+            "Filtering by both seccion and provincia simultaneously is not "
+            "supported; pass one or the other"
+        )
+    raise MissingFilterException(
+        "You must specify either provincia or seccion or both"
+    )
 
 
 def download_url(url, filename=None, try_again=0):

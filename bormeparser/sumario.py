@@ -30,7 +30,11 @@ from .download import (
     download_urls_multi_names,
     get_url_xml,
 )
-from .exceptions import BormeDoesntExistException
+from .exceptions import (
+    BormeDoesntExistException,
+    CveNotFound,
+    MissingFilterException,
+)
 from .seccion import SECCION
 
 logger = logging.getLogger(__name__)
@@ -168,11 +172,16 @@ class BormeXML:
         return sizes
 
     def get_url_cve(self, cve):
-        """URL de descarga del PDF identificado por ``cve``."""
+        """URL de descarga del PDF identificado por ``cve``.
+
+        Lanza :class:`CveNotFound` si el identificador no aparece en el sumario.
+        """
         for item in self._all_items():
             if item.findtext("identificador") == cve:
                 return item.findtext("url_pdf")
-        raise AttributeError("CVE not found in this BORME XML")
+        raise CveNotFound(
+            "CVE {!r} not found in BORME sumario {}".format(cve, self.date)
+        )
 
     def get_provincias(self, seccion):
         provincias = [
@@ -219,7 +228,7 @@ class BormeXML:
     def _get_url_borme_a(self, seccion=None, provincia=None):
         """URLs de la sección A/B según el filtro indicado."""
         if not seccion and not provincia:
-            raise AttributeError(
+            raise MissingFilterException(
                 "You must specify either provincia or seccion or both"
             )
 
