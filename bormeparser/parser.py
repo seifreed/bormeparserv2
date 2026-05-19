@@ -26,11 +26,13 @@ DEFAULT_PARSER = {
 }
 
 
-def parse(filename, seccion):
+def parse(filename, seccion, **backend_kwargs):
     """Parsea el fichero local del BORME indicado y devuelve el resultado.
 
     ``filename`` debe ser una ruta a un archivo existente. El backend se elige
-    a partir de ``seccion`` consultando :data:`DEFAULT_PARSER`.
+    a partir de ``seccion`` consultando :data:`DEFAULT_PARSER`. Los
+    ``backend_kwargs`` se reenvían al constructor del backend (por ejemplo
+    ``sanitize=True`` para :class:`PyPDFParser`).
     """
     try:
         module_path, class_name = DEFAULT_PARSER[seccion]
@@ -44,4 +46,4 @@ def parse(filename, seccion):
 
     module = importlib.import_module(module_path)
     backend_cls = getattr(module, class_name)
-    return backend_cls(filename).parse()
+    return backend_cls(filename, **backend_kwargs).parse()

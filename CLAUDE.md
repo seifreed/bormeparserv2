@@ -109,8 +109,8 @@ Object hierarchy:
 ### Config and conventions
 
 - `bormeparser.CONFIG` reads `~/.bormecfg` (INI format, `[general]` section) at import time; default `borme_root` is `~/.bormes`. Scripts read `bormeparser.CONFIG["borme_root"]` rather than taking a path argument.
-- `backends/defaults.py` exposes a global `OPTIONS` dict (e.g. `SANITIZE_COMPANY_NAME`) that scripts mutate *before* calling `parse()`. This is the project's chosen mechanism for backend feature flags — don't replace it with constructor kwargs without checking callers in `scripts/`.
-- `setup.py` symlinks `examples/` into `bormeparser/examples` during build (and removes it after); the symlink is the source of test fixtures referenced as `bormeparser/examples/BORME-*.pdf`.
+- Backends accept their own kwargs in `__init__`; `bormeparser.parse(filename, seccion, **kwargs)` forwards them to the chosen backend. The historical `backends/defaults.py:OPTIONS` global was deleted — pass `sanitize=True` explicitly when calling `parse()` (see `scripts/borme_to_json.py`).
+- `bormeparser/examples/` is a real package directory: PDF/XML/HTML fixtures live there and are shipped with the wheel via `package_data` in `setup.py`. There is no symlink hack anymore.
 
 ## Policies (non-negotiable)
 

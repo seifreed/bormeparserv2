@@ -17,15 +17,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import bormeparser
-import bormeparser.backends.pypdf.parser
-
-from bormeparser.backends.defaults import OPTIONS
-OPTIONS['SANITIZE_COMPANY_NAME'] = True
-
 import argparse
 import logging
 import os
+
+import bormeparser
+import bormeparser.backends.pypdf.parser
 
 
 if __name__ == '__main__':
@@ -40,7 +37,7 @@ if __name__ == '__main__':
         bormeparser.backends.pypdf.parser.logger.setLevel(logging.DEBUG)
 
     print('\nParsing {}'.format(args.filename))
-    borme = bormeparser.parse(args.filename, bormeparser.SECCION.A)
+    borme = bormeparser.parse(args.filename, bormeparser.SECCION.A, sanitize=True)
     path = borme.to_json(args.output)
 
     if path:

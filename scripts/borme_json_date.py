@@ -16,20 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import bormeparser
-import bormeparser.borme
-
-from bormeparser.backends.defaults import OPTIONS
-from bormeparser.utils import FIRST_BORME
-OPTIONS['SANITIZE_COMPANY_NAME'] = True
-
 import argparse
 import datetime
 import os
 import time
-
-from threading import Thread
 from queue import Queue
+from threading import Thread
+
+import bormeparser
+import bormeparser.borme
+from bormeparser.utils import FIRST_BORME
 
 BORME_ROOT = bormeparser.CONFIG["borme_root"]
 THREADS = 6
@@ -37,7 +33,7 @@ THREADS = 6
 
 class ThreadConvertJSON(Thread):
     def __init__(self, queue):
-        super(ThreadConvertJSON, self).__init__()
+        super().__init__()
         self.queue = queue
 
     def run(self):
@@ -45,7 +41,9 @@ class ThreadConvertJSON(Thread):
             pdf_path, json_path = self.queue.get()
             print('Creating %s ...' % json_path)
             try:
-                borme = bormeparser.parse(pdf_path, bormeparser.SECCION.A)
+                borme = bormeparser.parse(
+                    pdf_path, bormeparser.SECCION.A, sanitize=True
+                )
                 borme.to_json(json_path)
                 print('{cve}: OK'.format(cve=borme.cve))
             except Exception as e:

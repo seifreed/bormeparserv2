@@ -1,5 +1,5 @@
 from .acto import ACTO
-from .borme import Borme, BormeXML
+from .borme import Borme
 from .cargo import CARGO
 from .config import CONFIG
 from .download import (
@@ -14,6 +14,7 @@ from .emisor import EMISOR
 from .parser import parse
 from .provincia import PROVINCIA
 from .seccion import SECCION
+from .sumario import BormeXML
 
 __all__ = [
     "ACTO",

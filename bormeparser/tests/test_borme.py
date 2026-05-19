@@ -24,7 +24,8 @@ import unittest
 
 import bormeparser
 from bormeparser.borme import (
-        Borme, BormeActoCargo, BormeActoTexto, BormeAnuncio, BormeXML)
+        Borme, BormeActoCargo, BormeActoTexto, BormeAnuncio)
+from bormeparser.sumario import BormeXML
 from bormeparser.exceptions import BormeDoesntExistException
 from bormeparser.seccion import SECCION
 from bormeparser.provincia import PROVINCIA

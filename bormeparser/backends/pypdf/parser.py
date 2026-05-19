@@ -35,20 +35,25 @@ from bormeparser.regex import (
     regex_noarg,
 )
 
-from ..defaults import OPTIONS
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARN)
 
 
 class PyPDFParser(BormeAParserBackend):
-    """Parse BORME-A PDFs using the pypdf library."""
+    """Parse BORME-A PDFs using the pypdf library.
 
-    def __init__(self, filename, log_level=logging.WARN):
+    Args:
+        filename: Path to the BORME-A PDF.
+        sanitize: When True, normalises company names (drops trailing
+            type acronyms like S.L., S.A.) before storing them.
+        log_level: Logging level for the parser (default WARN).
+    """
+
+    def __init__(self, filename, *, sanitize=False, log_level=logging.WARN):
         super().__init__(filename)
         logger.setLevel(log_level)
         self.actos = []
-        self.sanitize = OPTIONS['SANITIZE_COMPANY_NAME']
+        self.sanitize = sanitize
 
     def _parse(self):
         cabecera = False
