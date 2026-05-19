@@ -83,7 +83,10 @@ class PyPDFParser(BormeAParserBackend):
                     continue
                 raw = contents.get_data()
                 if isinstance(raw, bytes):
-                    raw = raw.decode('unicode_escape')
+                    # PDF content streams son bytes con literales latin-1;
+                    # los escapes propios del PDF (\(, \), \\) los deshace
+                    # _clean_data más abajo.
+                    raw = raw.decode('latin-1')
                 page_contents.append(raw)
 
         for content in page_contents:

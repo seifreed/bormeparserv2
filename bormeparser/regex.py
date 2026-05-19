@@ -30,13 +30,24 @@ import logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARN)
 
-esc_arg_keywords = [x.replace('.', '\.').replace('(', '\(').replace(')', '\)') for x in ACTO.ARG_KEYWORDS]
-esc_colon_keywords = [x.replace('.', '\.') for x in ACTO.COLON_KEYWORDS]
-esc_bold_keywords = [x.replace('.', '\.') for x in ACTO.BOLD_KEYWORDS]
-esc_noarg_keywords = [x.replace('.', '\.').replace('(', '\(').replace(')', '\)') for x in ACTO.NOARG_KEYWORDS]
-esc_ending_keywords = [x.replace('.', '\.') for x in ACTO.ENDING_KEYWORDS]
+def _re_escape_keywords(keywords, *, with_parens=False):
+    """Escapa metacaracteres de regex en una lista de palabras clave."""
+    escaped = []
+    for keyword in keywords:
+        token = keyword.replace('.', r'\.')
+        if with_parens:
+            token = token.replace('(', r'\(').replace(')', r'\)')
+        escaped.append(token)
+    return escaped
 
-esc_cargos_keywords = [x.replace('.', '\.') for x in CARGO.KEYWORDS]
+
+esc_arg_keywords = _re_escape_keywords(ACTO.ARG_KEYWORDS, with_parens=True)
+esc_colon_keywords = _re_escape_keywords(ACTO.COLON_KEYWORDS)
+esc_bold_keywords = _re_escape_keywords(ACTO.BOLD_KEYWORDS)
+esc_noarg_keywords = _re_escape_keywords(ACTO.NOARG_KEYWORDS, with_parens=True)
+esc_ending_keywords = _re_escape_keywords(ACTO.ENDING_KEYWORDS)
+
+esc_cargos_keywords = _re_escape_keywords(CARGO.KEYWORDS)
 
 # -- ACTOS --
 # OR de las palabras clave con argumentos
@@ -58,18 +69,21 @@ RE_ENDING_KEYWORD = '(%s)' % esc_ending_keywords[0]
 RE_CARGOS_KEYWORDS = '(%s):' % '|'.join(esc_cargos_keywords)
 RE_CARGOS_KEYWORDS2 = '(?=%s|$)' % '|'.join([x + ':' for x in esc_cargos_keywords])
 # RE para capturar el cargo y los nombres
-RE_CARGOS_MATCH = RE_CARGOS_KEYWORDS + ' (.*?)\.?' + RE_CARGOS_KEYWORDS2
+RE_CARGOS_MATCH = RE_CARGOS_KEYWORDS + r' (.*?)\.?' + RE_CARGOS_KEYWORDS2
 
-REGEX_NOARG = re.compile(RE_NOARG_KEYWORDS + '\.\s*(.*)', re.UNICODE)
-REGEX_ARGCOLON = re.compile(RE_COLON_KEYWORDS + ': (.*?)(?:\.\s+)(.*)', re.UNICODE)
-REGEX_BOLD = re.compile(RE_BOLD_KEYWORDS + '\. (.*?)\.\s*' + RE_ALL_KEYWORDS + '(.*)\.?', re.UNICODE)
+REGEX_NOARG = re.compile(RE_NOARG_KEYWORDS + r'\.\s*(.*)', re.UNICODE)
+REGEX_ARGCOLON = re.compile(RE_COLON_KEYWORDS + r': (.*?)(?:\.\s+)(.*)', re.UNICODE)
+REGEX_BOLD = re.compile(
+    RE_BOLD_KEYWORDS + r'\. (.*?)\.\s*' + RE_ALL_KEYWORDS + r'(.*)\.?',
+    re.UNICODE,
+)
 
-REGEX_EMPRESA = re.compile('^(\d+) - (.*?)\.?$')
-REGEX_EMPRESA_REGISTRO = re.compile('^(\d+) - (.*)\(R.M. (.*)\)\.?$')
-REGEX_PDF_TEXT = re.compile('^\((.*)\)Tj$')
-REGEX_BORME_NUM = re.compile('^Núm\. (\d+)', re.UNICODE)
-REGEX_BORME_FECHA = re.compile('^\w+ (\d+) de (\w+) de (\d+)')
-REGEX_BORME_CVE = re.compile('^cve: (.*)$')
+REGEX_EMPRESA = re.compile(r'^(\d+) - (.*?)\.?$')
+REGEX_EMPRESA_REGISTRO = re.compile(r'^(\d+) - (.*)\(R.M. (.*)\)\.?$')
+REGEX_PDF_TEXT = re.compile(r'^\((.*)\)Tj$')
+REGEX_BORME_NUM = re.compile(r'^Núm\. (\d+)', re.UNICODE)
+REGEX_BORME_FECHA = re.compile(r'^\w+ (\d+) de (\w+) de (\d+)')
+REGEX_BORME_CVE = re.compile(r'^cve: (.*)$')
 
 MESES = {'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4, 'mayo': 5, 'junio': 6, 'julio': 7,
          'agosto': 8, 'septiembre': 9, 'octubre': 10, 'noviembre': 11, 'diciembre': 12}
@@ -251,13 +265,13 @@ def regex_constitucion(data):
     try:
         # 'dd.mm.yy', 'd.mm.yy', 'dd.m.yy', 'd.m.yy', 'dd/mm/yy', '2-10-2009', '21 DE FEBRERO DE 2006'
         if '/' in date or '-' in date:
-            n = re.findall('(\d{1,4})', date)  # ['17', '04', '2013']
+            n = re.findall(r'(\d{1,4})', date)  # ['17', '04', '2013']
             if len(n) != 3:
                 raise ValueError
             date = {'day': int(n[0]), 'month': int(n[1]), 'year': int(n[2])}
             date = datetime.date(**date)
         elif ' de ' in date.lower():
-            match = re.match('(\d+) de (\w+) de (\d+)', date.lower())
+            match = re.match(r'(\d+) de (\w+) de (\d+)', date.lower())
             if not match:
                 raise ValueError
             day, month, year = match.groups()
@@ -314,7 +328,7 @@ def regex_fecha(data):
     ('2', 'junio', '2015')
     """
 
-    day, month, year = re.match('\w+ (\d+) de (\w+) de (\d+)', data, re.UNICODE).groups()
+    day, month, year = re.match(r'\w+ (\d+) de (\w+) de (\d+)', data, re.UNICODE).groups()
     return (int(year), MESES[month], int(day))
 
 
@@ -334,12 +348,12 @@ def borme_c_separa_empresas_titulo(titulo):
     lines = []
 
     if not '\n' in titulo:
-        lines = re.findall('.*? \([\w\s]+\)', titulo, re.UNICODE)
+        lines = re.findall(r'.*? \([\w\s]+\)', titulo, re.UNICODE)
     if len(lines) == 0:
         lines = titulo.split('\n')
 
     for line in lines:
-        empresa = re.sub('\(.*?\)', '', line)
+        empresa = re.sub(r'\(.*?\)', '', line)
         #empresa = line.replace('(SOCIEDAD ABSORBENTE)', '')
         #empresa = empresa.replace('(SOCIEDAD ABSORBIDA)', '')
         #empresa = empresa.replace('(SOCIEDAD ESCINDIDA)', '')

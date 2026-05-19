@@ -36,7 +36,7 @@ class LxmlBormeCParser(BormeCParserBackend):
     BORME C Parser using lxml and regular expressions
     """
     def __init__(self, filename, log_level=logging.WARN):
-        super(LxmlBormeCParser, self).__init__(filename)
+        super().__init__(filename)
         logger.setLevel(log_level)
 
     def _clean_cif(self, companies):
@@ -87,7 +87,7 @@ class LxmlBormeCParser(BormeCParserBackend):
             logger.warning('En fusiones y absorciones debe haber al menos 2 empresas.')
             #assert(len(empresas) > 1)
 
-        cifs = re.findall('(?:[CN]IF n\w+|[CN]IF) ([A-Z]-?[\d.-]+)', texto, re.UNICODE)
+        cifs = re.findall(r'(?:[CN]IF n\w+|[CN]IF) ([A-Z]-?[\d.-]+)', texto, re.UNICODE)
         cifs = self._clean_cif(cifs)
 
         return {'departamento': departamento,
@@ -114,14 +114,14 @@ class LxmlBormeCParser(BormeCParserBackend):
         empresa = body.xpath('//p[@class="documento-tit"]/text()')[0]  # TODO: Partir por los intros y borrar lo que haya entre paréntesis
         texto = '\n\n'.join(body.xpath('//div[@id="textoxslt"]/p/text()'))
         title = body.xpath('//div[@class="poolBdatos"]/h3/text()[1]')[0]  # "CONVOCATORIAS DE JUNTAS (BORME 101 de 27/5/2011)"
-        title_groups = re.search('(.*) \(BORME (\d+) de (\d+)/(\d+)/(\d+)\)', title)
+        title_groups = re.search(r'(.*) \(BORME (\d+) de (\d+)/(\d+)/(\d+)\)', title)
         departamento, diario_numero = title_groups.group(1), title_groups.group(2)
         fecha_publicacion = datetime.date(int(title_groups.group(5)), int(title_groups.group(4)), int(title_groups.group(3)))
 
         cve = html.xpath('//div[@class="contMigas"]/ul/li[@class="destino"]/text()')[0]  # "Documento BORME-C-2011-20488"
         cve = cve.split()[1]
 
-        cifs = re.findall('(?:[CN]IF n\w+|[CN]IF) ([A-Z]-?[\d.-]+)', texto, re.UNICODE)
+        cifs = re.findall(r'(?:[CN]IF n\w+|[CN]IF) ([A-Z]-?[\d.-]+)', texto, re.UNICODE)
         cifs = self._clean_cif(cifs)
 
         return {'departamento': departamento,

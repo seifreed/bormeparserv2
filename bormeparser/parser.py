@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# parser.py -
+# parser.py - Punto de entrada que enruta a un backend según la sección.
 # Copyright (C) 2015-2022 Pablo Castellano <pablo@anche.no>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -10,35 +10,38 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 
 import importlib
 import os
 
-# backends
+# Backends registrados por código de sección. Cada entrada es
+# ``(módulo, nombre de la clase)`` y se importa de forma perezosa para
+# evitar arrastrar dependencias opcionales (lxml, pypdf) cuando no se
+# usan.
 DEFAULT_PARSER = {
-    'A': ('bormeparser.backends.pypdf.parser', 'PyPDFParser'),
-    'C': ('bormeparser.backends.seccion_c.lxml.parser', 'LxmlBormeCParser'),
+    "A": ("bormeparser.backends.pypdf.parser", "PyPDFParser"),
+    "C": ("bormeparser.backends.seccion_c.lxml.parser", "LxmlBormeCParser"),
 }
 
 
-# parse: url, filename (string)
-def parse(data, seccion):
-    module = importlib.import_module(DEFAULT_PARSER[seccion][0])
-    parser = getattr(module, DEFAULT_PARSER[seccion][1])
-    if os.path.isfile(data):
-        borme = parser(data).parse()
-    elif data.startswith('http'):
-        # TODO
-        # req = requests.get(data)
-        # content = req.text
-        borme = parser(data).parse()
-    else:
-        raise IOError(data)
+def parse(filename, seccion):
+    """Parsea el fichero local del BORME indicado y devuelve el resultado.
 
-    return borme
+    ``filename`` debe ser una ruta a un archivo existente. El backend se elige
+    a partir de ``seccion`` consultando :data:`DEFAULT_PARSER`.
+    """
+    try:
+        module_path, class_name = DEFAULT_PARSER[seccion]
+    except KeyError as exc:
+        raise ValueError(
+            "No backend registered for seccion={!r}".format(seccion)
+        ) from exc
+
+    if not os.path.isfile(filename):
+        raise FileNotFoundError(filename)
+
+    module = importlib.import_module(module_path)
+    backend_cls = getattr(module, class_name)
+    return backend_cls(filename).parse()

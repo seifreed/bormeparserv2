@@ -34,11 +34,6 @@ BORME_SUMARIO_URL = (
     "{protocol}://www.boe.es/datosabiertos/api/borme/sumario/"
     "{year}{month:02d}{day:02d}"
 )
-# Legacy PDF URL pattern — still served at the same path.
-BORME_AB_PDF_URL = (
-    "{protocol}://www.boe.es/borme/dias/{year}/{month:02d}/{day:02d}/pdfs/"
-    "BORME-{seccion}-{year}-{nbo}-{provincia}.pdf"
-)
 
 USE_HTTPS = True
 THREADS = 8
@@ -147,37 +142,46 @@ def download_pdf(date, filename, seccion, provincia, parse=False):
     return downloaded
 
 
-def get_url_pdf(date, seccion, provincia, secure=USE_HTTPS):
-    """URL absoluta del PDF BORME-A/B para una sección, provincia y fecha."""
-    date = _coerce_date(date)
-    url = get_url_xml(date, secure=secure)
-    nbo = get_nbo_from_xml(url)
-    protocol = "https" if secure else "http"
-    return BORME_AB_PDF_URL.format(
-        protocol=protocol,
-        year=date.year,
-        month=date.month,
-        day=date.day,
-        seccion=seccion,
-        nbo=nbo,
-        provincia=provincia.code,
+def _find_pdf_url_in_sumario(sumario, seccion, provincia_code):
+    """Localiza el ``<url_pdf>`` correspondiente a una sección/provincia.
+
+    Se busca por el sufijo ``-{nbo}-{provincia.code}`` del identificador
+    BORME, que es estable y no depende del nombre (bilingüe) de la
+    provincia.
+    """
+    diario = sumario.find("diario")
+    if diario is None:
+        raise BormeDoesntExistException("Sumario has no <diario>")
+    nbo = diario.attrib["numero"]
+    suffix = "-{}-{}".format(nbo, provincia_code)
+    xpath = 'seccion[@codigo="{}"]/item'.format(seccion)
+    for item in diario.iterfind(xpath):
+        identificador = item.findtext("identificador") or ""
+        if identificador.endswith(suffix):
+            url = item.findtext("url_pdf")
+            if url:
+                return url
+    raise BormeDoesntExistException(
+        "No PDF for seccion={} provincia={} in this sumario".format(
+            seccion, provincia_code
+        )
     )
+
+
+def get_url_pdf(date, seccion, provincia, secure=USE_HTTPS):
+    """URL absoluta del PDF BORME-A/B publicada en el sumario del día.
+
+    La URL se lee directamente del sumario en lugar de reconstruirla, así
+    seguimos funcionando si el BOE cambia el patrón de paths.
+    """
+    sumario = _fetch_sumario_tree(get_url_xml(date, secure=secure))
+    return _find_pdf_url_in_sumario(sumario, seccion, provincia.code)
 
 
 def get_url_pdf_from_xml(date, seccion, provincia, xml_path, secure=USE_HTTPS):
     """Variante de :func:`get_url_pdf` que toma el sumario de un fichero local."""
-    date = _coerce_date(date)
-    nbo = get_nbo_from_xml(xml_path)
-    protocol = "https" if secure else "http"
-    return BORME_AB_PDF_URL.format(
-        protocol=protocol,
-        year=date.year,
-        month=date.month,
-        day=date.day,
-        seccion=seccion,
-        nbo=nbo,
-        provincia=provincia.code,
-    )
+    sumario = _fetch_sumario_tree(xml_path)
+    return _find_pdf_url_in_sumario(sumario, seccion, provincia.code)
 
 
 def get_url_pdfs_provincia(date, provincia, secure=USE_HTTPS):

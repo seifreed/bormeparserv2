@@ -64,20 +64,16 @@ TH_FILE_VERSION = "2"
 FILE_VERSION = "{}".format(int(RAW_FILE_VERSION) + 1000 * int(TH_FILE_VERSION))
 
 
-class BormeActo(object):
+class BormeActo:
     """Representa un Acto del Registro Mercantil. Instanciar BormeActoTexto
        o BormeActoCargo
     """
     def __init__(self, name, value):
-        logger.debug('new %s(%s): %s' % (self.__class__.__name__, name, value))
+        logger.debug("new %s(%s): %s", self.__class__.__name__, name, value)
         if name not in ACTO.ALL_KEYWORDS:
-            logger.warning('Invalid acto found: %s' % name)
-            # raise BormeInvalidActoException(
-            #       'Invalid acto found: %s' % acto_nombre)
+            logger.warning("Invalid acto found: %s", name)
         self._set_name(name)
         self._set_value(value)
-
-    # TODO: @classmethod para elegir automaticamente el tipo?
 
     def _set_name(self, name):
         raise NotImplementedError
@@ -90,7 +86,8 @@ class BormeActo(object):
 
     def __repr__(self):
         return "<{}({}): {}>".format(
-                self.__class__.__name__, self.name, self.value)
+            self.__class__.__name__, self.name, self.value
+        )
 
 
 class BormeActoTexto(BormeActo):
@@ -142,13 +139,13 @@ class BormeActoCargo(BormeActo):
         return list(self.value.keys())
 
 
-class BormeAnuncio(object):
+class BormeAnuncio:
     """Representa un anuncio con un conjunto de actos mercantiles
        (Constitucion, Nombramientos, ...)
     """
 
     def __init__(self, id, empresa, actos, extra, datos_registrales=None):
-        logger.debug("new BormeAnuncio({}) {} ({})".format(id, empresa, extra))
+        logger.debug("new BormeAnuncio(%s) %s (%s)", id, empresa, extra)
         self.id = id
         self.empresa = empresa
         self.registro = extra["registro"]
@@ -184,7 +181,6 @@ class BormeAnuncio(object):
                     self.liquidacion, len(self.actos))
 
 
-# TODO: guardar self.filepath si from_file,
 _PROVINCIA_INDEX_TITLE = "ÍNDICE ALFABÉTICO DE SOCIEDADES"
 
 
@@ -417,7 +413,7 @@ def _find_adjacent_borme(date, step):
     return None
 
 
-class Borme(object):
+class Borme:
 
     def __init__(self, date, seccion, provincia, num, cve, anuncios=None,
                  filename=None, lazy=True):
