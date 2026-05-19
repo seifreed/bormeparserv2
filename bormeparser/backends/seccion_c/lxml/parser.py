@@ -134,12 +134,3 @@ class LxmlBormeCParser(BormeCParserBackend):
                 'seccion': SECCION.C,
                 'filename': self.filename
                 }
-
-
-if __name__ == '__main__':
-    import pprint
-    borme = LxmlBormeCParser('examples/BORME-C-2011-20488.html').parse()
-    pprint.pprint(borme, width=160)
-    print('\n------------------------------------------------------\n')
-    borme = LxmlBormeCParser('examples/BORME-C-2011-20488.xml').parse()
-    pprint.pprint(borme, width=160)

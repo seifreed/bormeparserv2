@@ -1,59 +1,49 @@
 #!/usr/bin/env python
 
-import os
-from glob import glob
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
-version = '0.5.1.dev0'
+VERSION = "0.5.1.dev0"
 
 
-def get_install_requires():
-    """
-    parse requirements.txt, ignore links, exclude comments
-    """
-    requirements = []
-    for requirements_file in ('requirements.txt',):
-        for line in open(requirements_file).readlines():
-            line = line.rstrip()
-            # skip to next iteration if comment or empty line
-            if any([line.startswith('#'), line == '', line.startswith('http'), line.startswith('git'), line == '-r base.txt']):
+def get_install_requires() -> list[str]:
+    requirements: list[str] = []
+    with open("requirements.txt", encoding="utf-8") as fh:
+        for raw in fh:
+            line = raw.rstrip()
+            if not line or line.startswith(("#", "http", "git")) or line == "-r base.txt":
                 continue
-            # add line to requirements
             requirements.append(line)
     return requirements
 
 
-
-try:
-    os.symlink('../examples', 'bormeparser/examples')
-except FileExistsError:
-    pass
-
 setup(
-    name='bormeparser',
-    packages=find_packages(exclude=['*.tests']),
-    package_data={
-        "bormeparser": glob("examples/*")
-    },
-    version=version,
+    name="bormeparser",
+    packages=find_packages(exclude=["*.tests"]),
+    package_data={"bormeparser": ["examples/*"]},
+    version=VERSION,
     description="bormeparser is a Python library for parsing BORME files",
-    long_description=open('README.md', encoding='utf-8').read(),
-    author='Pablo Castellano',
-    author_email='pablo@anche.no',
-    url='https://github.com/PabloCastellano/bormeparser/',
-    download_url='https://github.com/PabloCastellano/bormeparser/archive/master.zip',
-    keywords=['BORME', 'transparency', 'opendata', 'Spain', 'Registro mercantil', 'Boletín Oficial del Registro Mercantil'],
-    classifiers=[
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
+    long_description=open("README.md", encoding="utf-8").read(),
+    long_description_content_type="text/markdown",
+    author="Pablo Castellano",
+    author_email="pablo@anche.no",
+    url="https://github.com/PabloCastellano/bormeparser/",
+    download_url="https://github.com/PabloCastellano/bormeparser/archive/master.zip",
+    keywords=[
+        "BORME",
+        "transparency",
+        "opendata",
+        "Spain",
+        "Registro mercantil",
+        "Boletín Oficial del Registro Mercantil",
     ],
+    classifiers=[
+        "Programming Language :: Python :: 3.13",
+        "Programming Language :: Python :: 3.14",
+    ],
+    python_requires=">=3.13,<3.15",
     license="GPLv3+",
-    data_files=[('', ['LICENSE.txt'])],
     include_package_data=True,
     zip_safe=False,
     install_requires=get_install_requires(),
-    test_suite="bormeparser.tests"
+    test_suite="bormeparser.tests",
 )
-
-os.unlink('bormeparser/examples')

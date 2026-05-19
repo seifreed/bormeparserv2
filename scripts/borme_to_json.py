@@ -18,7 +18,7 @@
 
 
 import bormeparser
-import bormeparser.backends.pypdf2.parser
+import bormeparser.backends.pypdf.parser
 
 from bormeparser.backends.defaults import OPTIONS
 OPTIONS['SANITIZE_COMPANY_NAME'] = True
@@ -35,10 +35,9 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--output', help='Output directory or filename (default is current directory)')
     args = parser.parse_args()
 
-    # set logger DEBUG (Not working)
     if args.debug:
         bormeparser.borme.logger.setLevel(logging.DEBUG)
-        bormeparser.backends.pypdf2.parser.logger.setLevel(logging.DEBUG)  # FIXME: DEFAULT_PARSER
+        bormeparser.backends.pypdf.parser.logger.setLevel(logging.DEBUG)
 
     print('\nParsing {}'.format(args.filename))
     borme = bormeparser.parse(args.filename, bormeparser.SECCION.A)

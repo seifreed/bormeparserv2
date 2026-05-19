@@ -29,9 +29,7 @@ from bormeparser.exceptions import BormeDoesntExistException
 from bormeparser.seccion import SECCION
 from bormeparser.provincia import PROVINCIA
 
-EXAMPLES_PATH = os.path.join(os.path.dirname(bormeparser.__file__),
-                             '..',
-                             'examples')
+EXAMPLES_PATH = os.path.join(os.path.dirname(bormeparser.__file__), 'examples')
 
 DATA1 = {
     214: {

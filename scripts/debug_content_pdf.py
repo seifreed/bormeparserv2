@@ -18,22 +18,28 @@
 
 import argparse
 
-from PyPDF2 import PdfFileReader
+from pypdf import PdfReader
 
 
-if __name__ == '__main__':
+def main() -> None:
     parser = argparse.ArgumentParser(description='Debug PDF content.')
     parser.add_argument('filename', help='BORME A PDF filename')
     args = parser.parse_args()
 
-    reader = PdfFileReader(open(args.filename, 'rb'))
-    for n in range(0, reader.getNumPages()):
-        content = reader.getPage(n).getContents().getData()
+    with open(args.filename, 'rb') as fp:
+        reader = PdfReader(fp)
+        pages = list(reader.pages)
 
-        # Python 3
+    for page in pages:
+        contents = page.get_contents()
+        if contents is None:
+            continue
+        content = contents.get_data()
         if isinstance(content, bytes):
             content = content.decode('unicode_escape')
-
-        #print(content)
         for line in content.split('\n'):
             print(line)
+
+
+if __name__ == '__main__':
+    main()

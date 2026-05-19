@@ -1,6 +1,4 @@
-#!/usr/bin/env python
-#
-# bormeparser.backends.pypdf2.parser.py -
+# bormeparser.backends.pypdf.parser
 # Copyright (C) 2015-2022 Pablo Castellano <pablo@anche.no>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -16,30 +14,38 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#from __future__ import absolute_import
-from bormeparser.backends.base import BormeAParserBackend
 import logging
 
-from PyPDF2 import PdfFileReader
+from pypdf import PdfReader
 
-from bormeparser.regex import regex_cargos, regex_empresa, regex_argcolon, regex_noarg, is_acto_cargo, is_acto_bold,\
-                              regex_bold_acto, REGEX_ARGCOLON, REGEX_NOARG, REGEX_PDF_TEXT, REGEX_BORME_NUM, REGEX_BORME_CVE,\
-                              is_acto_bold_mix
+from bormeparser.backends.base import BormeAParserBackend
+from bormeparser.regex import (
+    REGEX_ARGCOLON,
+    REGEX_BORME_CVE,
+    REGEX_BORME_NUM,
+    REGEX_NOARG,
+    REGEX_PDF_TEXT,
+    is_acto_bold,
+    is_acto_bold_mix,
+    is_acto_cargo,
+    regex_argcolon,
+    regex_bold_acto,
+    regex_cargos,
+    regex_empresa,
+    regex_noarg,
+)
 
 from ..defaults import OPTIONS
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARN)
 
-actos = []
 
+class PyPDFParser(BormeAParserBackend):
+    """Parse BORME-A PDFs using the pypdf library."""
 
-class PyPDF2Parser(BormeAParserBackend):
-    """
-    Parse using PyPDF2
-    """
     def __init__(self, filename, log_level=logging.WARN):
-        super(PyPDF2Parser, self).__init__(filename)
+        super().__init__(filename)
         logger.setLevel(log_level)
         self.actos = []
         self.sanitize = OPTIONS['SANITIZE_COMPANY_NAME']
@@ -68,10 +74,14 @@ class PyPDF2Parser(BormeAParserBackend):
         }
         self.actos = []
 
-        fp = open(self.filename, 'rb')
-        reader = PdfFileReader(fp)
-        for n in range(0, reader.getNumPages()):
-            content = reader.getPage(n).getContents().getData()
+        with open(self.filename, 'rb') as fp:
+            reader = PdfReader(fp)
+            pages = list(reader.pages)
+        for page in pages:
+            contents = page.get_contents()
+            if contents is None:
+                continue
+            content = contents.get_data()
             logger.debug('---- BEGIN OF PAGE ----')
 
             # Python 3
@@ -311,9 +321,3 @@ class PyPDF2Parser(BormeAParserBackend):
         else:
             end = True
         return end, nombreacto
-
-
-if __name__ == '__main__':
-    import pprint
-    actos = PyPDF2Parser('examples/BORME-A-2015-27-10.pdf').parse()
-    pprint.pprint(actos, width=160)

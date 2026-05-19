@@ -21,8 +21,10 @@ import importlib
 import os
 
 # backends
-DEFAULT_PARSER = {'A': ('bormeparser.backends.pypdf2.parser', 'PyPDF2Parser'),
-                  'C': ('bormeparser.backends.seccion_c.lxml.parser', 'LxmlBormeCParser')}
+DEFAULT_PARSER = {
+    'A': ('bormeparser.backends.pypdf.parser', 'PyPDFParser'),
+    'C': ('bormeparser.backends.seccion_c.lxml.parser', 'LxmlBormeCParser'),
+}
 
 
 # parse: url, filename (string)

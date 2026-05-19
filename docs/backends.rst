@@ -8,9 +8,9 @@ Usar un backend específico
 
 .. code-block:: python
 
-    import bormeparser.backends.pypdf2
+    import bormeparser.backends.pypdf
 
-    parser = bormeparser.backends.pypdf2.parser.PyPDF2Parser('examples/BORME-A-2015-27-10.pdf')
+    parser = bormeparser.backends.pypdf.parser.PyPDFParser('examples/BORME-A-2015-27-10.pdf')
     borme = parser.parse()
 
 
@@ -60,8 +60,7 @@ Por último añada el nuevo parser a `backends/__init__.py`:
 
 .. code-block:: python
 
-    from .parser1.parser import Parser1
-    from .pypdf2.parser import PyPDF2Parser
+    from .pypdf.parser import PyPDFParser
     from .nuevoparser.parser import NuevoParser
 
-    __all__ = ['parser1', 'pypdf2', 'nuevoparser']
+    __all__ = ["PyPDFParser", "NuevoParser"]
