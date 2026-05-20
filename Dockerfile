@@ -1,4 +1,4 @@
-FROM python:3.13-bookworm as builder
+FROM python:3.13-bookworm AS builder
 
 RUN mkdir /build
 COPY . /build
