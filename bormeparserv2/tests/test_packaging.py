@@ -35,6 +35,35 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fi
 DistType = Literal["sdist", "wheel"]
 
 
+class DockerIgnoreSecurityTestCase(unittest.TestCase):
+    """El contexto Docker no debe enviar estado local sensible al daemon."""
+
+    def test_dockerignore_excludes_local_state_and_secrets(self):
+        path = os.path.join(REPO_ROOT, ".dockerignore")
+        with open(path, encoding="utf-8") as fp:
+            entries = {
+                line.strip()
+                for line in fp
+                if line.strip() and not line.startswith("#")
+            }
+        for required in (
+            ".git",
+            "venv",
+            ".venv",
+            "*.egg-info",
+            "build",
+            "dist",
+            ".coverage",
+            ".mypy_cache",
+            ".ruff_cache",
+            ".env",
+            ".env.*",
+            "*.pem",
+            "*.key",
+        ):
+            self.assertIn(required, entries)
+
+
 def _build(distribution: DistType) -> str:
     """Construye ``sdist`` o ``wheel`` invocando ``build.ProjectBuilder``
     en proceso (no usa ``subprocess`` para no disparar B404/B603 en
