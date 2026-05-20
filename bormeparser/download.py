@@ -105,7 +105,10 @@ def get_nbo_from_xml(source):
     diario = sumario.find("diario")
     if diario is None:
         raise BormeDoesntExistException("Sumario has no <diario>")
-    return diario.attrib["numero"]
+    nbo = diario.attrib.get("numero")
+    if nbo is None:
+        raise BormeDoesntExistException("<diario> has no numero attribute")
+    return nbo
 
 
 def download_xml(date, filename, secure=USE_HTTPS):
@@ -150,7 +153,9 @@ def _find_pdf_url_in_sumario(sumario, seccion, provincia_code):
     diario = sumario.find("diario")
     if diario is None:
         raise BormeDoesntExistException("Sumario has no <diario>")
-    nbo = diario.attrib["numero"]
+    nbo = diario.attrib.get("numero")
+    if nbo is None:
+        raise BormeDoesntExistException("<diario> has no numero attribute")
     suffix = "-{}-{}".format(nbo, provincia_code)
     xpath = 'seccion[@codigo="{}"]/item'.format(seccion)
     for item in diario.iterfind(xpath):
@@ -248,7 +253,9 @@ def get_url_pdfs(date, seccion=None, provincia=None, secure=USE_HTTPS):
         diario = sumario.find("diario")
         if diario is None:
             raise BormeDoesntExistException("Sumario has no <diario>")
-        nbo = diario.attrib["numero"]
+        nbo = diario.attrib.get("numero")
+        if nbo is None:
+            raise BormeDoesntExistException("<diario> has no numero attribute")
         suffix = "-{}-{}".format(nbo, provincia.code)
         for item in diario.iterfind('seccion[@codigo="{}"]/item'.format(seccion)):
             identificador = item.findtext("identificador") or ""

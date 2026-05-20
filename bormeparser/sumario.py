@@ -81,7 +81,10 @@ class BormeXML:
         diario = sumario.find("diario")
         if diario is None:
             raise BormeDoesntExistException("Missing <diario>")
-        self.nbo = int(diario.attrib["numero"])
+        nbo_attr = diario.attrib.get("numero")
+        if nbo_attr is None:
+            raise BormeDoesntExistException("Missing <diario numero>")
+        self.nbo = int(nbo_attr)
 
         # La API datosabiertos no expone fechaAnt/fechaSig; se calculan
         # bajo demanda con prev_borme / next_borme.

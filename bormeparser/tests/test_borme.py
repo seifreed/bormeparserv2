@@ -158,6 +158,30 @@ class BormeFromFileTestCase(unittest.TestCase):
             Borme.from_file("BORME-Z-2020-01-01.pdf")
 
 
+class BormeAlreadyDownloadedTestCase(unittest.TestCase):
+    """Regresión: ``Borme.download`` levantaba
+    ``BormeAlreadyDownloadedException(filename)`` con el path nuevo,
+    no con ``self.filename`` (el fichero que ya existe)."""
+
+    def test_existing_filename_propagated(self):
+        from bormeparser.exceptions import BormeAlreadyDownloadedException
+
+        borme = Borme(
+            (2015, 2, 10),
+            SECCION.A,
+            PROVINCIA.CACERES,
+            27,
+            "BORME-A-2015-27-10",
+            anuncios=[],
+            filename="/already/here/BORME-A-2015-27-10.pdf",
+        )
+        with self.assertRaises(BormeAlreadyDownloadedException) as ctx:
+            borme.download("/somewhere/else/new.pdf")
+        # La excepción debe identificar el fichero existente, no el
+        # path que el caller acaba de pedir.
+        self.assertEqual(str(ctx.exception), "/already/here/BORME-A-2015-27-10.pdf")
+
+
 class FakeBormeTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
