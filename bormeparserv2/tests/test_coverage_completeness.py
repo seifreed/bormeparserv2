@@ -633,5 +633,30 @@ class BormeLiveDownloadTestCase(unittest.TestCase):
             self.assertGreater(os.path.getsize(target), 10000)
 
 
+class MadridBormeParseTestCase(unittest.TestCase):
+    """Parsea el BORME de Madrid 2015-02-10 (946 anuncios) que ejercita
+    ramas del parser pypdf que el fixture pequeño de Cáceres no toca.
+
+    El fichero ``BORME-A-2015-27-28.pdf`` se descargó una vez y vive
+    en ``bormeparserv2/examples/`` como cualquier otro fixture.
+    """
+
+    MADRID_FIXTURE = os.path.join(EXAMPLES, "BORME-A-2015-27-28.pdf")
+
+    def test_madrid_parses_with_many_acts_and_variants(self):
+        import bormeparserv2
+
+        if not os.path.isfile(self.MADRID_FIXTURE):
+            self.skipTest(f"missing fixture {self.MADRID_FIXTURE}")
+        b = bormeparserv2.parse(
+            self.MADRID_FIXTURE, bormeparserv2.SECCION.A, sanitize=True
+        )
+        # Sanity checks: el BORME existe, tiene cientos de anuncios,
+        # provincia correcta.
+        self.assertEqual(b.cve, "BORME-A-2015-27-28")
+        self.assertEqual(str(b.provincia), "Madrid")
+        self.assertGreater(len(b.anuncios), 500)
+
+
 if __name__ == "__main__":
     unittest.main()
