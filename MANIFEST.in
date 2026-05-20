@@ -1,2 +1,5 @@
 include CHANGES.rst README.md LICENSE.txt
+# setup.py:get_install_requires lee requirements.txt en build-time;
+# sin esta línea el sdist falla al instalarse con FileNotFoundError.
+include requirements.txt
 exclude MANIFEST.in

@@ -28,6 +28,12 @@ Changelog for bormeparser
   -p CACERES`` no descargaba nada porque ``"CACERES" != "CÁCERES"``
   (el sumario emite la forma acentuada). Acepta también instancias de
   :class:`Provincia` directamente.
+- fix(packaging): el sdist no incluía ``requirements.txt``, pero
+  ``setup.py:get_install_requires`` lo lee en build-time. Resultado:
+  ``pip install bormeparser-X.tar.gz`` reventaba con
+  ``FileNotFoundError: requirements.txt`` antes de instalar nada.
+  ``MANIFEST.in`` ahora lo incluye explícitamente. Cubierto por
+  ``test_packaging.SdistShipsAllBuildtimeRequirementsTestCase``.
 - fix(ci): la pipeline de tests usaba ``coverage run --source=bormeparser
   setup.py test``, pero setuptools 72+ eliminó el comando ``test``. Se
   cambia a ``coverage run --source=bormeparser -m unittest discover
