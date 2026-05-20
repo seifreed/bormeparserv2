@@ -22,6 +22,7 @@ import os
 import re
 
 from .provincia import PROVINCIA, Provincia
+from ._security import safe_join
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +108,7 @@ def borme_to_json(borme, path=None, *, overwrite=True, pretty=True, include_url=
     if os.path.isfile(path) and not overwrite:
         return False
     if os.path.isdir(path):
-        path = os.path.join(path, borme.cve + ".json")
+        path = safe_join(path, borme.cve + ".json")
 
     doc = borme_to_dict(borme, include_url=include_url)
     indent = 2 if pretty else None

@@ -21,7 +21,7 @@ from bormeparserv2.seccion import SECCION
 from bormeparserv2.emisor import EMISOR
 from bormeparserv2.regex import borme_c_separa_empresas_titulo
 
-from lxml import etree
+from bormeparserv2._security import parse_html_text, parse_xml_file
 
 import datetime
 import logging
@@ -62,7 +62,7 @@ class LxmlBormeCParser(BormeCParserBackend):
             raise ValueError("Cannot detect BORME C type")
 
     def _parse_xml(self):
-        tree = etree.parse(self.filename)
+        tree = parse_xml_file(self.filename)
 
         texto = tree.xpath("/documento/texto/p/text()")
         titulo = tree.xpath("/documento/metadatos/titulo/text()")[
@@ -130,7 +130,7 @@ class LxmlBormeCParser(BormeCParserBackend):
         }
 
     def _parse_html(self, content):
-        html = etree.HTML(content)
+        html = parse_html_text(content)
 
         body = html.xpath('//div[@id="contenedor"][1]')[0]
         empresa = body.xpath('//p[@class="documento-tit"]/text()')[0]

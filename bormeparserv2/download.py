@@ -20,6 +20,7 @@ from threading import Thread
 import requests
 from lxml import etree
 
+from ._security import filename_from_url, parse_xml_bytes, parse_xml_file, safe_join
 from .exceptions import BormeDoesntExistException, MissingFilterException
 from .parser import parse as parse_borme
 from .provincia import PROVINCIA
@@ -74,14 +75,14 @@ def _fetch_sumario_tree(source):
             raise BormeDoesntExistException("BOE has no BORME for {}".format(source))
         response.raise_for_status()
         try:
-            root = etree.fromstring(response.content)
+            root = parse_xml_bytes(response.content)
         except etree.XMLSyntaxError as exc:
             raise BormeDoesntExistException(
                 f"Malformed sumario XML from {source}: {exc}"
             ) from exc
     else:
         try:
-            root = etree.parse(source).getroot()
+            root = parse_xml_file(source).getroot()
         except etree.XMLSyntaxError as exc:
             raise BormeDoesntExistException(
                 f"Malformed sumario XML at {source}: {exc}"
@@ -316,12 +317,23 @@ def download_urls(urls, path):
     """Descarga las URLs a ``path``. Devuelve la lista de ficheros descargados."""
     files = []
     for url in urls.values():
-        filename = url.split("/")[-1]
-        full_path = os.path.join(path, filename)
+        filename = filename_from_url(url)
+        full_path = safe_join(path, filename)
         if download_url(url, full_path):
             files.append(full_path)
             logger.info("Downloaded %s", filename)
     return files
+
+
+def _url_download_tasks(urls, path):
+    return [
+        (url, safe_join(path, filename_from_url(url)))
+        for url in urls.values()
+    ]
+
+
+def _named_download_tasks(urls, path):
+    return [(url, safe_join(path, filename)) for filename, url in urls.items()]
 
 
 def _start_workers(queue, files, threads):
@@ -348,12 +360,12 @@ def _stop_workers(queue, workers):
 
 def download_urls_multi(urls, path, threads=THREADS):
     """Versión multihilo de :func:`download_urls`. ``urls`` es ``{_: url}``."""
+    tasks = _url_download_tasks(urls, path)
     queue: Queue = Queue()
     files: list[str] = []
     workers = _start_workers(queue, files, threads)
-    for url in urls.values():
-        filename = url.split("/")[-1]
-        queue.put((url, os.path.join(path, filename)))
+    for task in tasks:
+        queue.put(task)
     queue.join()
     _stop_workers(queue, workers)
     return files
@@ -361,11 +373,12 @@ def download_urls_multi(urls, path, threads=THREADS):
 
 def download_urls_multi_names(urls, path, threads=THREADS):
     """Variante con nombres explícitos: ``urls`` es ``{filename: url}``."""
+    tasks = _named_download_tasks(urls, path)
     queue: Queue = Queue()
     files: list[str] = []
     workers = _start_workers(queue, files, threads)
-    for filename, url in urls.items():
-        queue.put((url, os.path.join(path, filename)))
+    for task in tasks:
+        queue.put(task)
     queue.join()
     _stop_workers(queue, workers)
     return files

@@ -19,6 +19,7 @@
 
 import bormeparserv2
 from bormeparserv2.exceptions import BormeDoesntExistException
+from bormeparserv2._security import safe_join
 from bormeparserv2.sumario import BormeXML
 from bormeparserv2.utils import FIRST_BORME, get_borme_xml_filepath, get_borme_pdf_path
 
@@ -68,7 +69,7 @@ def check_range(begin, end, provincia, seccion, directory, download_xml):
         for cve, size in sizes.items():
             logger.debug("Checking {}...".format(cve))
             filename = cve + ".pdf"
-            filepath = os.path.join(path, filename)
+            filepath = safe_join(path, filename)
 
             logger.debug(filepath)
             if not os.path.exists(filepath):

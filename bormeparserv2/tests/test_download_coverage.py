@@ -64,6 +64,32 @@ class GetNboFromXmlTestCase(unittest.TestCase):
         finally:
             os.unlink(path)
 
+    def test_external_entity_is_not_expanded(self):
+        from bormeparserv2.download import _fetch_sumario_tree
+
+        with tempfile.NamedTemporaryFile("w", delete=False, encoding="utf-8") as secret:
+            secret.write("20150210")
+            secret_path = secret.name
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".xml", delete=False, encoding="utf-8"
+        ) as fp:
+            fp.write(
+                '<!DOCTYPE sumario [<!ENTITY xxe SYSTEM "file://{}">]>'
+                "<sumario>"
+                "<metadatos><fecha_publicacion>&xxe;</fecha_publicacion></metadatos>"
+                '<diario numero="27"/>'
+                "</sumario>".format(secret_path)
+            )
+            path = fp.name
+        try:
+            sumario = _fetch_sumario_tree(path)
+            self.assertNotEqual(
+                sumario.findtext("metadatos/fecha_publicacion"), "20150210"
+            )
+        finally:
+            os.unlink(path)
+            os.unlink(secret_path)
+
     def test_missing_numero_attr_raises(self):
         from bormeparserv2.download import get_nbo_from_xml
 
@@ -220,6 +246,30 @@ class DownloadUrlsMultiOfflineTestCase(unittest.TestCase):
             }
             files = download_urls_multi_names(urls, tmp, threads=2)
             self.assertEqual(files, [])
+
+
+class DownloadFilenameSafetyTestCase(unittest.TestCase):
+    """Las descargas no deben escribir fuera del directorio destino."""
+
+    def test_url_without_plain_filename_is_rejected_before_network(self):
+        from bormeparserv2.download import download_urls
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(ValueError):
+                download_urls({"x": "https://example.invalid/path/"}, tmp)
+
+    def test_multi_names_rejects_path_traversal_before_network(self):
+        from bormeparserv2.download import download_urls_multi_names
+
+        with tempfile.TemporaryDirectory() as tmp:
+            outside = os.path.abspath(os.path.join(tmp, "..", "escape.xml"))
+            with self.assertRaises(ValueError):
+                download_urls_multi_names(
+                    {"../escape.xml": "https://example.invalid/whatever"},
+                    tmp,
+                    threads=1,
+                )
+            self.assertFalse(os.path.exists(outside))
 
 
 @require_live

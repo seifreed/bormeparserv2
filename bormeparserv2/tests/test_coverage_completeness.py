@@ -260,6 +260,24 @@ class SerializationEdgeCasesTestCase(unittest.TestCase):
                 msg=f"captured={cap.output!r}",
             )
 
+    def test_to_json_rejects_directory_escape_cve(self):
+        from bormeparserv2._serialization import borme_to_json
+        from bormeparserv2.borme import Borme
+
+        borme = Borme(
+            datetime.date(2015, 2, 10),
+            "A",
+            __import__("bormeparserv2").PROVINCIA.CACERES,
+            27,
+            "../escape",
+            [],
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            outside = os.path.abspath(os.path.join(tmp, "..", "escape.json"))
+            with self.assertRaises(ValueError):
+                borme_to_json(borme, path=tmp, include_url=False)
+            self.assertFalse(os.path.exists(outside))
+
 
 class SeccionCFusionesWarningTestCase(unittest.TestCase):
     """``LxmlBormeCParser`` debe loguear warning en fusiones/absorciones."""
@@ -305,6 +323,47 @@ class SeccionCFusionesWarningTestCase(unittest.TestCase):
             )
         finally:
             os.unlink(path)
+
+
+class SeccionCXmlSecurityTestCase(unittest.TestCase):
+    """El backend lxml de sección C no debe expandir entidades externas."""
+
+    def test_external_entity_text_is_not_included(self):
+        from bormeparserv2.backends.seccion_c.lxml.parser import LxmlBormeCParser
+
+        secret_text = "BORMEPARSERV2_SECRET_SHOULD_NOT_LEAK"
+        with tempfile.NamedTemporaryFile("w", delete=False, encoding="utf-8") as secret:
+            secret.write(secret_text)
+            secret_path = secret.name
+        xml = (
+            '<?xml version="1.0" encoding="iso-8859-1"?>'
+            '<!DOCTYPE documento [<!ENTITY xxe SYSTEM "file://{}">]>'
+            "<documento>"
+            "<metadatos>"
+            "<identificador>BORME-C-2024-99999</identificador>"
+            "<numero_anuncio>99999</numero_anuncio>"
+            "<id_anuncio>A240099999</id_anuncio>"
+            "<departamento>CONVOCATORIAS DE JUNTAS</departamento>"
+            "<titulo>EMPRESA SEGURA SL</titulo>"
+            "<diario_numero>10</diario_numero>"
+            "<fecha_publicacion>20240115</fecha_publicacion>"
+            "<pagina_inicial>1</pagina_inicial>"
+            "<pagina_final>2</pagina_final>"
+            "</metadatos>"
+            "<texto><p>&xxe;</p></texto>"
+            "</documento>".format(secret_path)
+        )
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".xml", delete=False, encoding="iso-8859-1"
+        ) as fp:
+            fp.write(xml)
+            path = fp.name
+        try:
+            result = LxmlBormeCParser(path).parse()
+            self.assertNotIn(secret_text, result["texto"])
+        finally:
+            os.unlink(path)
+            os.unlink(secret_path)
 
 
 class BormeActoDundersTestCase(unittest.TestCase):
