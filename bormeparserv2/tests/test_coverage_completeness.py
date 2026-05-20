@@ -71,7 +71,7 @@ class ConfigModuleGetattrTestCase(unittest.TestCase):
         from bormeparserv2 import config
 
         # Ejecuta la rama de reload_config explícitamente.
-        config._cached_config = {"borme_root": "/tmp"}
+        config._cached_config = {"borme_root": tempfile.gettempdir()}
         config.reload_config()
         self.assertIsNone(config._cached_config)
 
@@ -410,9 +410,9 @@ class BormeDownloadAndCompareTestCase(unittest.TestCase):
         from bormeparserv2.exceptions import BormeAlreadyDownloadedException
 
         b = _make_empty_borme("BORME-A-2015-27-10", [1])
-        b.filename = "/tmp/already.pdf"
+        b.filename = os.path.join(tempfile.gettempdir(), "already.pdf")
         with self.assertRaises(BormeAlreadyDownloadedException):
-            b.download("/tmp/new.pdf")
+            b.download(os.path.join(tempfile.gettempdir(), "new.pdf"))
 
     def test_lt_compares_anuncios_ranges(self):
         b1 = _make_empty_borme("BORME-A-2015-27-10", [10, 11, 12])
