@@ -172,29 +172,6 @@ assert borme2.cve == borme.cve
 
 ---
 
-## Quality and tests
-
-The project runs a strict set of quality gates on every commit:
-
-```bash
-ruff check .                                         # lint
-black --check .                                      # formatting
-mypy bormeparserv2                                   # types
-bandit -r bormeparserv2 scripts                      # security
-pip-audit --strict -r requirements.txt               # dependency CVEs
-hadolint Dockerfile                                  # Dockerfile lint
-actionlint                                           # workflow lint
-cd docs && make html SPHINXOPTS="-W"                 # docs (warnings as errors)
-python -m unittest discover bormeparserv2.tests      # offline suite
-BORMEPARSERV2_LIVE=1 python -m unittest discover bormeparserv2.tests   # also hits boe.es
-```
-
-**Test policy:** no mocks. Every test exercises real code against real fixtures (`bormeparserv2/examples/`) or real `boe.es` endpoints under the `@require_live` decorator. If a feature cannot be tested reproducibly, it is not considered complete.
-
-**Coverage target:** ≥ 88%, measured with `coverage run --source=bormeparserv2 -m unittest discover bormeparserv2.tests`.
-
----
-
 ## Requirements
 
 - Python 3.13 or 3.14
