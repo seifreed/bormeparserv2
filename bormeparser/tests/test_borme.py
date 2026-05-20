@@ -550,6 +550,38 @@ class BormeXMLTestCase(unittest.TestCase):
 
         self.assertEqual(self.bxml.get_provincias(SECCION.A), provincias)
 
+    def test_get_url_pdfs_provincia_ascii_matches_accented(self):
+        """Regresión: ``-p CACERES`` debe encontrar el PDF de ``CÁCERES``.
+
+        Los scripts CLI usan los atributos ASCII de :class:`PROVINCIA`
+        (``CACERES``) como ``choices`` de argparse, pero el sumario emite
+        ``CÁCERES``. ``_iter_items`` debe normalizar acentos.
+        """
+        from bormeparser import PROVINCIA
+
+        expected = {
+            "BORME-A-2015-183-10": (
+                "https://www.boe.es/borme/dias/2015/09/24/pdfs/BORME-A-2015-183-10.pdf"
+            )
+        }
+        # Forma ASCII (atributo argparse).
+        self.assertEqual(
+            self.bxml.get_url_pdfs(seccion=SECCION.A, provincia="CACERES"), expected
+        )
+        # Mismo nombre en minúsculas sin acento.
+        self.assertEqual(
+            self.bxml.get_url_pdfs(seccion=SECCION.A, provincia="caceres"), expected
+        )
+        # Forma acentuada en mayúsculas (la que emite el sumario).
+        self.assertEqual(
+            self.bxml.get_url_pdfs(seccion=SECCION.A, provincia="CÁCERES"), expected
+        )
+        # Instancia ``Provincia`` directa.
+        self.assertEqual(
+            self.bxml.get_url_pdfs(seccion=SECCION.A, provincia=PROVINCIA.CACERES),
+            expected,
+        )
+
     def test_get_sizes(self):
         seccion_a_sizes = {
             "BORME-A-2015-183-01": 264270,

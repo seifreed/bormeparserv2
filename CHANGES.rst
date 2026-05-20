@@ -23,6 +23,11 @@ Changelog for bormeparser
 - fix(scripts/borme_poller): añadido ``argparse`` con ``--help``,
   ``--once``, ``--url``, ``--delay`` y ``--logfile``. Antes ``--help``
   iniciaba el bucle de polling silenciosamente.
+- fix(sumario): ``BormeXML._iter_items`` normaliza acentos y
+  mayúsculas al comparar ``provincia``. Antes ``download_borme_pdfs.py
+  -p CACERES`` no descargaba nada porque ``"CACERES" != "CÁCERES"``
+  (el sumario emite la forma acentuada). Acepta también instancias de
+  :class:`Provincia` directamente.
 
 
 0.5.0 (2022-09-27)

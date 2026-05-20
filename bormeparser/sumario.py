@@ -36,6 +36,7 @@ from .exceptions import (
     MissingFilterException,
 )
 from .seccion import SECCION
+from .utils import remove_accents
 
 logger = logging.getLogger(__name__)
 
@@ -200,7 +201,14 @@ class BormeXML:
         yield from self.xml.iterfind("diario/seccion/apartado/item")
 
     def _iter_items(self, seccion=None, provincia=None):
-        """Itera los ``<item>`` del sumario filtrando por sección/provincia."""
+        """Itera los ``<item>`` del sumario filtrando por sección/provincia.
+
+        La comparación de provincia es insensible a mayúsculas y acentos:
+        el sumario emite ``CÁCERES``, pero los scripts CLI pasan ``CACERES``
+        (que es el atributo ASCII de :class:`PROVINCIA`). Aceptamos también
+        instancias de :class:`Provincia` (su ``__str__`` devuelve el
+        nombre con acentos, p. ej. ``"Cáceres"``).
+        """
         if seccion == SECCION.C:
             base = self.xml.iterfind('diario/seccion[@codigo="C"]/apartado/item')
         elif seccion:
@@ -210,9 +218,12 @@ class BormeXML:
         else:
             base = self._all_items()
 
+        provincia_norm = remove_accents(str(provincia)).upper() if provincia else None
         for item in base:
-            if provincia and item.findtext("titulo") != provincia:
-                continue
+            if provincia_norm is not None:
+                titulo = item.findtext("titulo") or ""
+                if remove_accents(titulo).upper() != provincia_norm:
+                    continue
             yield item
 
     def _get_url_borme_c(self, format="xml"):
