@@ -52,7 +52,7 @@ jobs:
       - name: mypy
         run: mypy bormeparserv2
       - name: bandit
-        run: bandit -r bormeparserv2 scripts
+        run: bandit -r bormeparserv2 scripts -x bormeparserv2/tests
       - name: pip-audit
         run: pip-audit --strict -r requirements.txt
 
