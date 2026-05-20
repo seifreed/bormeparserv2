@@ -4,7 +4,7 @@ RUN mkdir /build
 COPY . /build
 WORKDIR /build
 
-RUN pip install wheel && pip wheel . --wheel-dir=/build/wheels
+RUN pip install --no-cache-dir wheel==0.47.0 && pip wheel --no-cache-dir . --wheel-dir=/build/wheels
 
 FROM python:3.13-bookworm
 COPY --from=builder /build/scripts/* /usr/local/bin/
