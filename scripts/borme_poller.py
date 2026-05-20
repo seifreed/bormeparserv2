@@ -19,38 +19,40 @@
 
 # El BORME se publica los días laborables y normalmente a las 7:30 de la mañana
 import datetime
-import requests
 import time
 
-URL_BASE = "https://boe.es/diario_borme/xml.php?id=BORME-S-"  # https://boe.es/diario_borme/xml.php?id=BORME-S-20150910
+import requests
+
+# El endpoint antiguo (``boe.es/diario_borme/xml.php?id=BORME-S-...``)
+# redirige a ``/error/errorParametros.php``; la API actual de datos
+# abiertos devuelve 404 cuando todavía no hay BORME del día.
+URL_BASE = "https://www.boe.es/datosabiertos/api/borme/sumario/"
 DELAY = 5 * 60  # 5 minutes
 LOGFILE = "xmlpoller.log"
 TIMEOUT = 10
 
 
-def parse_content(content):
-    """
-    '<?xml version="1.0"?>\n<error><descripcion>No se encontr&#xF3; el sumario original.</descripcion></error>\n'
-    """
+def is_available(status_code: int) -> bool:
+    """``True`` si el sumario está publicado; ``False`` si la API
+    indica que aún no existe (HTTP 404)."""
+    return status_code == 200
 
-    # Python 3
-    found = False
-    if isinstance(content, bytes):
-        content = content.decode("unicode_escape")
 
+def log_result(found: bool, status_code: int) -> None:
     with open(LOGFILE, "a") as fp:
         fp.write(str(datetime.datetime.now()) + "\n")
         print(datetime.datetime.now())
         minutes = int(DELAY / 60)
-        if "<error>" in content:
-            message = f"Not available yet. I will try again in {minutes} minutes."
+        if found:
+            message = f"AVAILABLE! (HTTP {status_code})"
         else:
-            message = f"AVAILABLE! ({len(content)} bytes)"
-            found = True
+            message = (
+                f"Not available yet (HTTP {status_code}). "
+                f"I will try again in {minutes} minutes."
+            )
         fp.write(message)
         print(message)
         fp.write("\n\n")
-    return found
 
 
 def wait_till_seven():
@@ -67,7 +69,7 @@ def wait_till_seven():
     time.sleep(wake_seconds)
 
 
-def wait_till_monday(weekday):
+def wait_till_monday():
     now = datetime.datetime.now()
     with open(LOGFILE, "a") as fp:
         fp.write(str(now) + "\n")
@@ -86,12 +88,19 @@ def wait_till_monday(weekday):
 def poll_xml_dl():
     while True:
         today = datetime.date.today()
-        weekday = today.weekday()
-        if weekday in (5, 6):
-            wait_till_monday(weekday)
+        if today.weekday() in (5, 6):
+            wait_till_monday()
         url = URL_BASE + today.strftime("%Y%m%d")
-        req = requests.get(url, timeout=TIMEOUT)
-        found = parse_content(req.text)
+        try:
+            response = requests.get(
+                url, headers={"Accept": "application/xml"}, timeout=TIMEOUT
+            )
+        except requests.RequestException as exc:
+            print(f"Request failed: {exc}")
+            time.sleep(DELAY)
+            continue
+        found = is_available(response.status_code)
+        log_result(found, response.status_code)
         if found:
             wait_till_seven()
         else:
