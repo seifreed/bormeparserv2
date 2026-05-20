@@ -241,9 +241,25 @@ def get_url_pdfs(date, seccion=None, provincia=None, secure=USE_HTTPS):
     if provincia and not seccion:
         return get_url_pdfs_provincia(date, provincia, secure=secure)
     if provincia and seccion:
-        raise NotImplementedError(
-            "Filtering by both seccion and provincia simultaneously is not "
-            "supported; pass one or the other"
+        # Filtro combinado: localizamos el único PDF que satisface ambos
+        # criterios en el sumario y devolvemos un dict ``{cve: url}`` para
+        # mantener la firma del resto de variantes.
+        sumario = _fetch_sumario_tree(get_url_xml(date, secure=secure))
+        diario = sumario.find("diario")
+        if diario is None:
+            raise BormeDoesntExistException("Sumario has no <diario>")
+        nbo = diario.attrib["numero"]
+        suffix = "-{}-{}".format(nbo, provincia.code)
+        for item in diario.iterfind('seccion[@codigo="{}"]/item'.format(seccion)):
+            identificador = item.findtext("identificador") or ""
+            if identificador.endswith(suffix):
+                url = item.findtext("url_pdf")
+                if url:
+                    return {identificador: url}
+        raise BormeDoesntExistException(
+            "No PDF for seccion={} provincia={} in this sumario".format(
+                seccion, provincia.code
+            )
         )
     raise MissingFilterException("You must specify either provincia or seccion or both")
 

@@ -123,7 +123,10 @@ def borme_from_json(source):
             data = json.load(fp)
         filename = source
 
-    if data["version"] < FILE_VERSION:
+    # FILE_VERSION es un entero codificado como cadena ("2001", "10001",
+    # ...). Comparar como cadena fallaría con orden lexicográfico
+    # ("10001" < "2001"); fuerza la comparación numérica.
+    if int(data["version"]) < int(FILE_VERSION):
         logger.warning("This JSON was generated with an older version of bormeparser")
         logger.warning(
             "Current version is %s, file version is %s",

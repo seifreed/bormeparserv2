@@ -263,8 +263,8 @@ class BormeXML:
     def save_to_file(self, path):
         """Persiste el sumario XML en disco."""
         parent = os.path.dirname(path)
-        if parent and not os.path.isdir(parent):
-            os.makedirs(parent)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
         self.xml.write(path, encoding="utf-8", pretty_print=True, xml_declaration=True)
         return True
 

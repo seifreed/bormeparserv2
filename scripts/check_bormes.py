@@ -50,10 +50,7 @@ def check_range(begin, end, provincia, seccion, directory, download_xml):
             if download_xml:
                 logger.info("Downloading {}".format(os.path.basename(xml_path)))
                 bxml = BormeXML.from_date(next_date)
-                try:
-                    os.makedirs(os.path.dirname(xml_path))
-                except OSError:
-                    pass
+                os.makedirs(os.path.dirname(xml_path), exist_ok=True)
                 bxml.save_to_file(xml_path)
             else:
                 logger.info("Missing XML: {}\n".format(os.path.basename(xml_path)))

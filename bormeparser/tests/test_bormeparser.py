@@ -155,5 +155,81 @@ class BormeparserLiveDownloadTestCase(unittest.TestCase):
                 os.unlink(path)
 
 
+class ConfigTestCase(unittest.TestCase):
+    """Regresión: get_config debe tolerar ficheros sin sección
+    ``[general]`` y mezclar siempre los valores por defecto."""
+
+    def setUp(self):
+        # Mantenemos el cache aislado entre tests.
+        from bormeparser import config
+
+        self._previous_cache = config._cached_config
+        config._cached_config = None
+        self._previous_path = config.CONFIG_FILE
+
+    def tearDown(self):
+        from bormeparser import config
+
+        config._cached_config = self._previous_cache
+        config.CONFIG_FILE = self._previous_path
+
+    def test_no_file_uses_defaults(self):
+        from bormeparser import config
+
+        config.CONFIG_FILE = "/does/not/exist/.bormecfg"
+        cfg = config.get_config()
+        self.assertIn("borme_root", cfg)
+
+    def test_missing_general_section_falls_back(self):
+        from bormeparser import config
+
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".cfg", delete=False, encoding="utf-8"
+        ) as fp:
+            fp.write("[otro]\nkey=value\n")
+            path = fp.name
+        try:
+            config.CONFIG_FILE = path
+            cfg = config.get_config()
+            self.assertIn("borme_root", cfg)
+        finally:
+            os.unlink(path)
+
+    def test_partial_general_merges_defaults(self):
+        from bormeparser import config
+
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".cfg", delete=False, encoding="utf-8"
+        ) as fp:
+            fp.write("[general]\notra_clave=valor\n")
+            path = fp.name
+        try:
+            config.CONFIG_FILE = path
+            cfg = config.get_config()
+            # La clave del fichero está…
+            self.assertEqual(cfg["otra_clave"], "valor")
+            # …y borme_root sigue ahí porque viene de DEFAULTS.
+            self.assertIn("borme_root", cfg)
+        finally:
+            os.unlink(path)
+
+
+class ActoIdsUniqueTestCase(unittest.TestCase):
+    """Regresión: ``REACTIVACION_DE_LA_SOCIEDAD`` y
+    ``CIERRE_PROVISIONAL_REVOCACION_NIF`` apuntaban ambos a 32; las
+    búsquedas por id devolvían el primero indistintamente."""
+
+    def test_acto_ids_unique(self):
+        from bormeparser.acto import ACTO
+
+        # Recogemos los enteros declarados como atributos de la clase.
+        ids = [
+            getattr(ACTO, attr)
+            for attr in vars(ACTO)
+            if not attr.startswith("_") and isinstance(getattr(ACTO, attr), int)
+        ]
+        self.assertEqual(len(ids), len(set(ids)), "Hay IDs de acto duplicados")
+
+
 if __name__ == "__main__":
     unittest.main()

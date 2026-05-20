@@ -38,7 +38,11 @@ class ThreadConvertJSON(Thread):
 
     def run(self):
         while True:
-            pdf_path, json_path = self.queue.get()
+            item = self.queue.get()
+            if item is None:
+                self.queue.task_done()
+                return
+            pdf_path, json_path = item
             print(f"Creating {json_path} ...")
             try:
                 borme = bormeparser.parse(
@@ -48,7 +52,8 @@ class ThreadConvertJSON(Thread):
                 print("{cve}: OK".format(cve=borme.cve))
             except Exception as e:
                 print("ERROR: {} ({})".format(os.path.basename(pdf_path), e))
-            self.queue.task_done()
+            finally:
+                self.queue.task_done()
 
 
 def walk_borme_root_date(bormes_root, date):
@@ -61,7 +66,7 @@ def walk_borme_root_date(bormes_root, date):
     pdf_day_dir = os.path.join(pdf_root, year, month, day)
     if not os.path.isdir(pdf_day_dir):
         print("No existe {}".format(pdf_day_dir))
-        return None, None, None
+        return
 
     _, _, files = next(os.walk(pdf_day_dir))
     for filename in files:
@@ -105,20 +110,18 @@ if __name__ == "__main__":
 
     start_time = time.time()
 
-    q = Queue()
-    for i in range(THREADS):
+    q: Queue = Queue()
+    workers = []
+    for _ in range(THREADS):
         t = ThreadConvertJSON(q)
-        t.setDaemon(True)
+        t.daemon = True
         t.start()
+        workers.append(t)
 
     date = date_from
     while date <= date_to:
         for day_dir, filename in walk_borme_root_date(args.directory, date):
-            if (
-                filename
-                and not filename.endswith(".pdf")
-                or filename.endswith("-99.pdf")
-            ):
+            if not filename.endswith(".pdf") or filename.endswith("-99.pdf"):
                 continue
             year, month, day = (
                 str(date.year),
@@ -134,6 +137,10 @@ if __name__ == "__main__":
             q.put((pdf_path, json_path))
         date += datetime.timedelta(days=1)
     q.join()
+    for _ in workers:
+        q.put(None)
+    for t in workers:
+        t.join()
 
     elapsed_time = time.time() - start_time
     print(f"Elapsed time: {elapsed_time:.2f} seconds")

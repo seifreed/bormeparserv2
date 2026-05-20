@@ -62,10 +62,7 @@ def download_range(begin, end, directory, seccion, provincia=None):
                     )
                 )
                 bxml = BormeXML.from_date(next_date)
-                try:
-                    os.makedirs(os.path.dirname(xml_path))
-                except OSError:
-                    pass
+                os.makedirs(os.path.dirname(xml_path), exist_ok=True)
                 bxml.save_to_file(xml_path)
 
         except IOError:
@@ -73,16 +70,10 @@ def download_range(begin, end, directory, seccion, provincia=None):
                 "Downloading {filename}".format(filename=os.path.basename(xml_path))
             )
             bxml = BormeXML.from_date(next_date)
-            try:
-                os.makedirs(os.path.dirname(xml_path))
-            except OSError:
-                pass
+            os.makedirs(os.path.dirname(xml_path), exist_ok=True)
             bxml.save_to_file(xml_path)
 
-        try:
-            os.makedirs(path)
-        except OSError:
-            pass
+        os.makedirs(path, exist_ok=True)
 
         _, files = bxml.download_borme(path, provincia=provincia, seccion=seccion)
 

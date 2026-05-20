@@ -267,7 +267,6 @@ class CARGO:
     SECRETARIO_J_ADM = "Secretario J.Adm."
     TESORERO_J_ADM = "Tesorero J.Adm."
     CONTADOR = "Contador"
-    PRESIDENTE_COMISION_DIRECTIVA = "Presidente de la comisión directiva"
     PRESIDENTE_COMISION_AU_CNT = "Presidente de la comisión Au.Cnt."
     MIEMBRO_COMISION_AU_CUM = "Miembro de la comisión Au.Cnt."
     SE_TEC_NO_CO = "SE.TEC.NO CO"  # ?

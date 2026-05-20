@@ -50,7 +50,7 @@ class ACTO:
     ADAPTACION_LEY_2_95 = 30
     CIERRE_PROVISIONAL_BAJA_EN_EL_INDICE_DE_ENTIDADES_JURIDICAS = 31
     CIERRE_PROVISIONAL_REVOCACION_NIF = 32
-    REACTIVACION_DE_LA_SOCIEDAD = 32
+    REACTIVACION_DE_LA_SOCIEDAD = 33
 
     FE_DE_ERRATAS = 34
     DATOS_REGISTRALES = 35
@@ -159,16 +159,3 @@ class ACTO:
     ALL_KEYWORDS = (
         ARG_KEYWORDS + NOARG_KEYWORDS + COLON_KEYWORDS + BOLD_KEYWORDS + ENDING_KEYWORDS
     )
-
-
-"""
-    DICT_KEYWORDS = {kw: remove_accents(kw).replace(' del ', ' ').replace(' por ', ' ').replace(' de ', ' ')
-                 .replace(' ', '_').replace('/', '_').replace('.', '_').lower() for kw in ALL_KEYWORDS}
-
->>> DICT_KEYWORDS.values()
-['revocaciones', 'cambio_objeto_social', 'reelecciones', 'otros_conceptos', 'fe_erratas', 'sociedad_unipersonal', 'declaracion_unipersonalidad', 'constitucion', 'suspension_pagos', '
-perdida_caracter_unipersonalidad', 'cancelaciones_oficio_nombramientos', 'datos_registrales', 'cambio_domicilio_social', 'disolucion', 'ampliacion_objeto_social', 'cierre_provisional_hoj
-a_registral_baja_en_el_indice_entidades_juridicas', 'ceses_dimisiones', 'nombramientos', 'situacion_concursal', 'modificaciones_estatutarias', 'ampliacion_capital', 'adaptacion_ley_2_95'
-, 'cambio_denominacion_social', 'extincion', 'reduccion_capital', 'cambio_identidad_socio_unico', 'transformacion_sociedad', 'reapertura_hoja_registral', 'socio_unico', 'articulo_378_5
-_reglamento_registro_mercantil', 'fusion_absorcion']
-"""

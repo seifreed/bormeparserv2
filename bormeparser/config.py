@@ -39,13 +39,18 @@ def get_config():
     para forzar una nueva lectura (útil en tests).
     """
     global _cached_config
-    if _cached_config is None:
-        if os.path.isfile(CONFIG_FILE):
-            parser = configparser.ConfigParser()
-            parser.read(CONFIG_FILE)
-            _cached_config = dict(parser["general"])
-        else:
-            _cached_config = dict(DEFAULTS)
+    if _cached_config is not None:
+        return _cached_config
+
+    merged = dict(DEFAULTS)
+    if os.path.isfile(CONFIG_FILE):
+        parser = configparser.ConfigParser()
+        parser.read(CONFIG_FILE)
+        # El fichero histórico usa la sección [general]; si no está,
+        # caer en los defaults antes que reventar con KeyError.
+        if parser.has_section("general"):
+            merged.update(parser["general"])
+    _cached_config = merged
     return _cached_config
 
 

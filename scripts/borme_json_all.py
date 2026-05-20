@@ -38,7 +38,11 @@ class ThreadConvertJSON(Thread):
 
     def run(self):
         while True:
-            pdf_path, json_path = self.queue.get()
+            item = self.queue.get()
+            if item is None:
+                self.queue.task_done()
+                return
+            pdf_path, json_path = item
             print(f"Creating {json_path} ...")
             try:
                 borme = bormeparser.parse(
@@ -48,7 +52,8 @@ class ThreadConvertJSON(Thread):
                 print("{cve}: OK".format(cve=borme.cve))
             except Exception as e:
                 print("ERROR: {} ({})".format(os.path.basename(pdf_path), e))
-            self.queue.task_done()
+            finally:
+                self.queue.task_done()
 
 
 def walk_borme_root(bormes_root, json_root=None):
@@ -88,11 +93,13 @@ if __name__ == "__main__":
 
     start_time = time.time()
 
-    q = Queue()
-    for i in range(THREADS):
+    q: Queue = Queue()
+    workers = []
+    for _ in range(THREADS):
         t = ThreadConvertJSON(q)
-        t.setDaemon(True)
+        t.daemon = True
         t.start()
+        workers.append(t)
 
     json_folder = "json_" + get_git_revision_short_hash()
     json_root = os.path.join(args.directory, json_folder)
@@ -108,6 +115,10 @@ if __name__ == "__main__":
         json_path = os.path.join(json_day_dir, json_filename)
         q.put((pdf_path, json_path))
     q.join()
+    for _ in workers:
+        q.put(None)
+    for t in workers:
+        t.join()
 
     elapsed_time = time.time() - start_time
     print(f"Elapsed time: {elapsed_time:.2f} seconds")
