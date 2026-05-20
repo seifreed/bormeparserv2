@@ -20,7 +20,9 @@ contra el sumario de boe.es.
 import datetime
 import os
 import tempfile
+import threading
 import unittest
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from bormeparserv2 import PROVINCIA, SECCION
 from bormeparserv2.exceptions import (
@@ -35,6 +37,27 @@ LIVE = os.environ.get("BORMEPARSERV2_LIVE") == "1"
 require_live = unittest.skipUnless(
     LIVE, "set BORMEPARSERV2_LIVE=1 to run tests that hit boe.es"
 )
+
+
+class _TruncatedDownloadHandler(BaseHTTPRequestHandler):
+    def do_GET(self):  # noqa: N802
+        body = b"%PDF-1.4 partial"
+        self.send_response(200)
+        self.send_header("Content-Type", "application/pdf")
+        self.send_header("Content-Length", str(len(body) + 100))
+        self.end_headers()
+        self.wfile.write(body)
+        self.wfile.flush()
+
+    def log_message(self, *_args, **_kwargs):  # noqa: N802
+        pass
+
+
+def _serve_truncated_download():
+    server = ThreadingHTTPServer(("127.0.0.1", 0), _TruncatedDownloadHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    return server, f"http://127.0.0.1:{server.server_port}/file.pdf"
 
 
 class GetNboFromXmlTestCase(unittest.TestCase):
@@ -431,6 +454,22 @@ class DownloadUrlRetryTestCase(unittest.TestCase):
 
             with self.assertRaises(_requests.RequestException):
                 download_url("https://example.invalid/whatever.pdf", target)
+
+    def test_partial_stream_does_not_leave_final_file(self):
+        from bormeparserv2.download import download_url
+        import requests as _requests
+
+        server, url = _serve_truncated_download()
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                target = os.path.join(tmp, "partial.pdf")
+                with self.assertRaises(_requests.RequestException):
+                    download_url(url, target)
+                self.assertFalse(os.path.exists(target))
+                self.assertEqual(os.listdir(tmp), [])
+        finally:
+            server.shutdown()
+            server.server_close()
 
 
 @require_live

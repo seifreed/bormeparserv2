@@ -13,6 +13,7 @@
 import datetime
 import logging
 import os
+import tempfile
 import time
 from queue import Queue
 from threading import Thread
@@ -130,8 +131,7 @@ def download_xml(date, filename, secure=USE_HTTPS):
         return False
     response = requests.get(url, headers=_API_HEADERS, timeout=HTTP_TIMEOUT)
     response.raise_for_status()
-    with open(filename, "wb") as fp:
-        fp.write(response.content)
+    _atomic_write_bytes(filename, response.content)
     return True
 
 
@@ -306,11 +306,49 @@ def download_url(url, filename, try_again=0):
         raise
 
     response.raise_for_status()
-    with open(filename, "wb") as fp:
-        for chunk in response.iter_content(chunk_size=8192):
-            if chunk:
-                fp.write(chunk)
+    try:
+        _atomic_write_response(filename, response)
+    except requests.RequestException:
+        if try_again < 3:
+            return download_url(url, filename, try_again=try_again + 1)
+        raise
     return True
+
+
+def _atomic_write_response(filename, response):
+    tmp_path = None
+    try:
+        with _temporary_download_file(filename) as fp:
+            tmp_path = fp.name
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    fp.write(chunk)
+        os.replace(tmp_path, filename)
+    except Exception:
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+        raise
+
+
+def _temporary_download_file(filename):
+    directory = os.path.dirname(os.path.abspath(filename))
+    basename = os.path.basename(filename)
+    return tempfile.NamedTemporaryFile(
+        "wb", dir=directory, prefix=f".{basename}.", suffix=".tmp", delete=False
+    )
+
+
+def _atomic_write_bytes(filename, content):
+    tmp_path = None
+    try:
+        with _temporary_download_file(filename) as fp:
+            tmp_path = fp.name
+            fp.write(content)
+        os.replace(tmp_path, filename)
+    except Exception:
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+        raise
 
 
 def download_urls(urls, path):
