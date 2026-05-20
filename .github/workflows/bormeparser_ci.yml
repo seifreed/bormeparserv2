@@ -41,7 +41,7 @@ jobs:
       - name: Install tooling
         run: |
           python -m pip install --upgrade pip
-          pip install ruff black mypy bandit pip-audit
+          pip install ruff black mypy bandit pip-audit types-requests lxml-stubs
           pip install -r requirements.txt
       - name: ruff
         run: ruff check .

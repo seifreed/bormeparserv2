@@ -51,8 +51,9 @@ class BormeActo:
     """
 
     name: str
+    value: object
 
-    def __init__(self, name: str, value) -> None:
+    def __init__(self, name: str, value: object) -> None:
         logger.debug("new %s(%s): %s", self.__class__.__name__, name, value)
         if name not in ACTO.ALL_KEYWORDS:
             logger.warning("Invalid acto found: %s", name)
@@ -62,16 +63,14 @@ class BormeActo:
     def _set_name(self, name: str) -> None:
         raise NotImplementedError
 
-    def _set_value(self, value) -> None:
+    def _set_value(self, value: object) -> None:
         raise NotImplementedError
 
     def __lt__(self, other: "BormeActo") -> bool:
         return self.name < other.name
 
     def __repr__(self) -> str:
-        return "<{}({}): {}>".format(
-            self.__class__.__name__, self.name, self.value
-        )
+        return "<{}({}): {}>".format(self.__class__.__name__, self.name, self.value)
 
 
 class BormeActoTexto(BormeActo):
@@ -88,9 +87,7 @@ class BormeActoTexto(BormeActo):
 
     def _set_value(self, value) -> None:
         if not (value is None or isinstance(value, str)):
-            raise ValueError(
-                "value must be str or None: {!r}".format(value)
-            )
+            raise ValueError("value must be str or None: {!r}".format(value))
         self.value = value
 
 
@@ -108,9 +105,7 @@ class BormeActoCargo(BormeActo):
 
     def _set_value(self, value) -> None:
         if not isinstance(value, dict):
-            raise ValueError(
-                "value must be a dictionary: {!r}".format(value)
-            )
+            raise ValueError("value must be a dictionary: {!r}".format(value))
 
         for cargo, nombres in value.items():
             if isinstance(nombres, set):
@@ -185,7 +180,6 @@ class BormeAnuncio:
         )
 
 
-
 class Borme:
     """Una publicación BORME para una (fecha, sección, provincia) concreta."""
 
@@ -231,8 +225,9 @@ class Borme:
     def _set_url(self):
         xml_path = get_borme_xml_filepath(self.date)
         if os.path.isfile(xml_path):
-            self._url = get_url_pdf_from_xml(self.date, self.seccion,
-                                             self.provincia, xml_path)
+            self._url = get_url_pdf_from_xml(
+                self.date, self.seccion, self.provincia, xml_path
+            )
         else:
             self._url = get_url_pdf(self.date, self.seccion, self.provincia)
 
@@ -247,8 +242,8 @@ class Borme:
             return self.anuncios[anuncio_id]
         except KeyError:
             raise BormeAnuncioNotFound(
-                'Anuncio {} not found in BORME {}'.format(
-                    anuncio_id, str(self)))
+                "Anuncio {} not found in BORME {}".format(anuncio_id, str(self))
+            )
 
     def get_anuncios_ids(self):
         """
@@ -265,19 +260,20 @@ class Borme:
     def download(self, filename):
         if self.filename is not None:
             raise BormeAlreadyDownloadedException(filename)
-        downloaded = download_pdf(self.date, filename, self.seccion,
-                                  self.provincia)
+        downloaded = download_pdf(self.date, filename, self.seccion, self.provincia)
         if downloaded:
             self.filename = filename
         return downloaded
 
     def _to_dict(self, set_url=True):
         from ._serialization import borme_to_dict
+
         return borme_to_dict(self, include_url=set_url)
 
     def to_json(self, path=None, overwrite=True, pretty=True, include_url=True):
         """Genera BORME-JSON. Ver :func:`bormeparser._serialization.borme_to_json`."""
         from ._serialization import borme_to_json
+
         return borme_to_json(
             self,
             path,
@@ -294,6 +290,7 @@ class Borme:
         objeto file-like ya abierto.
         """
         from ._serialization import borme_from_json
+
         return borme_from_json(filename)
 
     def __lt__(self, other):
@@ -301,4 +298,5 @@ class Borme:
 
     def __repr__(self):
         return "<Borme({}) seccion:{} provincia:{}>".format(
-                    self.date, self.seccion, self.provincia)
+            self.date, self.seccion, self.provincia
+        )

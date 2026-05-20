@@ -137,18 +137,15 @@ class PyPDFParser(BormeAParserBackend):
         """Lee el PDF y produce el contenido decodificado de cada página."""
         with open(self.filename, "rb") as fp:
             reader = PdfReader(fp)
-            pages = []
+            pages: list[str] = []
             for page in reader.pages:
                 contents = page.get_contents()
                 if contents is None:
                     continue
-                raw = contents.get_data()
-                if isinstance(raw, bytes):
-                    # Content streams del PDF son bytes con literales
-                    # latin-1; los escapes propios del PDF (\(, \), \\)
-                    # los deshace _clean_data más abajo.
-                    raw = raw.decode("latin-1")
-                pages.append(raw)
+                # Content streams del PDF son bytes con literales latin-1;
+                # los escapes propios del PDF (\(, \), \\) los deshace
+                # _clean_data más abajo.
+                pages.append(contents.get_data().decode("latin-1"))
         yield from pages
 
     def _handle_line(self, line: str, state: _ParseState, data_out: dict) -> None:
@@ -241,11 +238,9 @@ class PyPDFParser(BormeAParserBackend):
             state.changing_page,
             state.last_font,
         )
-        should_close = (
-            state.nombreacto is not None
-            and (not state.changing_page or state.last_font == 2)
-        )
-        if should_close:
+        if state.nombreacto is not None and (
+            not state.changing_page or state.last_font == 2
+        ):
             self._parse_acto(state.nombreacto, state.data, prefix="F1")
             state.nombreacto = None
             state.data = ""
@@ -290,7 +285,10 @@ class PyPDFParser(BormeAParserBackend):
             data_out["borme_fecha"] = text
             logger.debug("fecha: %s", text)
         elif state.capture == "num":
-            data_out["borme_num"] = int(REGEX_BORME_NUM.match(text).group(1))
+            match_num = REGEX_BORME_NUM.match(text)
+            if match_num is None:
+                raise ValueError(f"No se pudo parsear borme_num desde el PDF: {text!r}")
+            data_out["borme_num"] = int(match_num.group(1))
             logger.debug("num: %d", data_out["borme_num"])
         elif state.capture == "seccion":
             data_out["borme_seccion"] = text
@@ -302,7 +300,10 @@ class PyPDFParser(BormeAParserBackend):
             data_out["borme_provincia"] = text
             logger.debug("provincia: %s", text)
         elif state.capture == "cve":
-            data_out["borme_cve"] = REGEX_BORME_CVE.match(text).group(1)
+            match_cve = REGEX_BORME_CVE.match(text)
+            if match_cve is None:
+                raise ValueError(f"No se pudo parsear borme_cve desde el PDF: {text!r}")
+            data_out["borme_cve"] = match_cve.group(1)
             logger.debug("cve: %s", data_out["borme_cve"])
         state.capture = None
         state.data += " " + text
@@ -326,12 +327,7 @@ class PyPDFParser(BormeAParserBackend):
 
     def _clean_data(self, data: str) -> str:
         """Deshace los escapes \\( \\) del PDF y colapsa dobles espacios."""
-        return (
-            data.replace(r"\(", "(")
-            .replace(r"\)", ")")
-            .replace("  ", " ")
-            .strip()
-        )
+        return data.replace(r"\(", "(").replace(r"\)", ")").replace("  ", " ").strip()
 
     def _parse_acto(self, nombreacto: str, data: str, prefix: str = "") -> None:
         data = self._clean_data(data)

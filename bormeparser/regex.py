@@ -30,13 +30,14 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def _re_escape_keywords(keywords, *, with_parens=False):
     """Escapa metacaracteres de regex en una lista de palabras clave."""
     escaped = []
     for keyword in keywords:
-        token = keyword.replace('.', r'\.')
+        token = keyword.replace(".", r"\.")
         if with_parens:
-            token = token.replace('(', r'\(').replace(')', r'\)')
+            token = token.replace("(", r"\(").replace(")", r"\)")
         escaped.append(token)
     return escaped
 
@@ -51,66 +52,93 @@ esc_cargos_keywords = _re_escape_keywords(CARGO.KEYWORDS)
 
 # -- ACTOS --
 # OR de las palabras clave con argumentos
-RE_ARG_KEYWORDS = '(%s)' % '|'.join(esc_arg_keywords)
-RE_ALL_KEYWORDS = '(%s|%s|%s|%s)' % ('|'.join(esc_arg_keywords), '|'.join(esc_colon_keywords),
-                                     '|'.join(esc_noarg_keywords), esc_ending_keywords[0])
+RE_ARG_KEYWORDS = "(%s)" % "|".join(esc_arg_keywords)
+RE_ALL_KEYWORDS = "(%s|%s|%s|%s)" % (
+    "|".join(esc_arg_keywords),
+    "|".join(esc_colon_keywords),
+    "|".join(esc_noarg_keywords),
+    esc_ending_keywords[0],
+)
 # OR de las palabras clave, "non grouping"
-RE_ALL_KEYWORDS_NG = '(?:%s|%s|%s|%s)' % ('|'.join(esc_arg_keywords), '|'.join(esc_colon_keywords),
-                                          '|'.join(esc_noarg_keywords), esc_ending_keywords[0])
+RE_ALL_KEYWORDS_NG = "(?:%s|%s|%s|%s)" % (
+    "|".join(esc_arg_keywords),
+    "|".join(esc_colon_keywords),
+    "|".join(esc_noarg_keywords),
+    esc_ending_keywords[0],
+)
 # OR de las palabras clave sin argumentos
-RE_NOARG_KEYWORDS = '(%s)' % '|'.join(esc_noarg_keywords)
+RE_NOARG_KEYWORDS = "(%s)" % "|".join(esc_noarg_keywords)
 # OR de las palabras clave con argumentos seguidas por :
-RE_COLON_KEYWORDS = '(%s)' % '|'.join(esc_colon_keywords)
-RE_BOLD_KEYWORDS = '(%s)' % '|'.join(esc_bold_keywords)
-RE_ENDING_KEYWORD = '(%s)' % esc_ending_keywords[0]
+RE_COLON_KEYWORDS = "(%s)" % "|".join(esc_colon_keywords)
+RE_BOLD_KEYWORDS = "(%s)" % "|".join(esc_bold_keywords)
+RE_ENDING_KEYWORD = "(%s)" % esc_ending_keywords[0]
 
 # -- CARGOS --
 # OR de las palabras clave
-RE_CARGOS_KEYWORDS = '(%s):' % '|'.join(esc_cargos_keywords)
-RE_CARGOS_KEYWORDS2 = '(?=%s|$)' % '|'.join([x + ':' for x in esc_cargos_keywords])
+RE_CARGOS_KEYWORDS = "(%s):" % "|".join(esc_cargos_keywords)
+RE_CARGOS_KEYWORDS2 = "(?=%s|$)" % "|".join([x + ":" for x in esc_cargos_keywords])
 # RE para capturar el cargo y los nombres
-RE_CARGOS_MATCH = RE_CARGOS_KEYWORDS + r' (.*?)\.?' + RE_CARGOS_KEYWORDS2
+RE_CARGOS_MATCH = RE_CARGOS_KEYWORDS + r" (.*?)\.?" + RE_CARGOS_KEYWORDS2
 
-REGEX_NOARG = re.compile(RE_NOARG_KEYWORDS + r'\.\s*(.*)', re.UNICODE)
-REGEX_ARGCOLON = re.compile(RE_COLON_KEYWORDS + r': (.*?)(?:\.\s+)(.*)', re.UNICODE)
+REGEX_NOARG = re.compile(RE_NOARG_KEYWORDS + r"\.\s*(.*)", re.UNICODE)
+REGEX_ARGCOLON = re.compile(RE_COLON_KEYWORDS + r": (.*?)(?:\.\s+)(.*)", re.UNICODE)
 REGEX_BOLD = re.compile(
-    RE_BOLD_KEYWORDS + r'\. (.*?)\.\s*' + RE_ALL_KEYWORDS + r'(.*)\.?',
+    RE_BOLD_KEYWORDS + r"\. (.*?)\.\s*" + RE_ALL_KEYWORDS + r"(.*)\.?",
     re.UNICODE,
 )
 
-REGEX_EMPRESA = re.compile(r'^(\d+) - (.*?)\.?$')
-REGEX_EMPRESA_REGISTRO = re.compile(r'^(\d+) - (.*)\(R.M. (.*)\)\.?$')
-REGEX_PDF_TEXT = re.compile(r'^\((.*)\)Tj$')
-REGEX_BORME_NUM = re.compile(r'^Núm\. (\d+)', re.UNICODE)
-REGEX_BORME_FECHA = re.compile(r'^\w+ (\d+) de (\w+) de (\d+)')
-REGEX_BORME_CVE = re.compile(r'^cve: (.*)$')
+REGEX_EMPRESA = re.compile(r"^(\d+) - (.*?)\.?$")
+REGEX_EMPRESA_REGISTRO = re.compile(r"^(\d+) - (.*)\(R.M. (.*)\)\.?$")
+REGEX_PDF_TEXT = re.compile(r"^\((.*)\)Tj$")
+REGEX_BORME_NUM = re.compile(r"^Núm\. (\d+)", re.UNICODE)
+REGEX_BORME_FECHA = re.compile(r"^\w+ (\d+) de (\w+) de (\d+)")
+REGEX_BORME_CVE = re.compile(r"^cve: (.*)$")
 
-MESES = {'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4, 'mayo': 5, 'junio': 6, 'julio': 7,
-         'agosto': 8, 'septiembre': 9, 'octubre': 10, 'noviembre': 11, 'diciembre': 12}
+MESES = {
+    "enero": 1,
+    "febrero": 2,
+    "marzo": 3,
+    "abril": 4,
+    "mayo": 5,
+    "junio": 6,
+    "julio": 7,
+    "agosto": 8,
+    "septiembre": 9,
+    "octubre": 10,
+    "noviembre": 11,
+    "diciembre": 12,
+}
 
 
 def is_acto_cargo_entrante(data):
-    """ Comprueba si es un acto que aporta nuevos cargos """
+    """Comprueba si es un acto que aporta nuevos cargos"""
 
     if not is_acto_cargo(data):
-        raise ValueError('No es un acto con cargos: %s' % data)
-    return data in ['Reelecciones', 'Nombramientos']
+        raise ValueError("No es un acto con cargos: %s" % data)
+    return data in ["Reelecciones", "Nombramientos"]
 
 
 def is_acto_cargo(data):
-    """ Comprueba si es un acto que tiene como parámetro una lista de cargos """
-    actos = ['Revocaciones', 'Reelecciones', 'Cancelaciones de oficio de nombramientos', 'Nombramientos',
-             'Ceses/Dimisiones', 'Emisión de obligaciones', 'Modificación de poderes']
+    """Comprueba si es un acto que tiene como parámetro una lista de cargos"""
+    actos = [
+        "Revocaciones",
+        "Reelecciones",
+        "Cancelaciones de oficio de nombramientos",
+        "Nombramientos",
+        "Ceses/Dimisiones",
+        "Emisión de obligaciones",
+        "Modificación de poderes",
+    ]
     return data in actos
 
 
 def is_acto_noarg(data):
-    """ Comprueba si es un acto que no tiene parametros """
+    """Comprueba si es un acto que no tiene parametros"""
     return data in ACTO.NOARG_KEYWORDS
 
 
 def is_acto_bold_mix(data):
-    return data.startswith('Escisión total')
+    return data.startswith("Escisión total")
 
 
 def is_acto_bold(data):
@@ -121,26 +149,26 @@ def is_acto_bold(data):
 
 
 def is_company(data):
-    """ Comprueba si es algún tipo de sociedad o por el contrario es una persona física """
+    """Comprueba si es algún tipo de sociedad o por el contrario es una persona física"""
     siglas = ALL_SOCIEDADES
-    siglas = list(map(lambda x: ' %s' % x, siglas))
+    siglas = list(map(lambda x: " %s" % x, siglas))
     data = clean_empresa(data)
     alguna_sigla = any(data.endswith(s) for s in siglas)
     if not alguna_sigla:
-        return 'SOCIEDAD' in data
+        return "SOCIEDAD" in data
     return True
 
 
 # HACK
 def regex_argcolon(data):
-    """ Captura el acto y su argumento y el siguiente acto """
+    """Captura el acto y su argumento y el siguiente acto"""
     acto_colon, arg_colon, nombreacto = REGEX_ARGCOLON.match(data).groups()
     return acto_colon, arg_colon, nombreacto
 
 
 # HACK
 def regex_noarg(data):
-    """ Captura el acto sin argumento y el siguiente acto """
+    """Captura el acto sin argumento y el siguiente acto"""
     nombreacto, siguiente_acto = REGEX_NOARG.match(data).groups()
     return nombreacto, siguiente_acto
 
@@ -156,22 +184,22 @@ def regex_empresa_tipo(data):
       GARNO INVESTMENTS SICAV SOCIEDAD ANONIMA
     """
     empresa = clean_empresa(data)
-    tipo = ''
+    tipo = ""
     for t in ALL_SOCIEDADES:
-        if empresa.endswith(' %s' % t):
-            empresa = empresa[:-len(t) - 1]
+        if empresa.endswith(" %s" % t):
+            empresa = empresa[: -len(t) - 1]
             tipo = t
             empresa = empresa.rstrip(",")
     return empresa, tipo
 
 
 def regex_empresa(data, sanitize=True):
-    """ Captura el número de acto y el nombre de la empresa
-        Si el nombre incluye el nombre de un registro mercantil, lo devuelve en el tercer parámetro
-        El tercer parámetro contiene información extra de la empresa
+    """Captura el número de acto y el nombre de la empresa
+    Si el nombre incluye el nombre de un registro mercantil, lo devuelve en el tercer parámetro
+    El tercer parámetro contiene información extra de la empresa
 
-        data: "57344 - ALDARA CATERING SL"
-        data: "473700 - SA COVA PLAÇA MAJOR SL(R.M. PALMA DE MALLORCA)"
+    data: "57344 - ALDARA CATERING SL"
+    data: "473700 - SA COVA PLAÇA MAJOR SL(R.M. PALMA DE MALLORCA)"
     """
 
     extra = {"liquidacion": False, "sucursal": False, "registro": ""}
@@ -213,7 +241,7 @@ def regex_cargos(data, sanitize=True):
     cargos = {}
     for cargo in re.findall(RE_CARGOS_MATCH, data, re.UNICODE):
         entidades = set()
-        for e in cargo[1].split(';'):
+        for e in cargo[1].split(";"):
             e = e.strip(" .")
             if sanitize:
                 e = clean_empresa(e)
@@ -240,81 +268,91 @@ def regex_constitucion(data):
     def parse_capital(amount):
         # '3.000,00 Euros', '3.000.000 Ptas'
         amount = amount.group(1).strip()
-        if 'Euros' in amount:
-            amount = amount.split(' Euros')[0]
-            amount = float(amount.replace('.', '').replace(',', '.'))
-        elif 'Ptas' in amount:
-            amount = amount.split(' Ptas')[0]
-            amount = int(amount.replace('.', ''))
+        if "Euros" in amount:
+            amount = amount.split(" Euros")[0]
+            amount = float(amount.replace(".", "").replace(",", "."))
+        elif "Ptas" in amount:
+            amount = amount.split(" Ptas")[0]
+            amount = int(amount.replace(".", ""))
         else:
-            raise ValueError('Capital ni Ptas ni Euros: {0}'.format(amount))
+            raise ValueError("Capital ni Ptas ni Euros: {0}".format(amount))
         return amount
 
-    all_keywords = ['Comienzo de operaciones', 'Duración', 'Objeto social', 'Domicilio'
-                    'Capital', 'Capital suscrito', 'Desembolsado']
-    all_keywords.append('$')
-    all_or_ng = '(?:{0})'.format('|'.join(all_keywords))
+    all_keywords = [
+        "Comienzo de operaciones",
+        "Duración",
+        "Objeto social",
+        "Domicilio" "Capital",
+        "Capital suscrito",
+        "Desembolsado",
+    ]
+    all_keywords.append("$")
+    all_or_ng = "(?:{0})".format("|".join(all_keywords))
 
-    date = re.search('Comienzo de operaciones: (.*?){0}'.format(all_or_ng), data).group(1).strip()
-    if len(date) > 1 and date[1] == '.':
+    date = (
+        re.search("Comienzo de operaciones: (.*?){0}".format(all_or_ng), data)
+        .group(1)
+        .strip()
+    )
+    if len(date) > 1 and date[1] == ".":
         date = date[:7]
-    elif len(date) > 2 and date[2] == '.':
+    elif len(date) > 2 and date[2] == ".":
         date = date[:8]
-    if date.endswith('.'):
+    if date.endswith("."):
         date = date[:-1]
     try:
         # 'dd.mm.yy', 'd.mm.yy', 'dd.m.yy', 'd.m.yy', 'dd/mm/yy', '2-10-2009', '21 DE FEBRERO DE 2006'
-        if '/' in date or '-' in date:
-            n = re.findall(r'(\d{1,4})', date)  # ['17', '04', '2013']
+        if "/" in date or "-" in date:
+            n = re.findall(r"(\d{1,4})", date)  # ['17', '04', '2013']
             if len(n) != 3:
                 raise ValueError
-            date = {'day': int(n[0]), 'month': int(n[1]), 'year': int(n[2])}
+            date = {"day": int(n[0]), "month": int(n[1]), "year": int(n[2])}
             date = datetime.date(**date)
-        elif ' de ' in date.lower():
-            match = re.match(r'(\d+) de (\w+) de (\d+)', date.lower())
+        elif " de " in date.lower():
+            match = re.match(r"(\d+) de (\w+) de (\d+)", date.lower())
             if not match:
                 raise ValueError
             day, month, year = match.groups()
             date = datetime.date(day=int(day), month=MESES[month], year=int(year))
         else:
-            date = datetime.datetime.strptime(date, '%d.%m.%y').date()
+            date = datetime.datetime.strptime(date, "%d.%m.%y").date()
         date = date.isoformat()
     except ValueError:
-        print('ERROR CON Comienzo de operaciones: {0}'.format(date))
+        print("ERROR CON Comienzo de operaciones: {0}".format(date))
 
-    duration = re.search('Duración: (.*?){0}'.format(all_or_ng), data)
+    duration = re.search("Duración: (.*?){0}".format(all_or_ng), data)
     if duration:
         duration = duration.group(1).strip()
 
-    activity = re.search('Objeto social: (.*?){0}'.format(all_or_ng), data)
+    activity = re.search("Objeto social: (.*?){0}".format(all_or_ng), data)
     if activity:
         activity = activity.group(1).strip()
         activity = capitalize_sentence(activity)
 
-    address = re.search('Domicilio: (.*?){0}'.format(all_or_ng), data)
+    address = re.search("Domicilio: (.*?){0}".format(all_or_ng), data)
     if address:
         address = address.group(1).strip().title()
 
-    capital = re.search('Capital: (.*?){0}'.format(all_or_ng), data)
+    capital = re.search("Capital: (.*?){0}".format(all_or_ng), data)
     if capital:
         try:
             capital = parse_capital(capital)
         except ValueError:
-            raise ValueError('Capital ni Ptas ni Euros: {0}'.format(capital))
+            raise ValueError("Capital ni Ptas ni Euros: {0}".format(capital))
 
-    suscrito = re.search('Capital suscrito: (.*?){0}'.format(all_or_ng), data)
+    suscrito = re.search("Capital suscrito: (.*?){0}".format(all_or_ng), data)
     if suscrito:
         try:
             suscrito = parse_capital(suscrito)
         except ValueError:
-            raise ValueError('Suscrito ni Ptas ni Euros: {0}'.format(suscrito))
+            raise ValueError("Suscrito ni Ptas ni Euros: {0}".format(suscrito))
 
-    desembolsado = re.search('Desembolsado: (.*?){0}'.format(all_or_ng), data)
+    desembolsado = re.search("Desembolsado: (.*?){0}".format(all_or_ng), data)
     if desembolsado:
         try:
             desembolsado = parse_capital(desembolsado)
         except ValueError:
-            raise ValueError('Desembolsado ni Ptas ni Euros: {0}'.format(desembolsado))
+            raise ValueError("Desembolsado ni Ptas ni Euros: {0}".format(desembolsado))
 
     return (date, activity, address, capital)
 
@@ -328,12 +366,14 @@ def regex_fecha(data):
     ('2', 'junio', '2015')
     """
 
-    day, month, year = re.match(r'\w+ (\d+) de (\w+) de (\d+)', data, re.UNICODE).groups()
+    day, month, year = re.match(
+        r"\w+ (\d+) de (\w+) de (\d+)", data, re.UNICODE
+    ).groups()
     return (int(year), MESES[month], int(day))
 
 
 def borme_c_separa_empresas_titulo(titulo):
-    """ This function is far from being perfect """
+    """This function is far from being perfect"""
     #
     #        if len(empresas) > 0:
     #            # ['SOCIEDAD ANONIMA BLABLA (SOCIEDAD ABSORBENTE)', ' CABALUR, SOCIEDAD LIMITADA UNIPERSONAL (SOCIEDAD ABSORBIDA)']
@@ -347,25 +387,25 @@ def borme_c_separa_empresas_titulo(titulo):
     empresas = []
     lines = []
 
-    if not '\n' in titulo:
-        lines = re.findall(r'.*? \([\w\s]+\)', titulo, re.UNICODE)
+    if "\n" not in titulo:
+        lines = re.findall(r".*? \([\w\s]+\)", titulo, re.UNICODE)
     if len(lines) == 0:
-        lines = titulo.split('\n')
+        lines = titulo.split("\n")
 
     for line in lines:
-        empresa = re.sub(r'\(.*?\)', '', line)
-        #empresa = line.replace('(SOCIEDAD ABSORBENTE)', '')
-        #empresa = empresa.replace('(SOCIEDAD ABSORBIDA)', '')
-        #empresa = empresa.replace('(SOCIEDAD ESCINDIDA)', '')
-        #empresa = empresa.replace('(SOCIEDAD BENEFICIARIA)', '')
-        #empresa = empresa.replace('(SOCIEDADES ABSORBIDAS)', '')
-        #empresa = empresa.replace('(EN LIQUIDACIÓN)', '')
-        #empresa = empresa.replace('(SOCIEDAD ABSORBENTE Y PARCIALMENTE ESCINDIDA)', '')
-        #empresa = empresa.replace('(SOCIEDADES BENEFICIARIAS DE LA ESCISIÓN PARCIAL)', '')
-        empresa = empresa.replace('SOCIEDAD ABSORBENTE', '')
-        empresa = empresa.replace('SOCIEDAD ABSORBIDA', '')
+        empresa = re.sub(r"\(.*?\)", "", line)
+        # empresa = line.replace('(SOCIEDAD ABSORBENTE)', '')
+        # empresa = empresa.replace('(SOCIEDAD ABSORBIDA)', '')
+        # empresa = empresa.replace('(SOCIEDAD ESCINDIDA)', '')
+        # empresa = empresa.replace('(SOCIEDAD BENEFICIARIA)', '')
+        # empresa = empresa.replace('(SOCIEDADES ABSORBIDAS)', '')
+        # empresa = empresa.replace('(EN LIQUIDACIÓN)', '')
+        # empresa = empresa.replace('(SOCIEDAD ABSORBENTE Y PARCIALMENTE ESCINDIDA)', '')
+        # empresa = empresa.replace('(SOCIEDADES BENEFICIARIAS DE LA ESCISIÓN PARCIAL)', '')
+        empresa = empresa.replace("SOCIEDAD ABSORBENTE", "")
+        empresa = empresa.replace("SOCIEDAD ABSORBIDA", "")
         empresa = empresa.strip()
-        empresa = empresa.rstrip(',')
+        empresa = empresa.rstrip(",")
         empresa = empresa.strip()
         empresas.append(empresa)
         # TODO: regex_empresa
@@ -379,15 +419,15 @@ def borme_c_separa_empresas_titulo(titulo):
 
 def capitalize_sentence(string):
     # TODO: espacio de más tras coma/punto
-    string = re.sub(r'([,/\.]+)(?! )', r'\1 ', string)
+    string = re.sub(r"([,/\.]+)(?! )", r"\1 ", string)
     if string == string.upper():
         string = string.lower()
     sentences = string.split(". ")
-    while '' in sentences:
-        sentences.remove('')
+    while "" in sentences:
+        sentences.remove("")
     sentences2 = [sentence[0].capitalize() + sentence[1:] for sentence in sentences]
-    string2 = '. '.join(sentences2)
-    if not string2.endswith('.'):
-        string2 += '.'
+    string2 = ". ".join(sentences2)
+    if not string2.endswith("."):
+        string2 += "."
 
     return string2

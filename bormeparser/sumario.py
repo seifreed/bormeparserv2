@@ -126,7 +126,11 @@ class BormeXML:
         bxml.use_https = secure
         bxml._url = get_url_xml(date, secure=secure)
         bxml._load(bxml._url)
-        assert date == bxml.date
+        if date != bxml.date:
+            raise BormeDoesntExistException(
+                f"El sumario devuelto por el BOE corresponde a {bxml.date}, "
+                f"se pidió {date}"
+            )
         return bxml
 
     def get_urls_cve(self, seccion=None, provincia=None):
@@ -185,8 +189,7 @@ class BormeXML:
 
     def get_provincias(self, seccion):
         provincias = [
-            item.findtext("titulo")
-            for item in self._iter_items(seccion=seccion)
+            item.findtext("titulo") for item in self._iter_items(seccion=seccion)
         ]
         return [p for p in provincias if p and p != _PROVINCIA_INDEX_TITLE]
 
@@ -262,9 +265,7 @@ class BormeXML:
         parent = os.path.dirname(path)
         if parent and not os.path.isdir(parent):
             os.makedirs(parent)
-        self.xml.write(
-            path, encoding="utf-8", pretty_print=True, xml_declaration=True
-        )
+        self.xml.write(path, encoding="utf-8", pretty_print=True, xml_declaration=True)
         return True
 
 
