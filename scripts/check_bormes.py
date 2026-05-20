@@ -19,7 +19,7 @@
 
 import bormeparser
 from bormeparser.exceptions import BormeDoesntExistException
-from bormeparser.borme import BormeXML
+from bormeparser.sumario import BormeXML
 from bormeparser.utils import FIRST_BORME, get_borme_xml_filepath, get_borme_pdf_path
 
 import argparse
@@ -74,7 +74,7 @@ def check_range(begin, end, provincia, seccion, directory, download_xml):
 
             if os.path.getsize(filepath) != size:
                 results["incorrect"] += 1
-                logger.warn(
+                logger.warning(
                     "{}: PDF size is incorrect (is {} but should be {})\n".format(
                         filepath, os.path.getsize(filepath), size
                     )
@@ -183,7 +183,7 @@ if __name__ == "__main__":
             args.download_xml,
         )
     except BormeDoesntExistException:
-        logger.warn(
+        logger.warning(
             "It looks like there is no BORME for the start date ({}). Nothing was downloaded".format(
                 date_from
             )

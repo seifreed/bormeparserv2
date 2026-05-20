@@ -87,7 +87,6 @@ class BormeXML:
         # bajo demanda con prev_borme / next_borme.
         self._prev_borme = None
         self._next_borme = None
-        self.is_final = True
 
     @property
     def url(self):

@@ -34,9 +34,10 @@ def main() -> None:
         contents = page.get_contents()
         if contents is None:
             continue
-        content = contents.get_data()
-        if isinstance(content, bytes):
-            content = content.decode("unicode_escape")
+        # Mismo decode que ``PyPDFParser._iter_page_contents``: el
+        # content stream del PDF es latin-1, no unicode_escape (que
+        # interpretaría secuencias ``\n`` literales como saltos).
+        content = contents.get_data().decode("latin-1")
         for line in content.split("\n"):
             print(line)
 

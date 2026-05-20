@@ -19,7 +19,7 @@
 
 import bormeparser
 from bormeparser.exceptions import BormeDoesntExistException
-from bormeparser.borme import BormeXML
+from bormeparser.sumario import BormeXML
 from bormeparser.utils import FIRST_BORME, get_borme_xml_filepath, get_borme_pdf_path
 
 import argparse
@@ -146,7 +146,7 @@ if __name__ == "__main__":
     try:
         download_range(date_from, date_to, args.directory, args.seccion, args.provincia)
     except BormeDoesntExistException:
-        logger.warn(
+        logger.warning(
             "It looks like there is no BORME for the start date ({}). Nothing was downloaded".format(
                 date_from
             )

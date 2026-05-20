@@ -46,8 +46,10 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    # set logger DEBUG (Not working)
     if args.verbose:
+        # Sin basicConfig los loggers no tienen handler y los mensajes
+        # DEBUG se descartan aunque pongas el nivel del logger en DEBUG.
+        logging.basicConfig(level=logging.DEBUG)
         bormeparser.borme.logger.setLevel(logging.DEBUG)
         bormeparser.backends.pypdf.parser.logger.setLevel(logging.DEBUG)
 

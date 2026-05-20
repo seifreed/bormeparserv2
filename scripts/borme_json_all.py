@@ -111,7 +111,10 @@ if __name__ == "__main__":
         if not filename.endswith(".pdf") or filename.endswith("-99.pdf"):
             continue
         pdf_path = os.path.join(day_dir, filename)
-        json_filename = filename.replace(".pdf", ".json")
+        # Solo sustituye la extensión final; ``str.replace`` haría match
+        # de cualquier ``.pdf`` dentro del nombre (p. ej. paths con
+        # punto en el directorio padre).
+        json_filename = filename[: -len(".pdf")] + ".json"
         json_path = os.path.join(json_day_dir, json_filename)
         q.put((pdf_path, json_path))
     q.join()

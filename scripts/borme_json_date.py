@@ -132,7 +132,9 @@ if __name__ == "__main__":
             os.makedirs(json_day_dir, exist_ok=True)
 
             pdf_path = os.path.join(day_dir, filename)
-            json_filename = filename.replace(".pdf", ".json")
+            # Solo sustituye la extensión final; ``str.replace`` haría match
+            # de cualquier ``.pdf`` dentro del nombre.
+            json_filename = filename[: -len(".pdf")] + ".json"
             json_path = os.path.join(json_day_dir, json_filename)
             q.put((pdf_path, json_path))
         date += datetime.timedelta(days=1)
