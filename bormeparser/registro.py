@@ -29,7 +29,7 @@ REGISTROS = {
     "LAS PALMAS": "Las Palmas (Canarias)",
     "SAN SEBASTIAN DE LA GOMERA": "Santa Cruz de Tenerife (Canarias)",
     "EIVISSA": "Ibiza (Islas Baleares)",
-    "MAHON": "Mahon (Menorca, Islas Baleares)"
+    "MAHON": "Mahon (Menorca, Islas Baleares)",
 }
 
 

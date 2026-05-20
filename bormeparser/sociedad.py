@@ -19,49 +19,49 @@
 
 # https://es.wikipedia.org/wiki/Anexo:Tipos_de_sociedad_mercantil_en_Espa%C3%B1a
 SOCIEDADES = {
-    'AIE': 'Agrupación de Interés Económico',
-    'AEIE': 'Agrupación Europea de Interés Económico',
-    'COOP': 'Cooperativa',
-    'FP': 'Fondo de Pensiones',
-    'SA': 'Sociedad Anónima',
-    'SAD': 'Sociedad Anónima Deportiva',
-    'SAL': 'Sociedad Anónima Laboral',
-    'SAP': 'Sociedad Anónima P?',
-    'SAS': 'Sociedad por Acciones Simplificada',
-    'SAU': 'Sociedad Anónima Unipersonal',
-    'SC': 'Sociedad Colectiva',
-    'S.COM.': 'Sociedad Comanditaria',
-    'S.COM.P.A.': 'Sociedad Comanditaria por Acciones',
-    'SCP': 'Sociedad Civil Profesional',
-    'SICAV': 'Sociedad de Inversión de Capital Variable',
-    'SL': 'Sociedad Limitada',
-    'SLL': 'Sociedad Limitada Laboral',
-    'SLLP': 'Sociedad Limitada Laboral P?',
-    'SLNE': 'Sociedad Limitada Nueva Empresa',
-    'SLP': 'Sociedad Limitada Profesional',
-    'SLU': 'Sociedad Limitada Unipersonal',
-    'SME': 'Sociedad Mercantil Estatal',
-    'SRL': 'Sociedad de Responsabilidad Limitada',
-    'SRLL': 'Sociedad de Responsabilidad Limitada Laboral',
-    'SRLP': 'Sociedad de Responsabilidad Limitada Profesional',
+    "AIE": "Agrupación de Interés Económico",
+    "AEIE": "Agrupación Europea de Interés Económico",
+    "COOP": "Cooperativa",
+    "FP": "Fondo de Pensiones",
+    "SA": "Sociedad Anónima",
+    "SAD": "Sociedad Anónima Deportiva",
+    "SAL": "Sociedad Anónima Laboral",
+    "SAP": "Sociedad Anónima P?",
+    "SAS": "Sociedad por Acciones Simplificada",
+    "SAU": "Sociedad Anónima Unipersonal",
+    "SC": "Sociedad Colectiva",
+    "S.COM.": "Sociedad Comanditaria",
+    "S.COM.P.A.": "Sociedad Comanditaria por Acciones",
+    "SCP": "Sociedad Civil Profesional",
+    "SICAV": "Sociedad de Inversión de Capital Variable",
+    "SL": "Sociedad Limitada",
+    "SLL": "Sociedad Limitada Laboral",
+    "SLLP": "Sociedad Limitada Laboral P?",
+    "SLNE": "Sociedad Limitada Nueva Empresa",
+    "SLP": "Sociedad Limitada Profesional",
+    "SLU": "Sociedad Limitada Unipersonal",
+    "SME": "Sociedad Mercantil Estatal",
+    "SRL": "Sociedad de Responsabilidad Limitada",
+    "SRLL": "Sociedad de Responsabilidad Limitada Laboral",
+    "SRLP": "Sociedad de Responsabilidad Limitada Profesional",
 }
 # SOCIEDAD COOPERATIVA DE CREDITO
 # FONDOS DE PENSIONES
 
 # Tipos de sociedades extranjeras
-SOCIEDADES.update({
-    # Bélgica
-    # BVBA: Sociedad Privada de Responsabilidad Limitada
-    'BVBA': 'Besloten vennootschap met beperkte aansprakelijkheid',
-
-    # Holanda
-    # BV: Sociedad Privada de Responsabilidad Limitada
-    'BV': 'Besloten vennootschap met beperkte aansprakelijkheid',
-    # NV: Sociedad Anónima (Holanda)
-    'NV': 'Naamloze Vennootschap',
-
-    # UK
-    'LTD': 'Limited company',
-})
+SOCIEDADES.update(
+    {
+        # Bélgica
+        # BVBA: Sociedad Privada de Responsabilidad Limitada
+        "BVBA": "Besloten vennootschap met beperkte aansprakelijkheid",
+        # Holanda
+        # BV: Sociedad Privada de Responsabilidad Limitada
+        "BV": "Besloten vennootschap met beperkte aansprakelijkheid",
+        # NV: Sociedad Anónima (Holanda)
+        "NV": "Naamloze Vennootschap",
+        # UK
+        "LTD": "Limited company",
+    }
+)
 
 ALL_SOCIEDADES = sorted(SOCIEDADES.keys())

@@ -18,6 +18,7 @@
 
 from bormeparser.utils import remove_accents
 
+
 class Provincia:
     def __init__(self, name, code):
         self.name = name
@@ -38,7 +39,7 @@ class Provincia:
 
     # TODO: tildes
     def __eq__(self, other):
-        """ Hace posible comparar la clase con una cadena (nombre de provincia) """
+        """Hace posible comparar la clase con una cadena (nombre de provincia)"""
         if isinstance(other, self.__class__):
             return self.__dict__ == other.__dict__
         elif isinstance(other, str):
@@ -51,66 +52,66 @@ class Provincia:
 
 
 class PROVINCIA:
-    ALAVA = Provincia('Álava', 1)
+    ALAVA = Provincia("Álava", 1)
     ARABA = ALAVA
-    ALBACETE = Provincia('Albacete', 2)
-    ALICANTE = Provincia('Alicante', 3)
-    ALMERIA = Provincia('Almería', 4)
-    AVILA = Provincia('Ávila', 5)
-    BADAJOZ = Provincia('Badajoz', 6)
-    ISLAS_BALEARES = Provincia('Islas Baleares', 7)
+    ALBACETE = Provincia("Albacete", 2)
+    ALICANTE = Provincia("Alicante", 3)
+    ALMERIA = Provincia("Almería", 4)
+    AVILA = Provincia("Ávila", 5)
+    BADAJOZ = Provincia("Badajoz", 6)
+    ISLAS_BALEARES = Provincia("Islas Baleares", 7)
     ILLES_BALEARS = ISLAS_BALEARES
-    BARCELONA = Provincia('Barcelona', 8)
-    BURGOS = Provincia('Burgos', 9)
-    CACERES = Provincia('Cáceres', 10)
-    CADIZ = Provincia('Cádiz', 11)
-    CASTELLON = Provincia('Castellón', 12)
-    CIUDAD_REAL = Provincia('Ciudad Real', 13)
-    CORDOBA = Provincia('Córdoba', 14)
-    LA_CORUNA = Provincia('La Coruña', 15)
+    BARCELONA = Provincia("Barcelona", 8)
+    BURGOS = Provincia("Burgos", 9)
+    CACERES = Provincia("Cáceres", 10)
+    CADIZ = Provincia("Cádiz", 11)
+    CASTELLON = Provincia("Castellón", 12)
+    CIUDAD_REAL = Provincia("Ciudad Real", 13)
+    CORDOBA = Provincia("Córdoba", 14)
+    LA_CORUNA = Provincia("La Coruña", 15)
     A_CORUNA = LA_CORUNA
-    CUENCA = Provincia('Cuenca', 16)
-    GERONA = Provincia('Gerona', 17)
+    CUENCA = Provincia("Cuenca", 16)
+    GERONA = Provincia("Gerona", 17)
     GIRONA = GERONA
-    GRANADA = Provincia('Granada', 18)
-    GUADALAJARA = Provincia('Guadalajara', 19)
-    GUIPUZCOA = Provincia('Guipúzcoa', 20)
+    GRANADA = Provincia("Granada", 18)
+    GUADALAJARA = Provincia("Guadalajara", 19)
+    GUIPUZCOA = Provincia("Guipúzcoa", 20)
     GIPUZKOA = GUIPUZCOA
-    HUELVA = Provincia('Huelva', 21)
-    HUESCA = Provincia('Huesca', 22)
-    JAEN = Provincia('Jaén', 23)
-    LEON = Provincia('León', 24)
-    LERIDA = Provincia('Lérida', 25)
+    HUELVA = Provincia("Huelva", 21)
+    HUESCA = Provincia("Huesca", 22)
+    JAEN = Provincia("Jaén", 23)
+    LEON = Provincia("León", 24)
+    LERIDA = Provincia("Lérida", 25)
     LLEIDA = LERIDA
-    LA_RIOJA = Provincia('La Rioja', 26)
-    LUGO = Provincia('Lugo', 27)
-    MADRID = Provincia('Madrid', 28)
-    MALAGA = Provincia('Málaga', 29)
-    MURCIA = Provincia('Murcia', 30)
-    NAVARRA = Provincia('Navarra', 31)
-    ORENSE = Provincia('Orense', 32)
+    LA_RIOJA = Provincia("La Rioja", 26)
+    LUGO = Provincia("Lugo", 27)
+    MADRID = Provincia("Madrid", 28)
+    MALAGA = Provincia("Málaga", 29)
+    MURCIA = Provincia("Murcia", 30)
+    NAVARRA = Provincia("Navarra", 31)
+    ORENSE = Provincia("Orense", 32)
     OURENSE = ORENSE
-    ASTURIAS = Provincia('Asturias', 33)
-    PALENCIA = Provincia('Palencia', 34)
-    LAS_PALMAS = Provincia('Las Palmas', 35)
-    PONTEVEDRA = Provincia('Pontevedra', 36)
-    SALAMANCA = Provincia('Salamanca', 37)
-    SANTA_CRUZ_DE_TENERIFE = Provincia('Santa Cruz de Tenerife', 38)
-    CANTABRIA = Provincia('Cantabria', 39)
-    SEGOVIA = Provincia('Segovia', 40)
-    SEVILLA = Provincia('Sevilla', 41)
-    SORIA = Provincia('Soria', 42)
-    TARRAGONA = Provincia('Tarragona', 43)
-    TERUEL = Provincia('Teruel', 44)
-    TOLEDO = Provincia('Toledo', 45)
-    VALENCIA = Provincia('Valencia', 46)
-    VALLADOLID = Provincia('Valladolid', 47)
-    VIZCAYA = Provincia('Vizcaya', 48)
+    ASTURIAS = Provincia("Asturias", 33)
+    PALENCIA = Provincia("Palencia", 34)
+    LAS_PALMAS = Provincia("Las Palmas", 35)
+    PONTEVEDRA = Provincia("Pontevedra", 36)
+    SALAMANCA = Provincia("Salamanca", 37)
+    SANTA_CRUZ_DE_TENERIFE = Provincia("Santa Cruz de Tenerife", 38)
+    CANTABRIA = Provincia("Cantabria", 39)
+    SEGOVIA = Provincia("Segovia", 40)
+    SEVILLA = Provincia("Sevilla", 41)
+    SORIA = Provincia("Soria", 42)
+    TARRAGONA = Provincia("Tarragona", 43)
+    TERUEL = Provincia("Teruel", 44)
+    TOLEDO = Provincia("Toledo", 45)
+    VALENCIA = Provincia("Valencia", 46)
+    VALLADOLID = Provincia("Valladolid", 47)
+    VIZCAYA = Provincia("Vizcaya", 48)
     BIZKAIA = VIZCAYA
-    ZAMORA = Provincia('Zamora', 49)
-    ZARAGOZA = Provincia('Zaragoza', 50)
-    CEUTA = Provincia('Ceuta', 51)
-    MELILLA = Provincia('Melilla', 52)
+    ZAMORA = Provincia("Zamora", 49)
+    ZARAGOZA = Provincia("Zaragoza", 50)
+    CEUTA = Provincia("Ceuta", 51)
+    MELILLA = Provincia("Melilla", 52)
 
     @staticmethod
     def from_title(title):
@@ -122,4 +123,7 @@ class PROVINCIA:
         except AttributeError as exc:
             raise ValueError(f"InvalidProvince: {title}") from exc
 
-ALL_PROVINCIAS = list(filter(lambda x: not x.startswith('__') and x != 'from_title', vars(PROVINCIA)))
+
+ALL_PROVINCIAS = list(
+    filter(lambda x: not x.startswith("__") and x != "from_title", vars(PROVINCIA))
+)

@@ -29,26 +29,26 @@ import os
 
 BORME_ROOT = bormeparser.CONFIG["borme_root"]
 
-logger = logging.getLogger('check_bormes')
+logger = logging.getLogger("check_bormes")
 ch = logging.StreamHandler()
 logger.addHandler(ch)
 
 
 def check_range(begin, end, provincia, seccion, directory, download_xml):
-    """ Downloads PDFs using threads """
+    """Downloads PDFs using threads"""
     next_date = begin
-    results = {'good': 0, 'missing': 0, 'incorrect': 0}
+    results = {"good": 0, "missing": 0, "incorrect": 0}
     summary = []
 
     while next_date and next_date <= end:
-        logger.info('Checking files from {}'.format(next_date.isoformat()))
+        logger.info("Checking files from {}".format(next_date.isoformat()))
         xml_path = get_borme_xml_filepath(next_date, directory)
         logger.debug(xml_path)
         try:
             bxml = BormeXML.from_file(xml_path)
         except IOError:
             if download_xml:
-                logger.info('Downloading {}'.format(os.path.basename(xml_path)))
+                logger.info("Downloading {}".format(os.path.basename(xml_path)))
                 bxml = BormeXML.from_date(next_date)
                 try:
                     os.makedirs(os.path.dirname(xml_path))
@@ -56,33 +56,37 @@ def check_range(begin, end, provincia, seccion, directory, download_xml):
                     pass
                 bxml.save_to_file(xml_path)
             else:
-                logger.info('Missing XML: {}\n'.format(os.path.basename(xml_path)))
-                logger.info('If you want to continue use --download-xml.\n')
+                logger.info("Missing XML: {}\n".format(os.path.basename(xml_path)))
+                logger.info("If you want to continue use --download-xml.\n")
                 return
 
         sizes = bxml.get_sizes(seccion, provincia)
         path = get_borme_pdf_path(bxml.date, directory)
 
         for cve, size in sizes.items():
-            logger.debug('Checking {}...'.format(cve))
-            filename = cve + '.pdf'
+            logger.debug("Checking {}...".format(cve))
+            filename = cve + ".pdf"
             filepath = os.path.join(path, filename)
 
             logger.debug(filepath)
             if not os.path.exists(filepath):
-                results['missing'] += 1
-                logger.debug('Missing PDF: {}\n'.format(filepath))
+                results["missing"] += 1
+                logger.debug("Missing PDF: {}\n".format(filepath))
                 summary.append(filepath)
                 continue
 
             if os.path.getsize(filepath) != size:
-                results['incorrect'] += 1
-                logger.warn('{}: PDF size is incorrect (is {} but should be {})\n'.format(filepath, os.path.getsize(filepath), size))
+                results["incorrect"] += 1
+                logger.warn(
+                    "{}: PDF size is incorrect (is {} but should be {})\n".format(
+                        filepath, os.path.getsize(filepath), size
+                    )
+                )
                 summary.append(filepath)
                 continue
 
-            results['good'] += 1
-            logger.debug('OK\n')
+            results["good"] += 1
+            logger.debug("OK\n")
 
         next_date = bxml.next_borme
 
@@ -91,26 +95,66 @@ def check_range(begin, end, provincia, seccion, directory, download_xml):
         print("Try removing " + xml_path + " and then run with --download-xml.")
 
     if len(summary) > 0:
-        print('\nMissing or incorrect files:')
-        print('\n'.join(summary[:10]))
+        print("\nMissing or incorrect files:")
+        print("\n".join(summary[:10]))
     if len(summary) > 10:
-        print('This list is truncated. There are {} files not shown.'.format(len(summary) - 10))
+        print(
+            "This list is truncated. There are {} files not shown.".format(
+                len(summary) - 10
+            )
+        )
 
-    print('\nResults:')
-    print('\tGood: {}'.format(results['good']))
-    print('\tIncorrect: {}'.format(results['incorrect']))
-    print('\tMissing: {}'.format(results['missing']))
+    print("\nResults:")
+    print("\tGood: {}".format(results["good"]))
+    print("\tIncorrect: {}".format(results["incorrect"]))
+    print("\tMissing: {}".format(results["missing"]))
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Check BORME files are present and not corrupt.')
-    parser.add_argument('-f', '--fromdate', default='init', help='ISO formatted date (ex. 2015-01-01). Default: init')
-    parser.add_argument('-t', '--to', default='today', help='ISO formatted date (ex. 2016-01-01). Default: today')
-    parser.add_argument('-d', '--directory', default=BORME_ROOT, help='Directory to download files (default is {})'.format(BORME_ROOT))
-    parser.add_argument('-s', '--seccion', default=bormeparser.SECCION.A, choices=['A', 'B', 'C'], help='BORME seccion')
-    parser.add_argument('-p', '--provincia', choices=bormeparser.provincia.ALL_PROVINCIAS, help='BORME provincia')
-    parser.add_argument('-x', '--download-xml', action='store_true', default=False, help='Download missing XML BORME files')
-    parser.add_argument('-v', '--verbose', action='store_true', default=False, help='Verbose mode')
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Check BORME files are present and not corrupt."
+    )
+    parser.add_argument(
+        "-f",
+        "--fromdate",
+        default="init",
+        help="ISO formatted date (ex. 2015-01-01). Default: init",
+    )
+    parser.add_argument(
+        "-t",
+        "--to",
+        default="today",
+        help="ISO formatted date (ex. 2016-01-01). Default: today",
+    )
+    parser.add_argument(
+        "-d",
+        "--directory",
+        default=BORME_ROOT,
+        help="Directory to download files (default is {})".format(BORME_ROOT),
+    )
+    parser.add_argument(
+        "-s",
+        "--seccion",
+        default=bormeparser.SECCION.A,
+        choices=["A", "B", "C"],
+        help="BORME seccion",
+    )
+    parser.add_argument(
+        "-p",
+        "--provincia",
+        choices=bormeparser.provincia.ALL_PROVINCIAS,
+        help="BORME provincia",
+    )
+    parser.add_argument(
+        "-x",
+        "--download-xml",
+        action="store_true",
+        default=False,
+        help="Download missing XML BORME files",
+    )
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", default=False, help="Verbose mode"
+    )
     args = parser.parse_args()
 
     if args.verbose:
@@ -120,19 +164,30 @@ if __name__ == '__main__':
         bormeparser.download.logger.setLevel(logging.INFO)
         logger.setLevel(logging.INFO)
 
-    if args.fromdate == 'init':
+    if args.fromdate == "init":
         date_from = FIRST_BORME[2009]
-    elif args.fromdate == 'today':
+    elif args.fromdate == "today":
         date_from = datetime.date.today()
     else:
-        date_from = datetime.datetime.strptime(args.fromdate, '%Y-%m-%d').date()
+        date_from = datetime.datetime.strptime(args.fromdate, "%Y-%m-%d").date()
 
-    if args.to == 'today':
+    if args.to == "today":
         date_to = datetime.date.today()
     else:
-        date_to = datetime.datetime.strptime(args.to, '%Y-%m-%d').date()
+        date_to = datetime.datetime.strptime(args.to, "%Y-%m-%d").date()
 
     try:
-        check_range(date_from, date_to, args.provincia, args.seccion, args.directory, args.download_xml)
+        check_range(
+            date_from,
+            date_to,
+            args.provincia,
+            args.seccion,
+            args.directory,
+            args.download_xml,
+        )
     except BormeDoesntExistException:
-        logger.warn('It looks like there is no BORME for the start date ({}). Nothing was downloaded'.format(date_from))
+        logger.warn(
+            "It looks like there is no BORME for the start date ({}). Nothing was downloaded".format(
+                date_from
+            )
+        )

@@ -10,7 +10,11 @@ def get_install_requires() -> list[str]:
     with open("requirements.txt", encoding="utf-8") as fh:
         for raw in fh:
             line = raw.rstrip()
-            if not line or line.startswith(("#", "http", "git")) or line == "-r base.txt":
+            if (
+                not line
+                or line.startswith(("#", "http", "git"))
+                or line == "-r base.txt"
+            ):
                 continue
             requirements.append(line)
     return requirements

@@ -60,6 +60,4 @@ def __getattr__(name):
     # sigue funcionando, pero el fichero solo se lee si CONFIG se usa.
     if name == "CONFIG":
         return get_config()
-    raise AttributeError(
-        "module {!r} has no attribute {!r}".format(__name__, name)
-    )
+    raise AttributeError("module {!r} has no attribute {!r}".format(__name__, name))

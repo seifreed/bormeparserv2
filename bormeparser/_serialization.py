@@ -124,9 +124,7 @@ def borme_from_json(source):
         filename = source
 
     if data["version"] < FILE_VERSION:
-        logger.warning(
-            "This JSON was generated with an older version of bormeparser"
-        )
+        logger.warning("This JSON was generated with an older version of bormeparser")
         logger.warning(
             "Current version is %s, file version is %s",
             FILE_VERSION,

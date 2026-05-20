@@ -70,9 +70,7 @@ def _fetch_sumario_tree(source):
         # La API responde con 404 cuando no hay BORME publicado en esa fecha
         # (festivos, domingos). Lo traducimos a una excepción de dominio.
         if response.status_code == 404:
-            raise BormeDoesntExistException(
-                "BOE has no BORME for {}".format(source)
-            )
+            raise BormeDoesntExistException("BOE has no BORME for {}".format(source))
         response.raise_for_status()
         root = etree.fromstring(response.content)
     else:
@@ -247,9 +245,7 @@ def get_url_pdfs(date, seccion=None, provincia=None, secure=USE_HTTPS):
             "Filtering by both seccion and provincia simultaneously is not "
             "supported; pass one or the other"
         )
-    raise MissingFilterException(
-        "You must specify either provincia or seccion or both"
-    )
+    raise MissingFilterException("You must specify either provincia or seccion or both")
 
 
 def download_url(url, filename=None, try_again=0):

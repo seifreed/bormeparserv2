@@ -39,22 +39,22 @@ class ThreadConvertJSON(Thread):
     def run(self):
         while True:
             pdf_path, json_path = self.queue.get()
-            print(f'Creating {json_path} ...')
+            print(f"Creating {json_path} ...")
             try:
                 borme = bormeparser.parse(
                     pdf_path, bormeparser.SECCION.A, sanitize=True
                 )
                 borme.to_json(json_path)
-                print('{cve}: OK'.format(cve=borme.cve))
+                print("{cve}: OK".format(cve=borme.cve))
             except Exception as e:
-                print('ERROR: {} ({})'.format(os.path.basename(pdf_path), e))
+                print("ERROR: {} ({})".format(os.path.basename(pdf_path), e))
             self.queue.task_done()
 
 
 def walk_borme_root(bormes_root, json_root=None):
-    pdf_root = os.path.join(bormes_root, 'pdf')
+    pdf_root = os.path.join(bormes_root, "pdf")
     if json_root is None:
-        json_root = os.path.join(bormes_root, 'json')
+        json_root = os.path.join(bormes_root, "json")
 
     _, year_dirs, _ = next(os.walk(pdf_root))
     for year in year_dirs:
@@ -76,9 +76,14 @@ def walk_borme_root(bormes_root, json_root=None):
                     yield day_dir, json_day_dir, filename
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Convert all BORME PDF files to JSON.')
-    parser.add_argument('-d', '--directory', default=BORME_ROOT, help='Directory to download files (default is {})'.format(BORME_ROOT))
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Convert all BORME PDF files to JSON.")
+    parser.add_argument(
+        "-d",
+        "--directory",
+        default=BORME_ROOT,
+        help="Directory to download files (default is {})".format(BORME_ROOT),
+    )
     args = parser.parse_args()
 
     start_time = time.time()
@@ -89,20 +94,20 @@ if __name__ == '__main__':
         t.setDaemon(True)
         t.start()
 
-    json_folder = 'json_' + get_git_revision_short_hash()
+    json_folder = "json_" + get_git_revision_short_hash()
     json_root = os.path.join(args.directory, json_folder)
     if os.path.exists(json_root):
-        print('{} already exists'.format(json_root))
+        print("{} already exists".format(json_root))
         sys.exit(1)
 
     for day_dir, json_day_dir, filename in walk_borme_root(args.directory, json_root):
-        if not filename.endswith('.pdf') or filename.endswith('-99.pdf'):
+        if not filename.endswith(".pdf") or filename.endswith("-99.pdf"):
             continue
         pdf_path = os.path.join(day_dir, filename)
-        json_filename = filename.replace('.pdf', '.json')
+        json_filename = filename.replace(".pdf", ".json")
         json_path = os.path.join(json_day_dir, json_filename)
         q.put((pdf_path, json_path))
     q.join()
 
     elapsed_time = time.time() - start_time
-    print(f'Elapsed time: {elapsed_time:.2f} seconds')
+    print(f"Elapsed time: {elapsed_time:.2f} seconds")

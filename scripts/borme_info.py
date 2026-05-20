@@ -26,22 +26,24 @@ import sys
 
 
 def print_anuncio(anuncio):
-    print('\nAnuncio {}'.format(anuncio.id))
-    print('-' * (8 + len(str(anuncio.id))))
+    print("\nAnuncio {}".format(anuncio.id))
+    print("-" * (8 + len(str(anuncio.id))))
     print()
     for acto, valor in anuncio.get_actos():
-        print('  {}'.format(acto))
-        print('    {}'.format(valor))
-    print('  Datos registrales')
-    print('    ' + anuncio.datos_registrales)
+        print("  {}".format(acto))
+        print("    {}".format(valor))
+    print("  Datos registrales")
+    print("    " + anuncio.datos_registrales)
     print()
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Shows BORME A info.')
-    parser.add_argument('filename', help='BORME A PDF filename')
-    parser.add_argument('-n', '--number', nargs='*', type=int, help='Show Verbose mode')
-    parser.add_argument('-v', '--verbose', action='store_true', default=False, help='Verbose mode')
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Shows BORME A info.")
+    parser.add_argument("filename", help="BORME A PDF filename")
+    parser.add_argument("-n", "--number", nargs="*", type=int, help="Show Verbose mode")
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", default=False, help="Verbose mode"
+    )
     args = parser.parse_args()
 
     # set logger DEBUG (Not working)
@@ -58,7 +60,11 @@ if __name__ == '__main__':
                 anuncio = borme.get_anuncio(n)
                 anuncios.append(anuncio)
             except BormeAnuncioNotFound:
-                print('No existe el anuncio {}. Elije uno entre {} y {}.'.format(n, borme.anuncios_rango[0], borme.anuncios_rango[1]))
+                print(
+                    "No existe el anuncio {}. Elije uno entre {} y {}.".format(
+                        n, borme.anuncios_rango[0], borme.anuncios_rango[1]
+                    )
+                )
                 sys.exit(1)
     else:
         anuncios = borme.get_anuncios()
@@ -67,11 +73,11 @@ if __name__ == '__main__':
         print_anuncio(anuncio)
 
     if not args.number:
-        print('Otros datos')
-        print('-----\n')
-        print('  CVE: {}'.format(borme.cve))
-        print('  Fecha: {}'.format(borme.date))
-        print('  Num: {}'.format(borme.num))
-        print('  Provincia: {}'.format(borme.provincia))
-        print('  Seccion: {}'.format(borme.seccion))
-        print('  Anuncios incluidos: {}'.format(len(borme.get_anuncios())))
+        print("Otros datos")
+        print("-----\n")
+        print("  CVE: {}".format(borme.cve))
+        print("  Fecha: {}".format(borme.date))
+        print("  Num: {}".format(borme.num))
+        print("  Provincia: {}".format(borme.provincia))
+        print("  Seccion: {}".format(borme.seccion))
+        print("  Anuncios incluidos: {}".format(len(borme.get_anuncios())))

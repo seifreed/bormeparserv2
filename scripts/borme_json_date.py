@@ -39,21 +39,25 @@ class ThreadConvertJSON(Thread):
     def run(self):
         while True:
             pdf_path, json_path = self.queue.get()
-            print(f'Creating {json_path} ...')
+            print(f"Creating {json_path} ...")
             try:
                 borme = bormeparser.parse(
                     pdf_path, bormeparser.SECCION.A, sanitize=True
                 )
                 borme.to_json(json_path)
-                print('{cve}: OK'.format(cve=borme.cve))
+                print("{cve}: OK".format(cve=borme.cve))
             except Exception as e:
-                print('ERROR: {} ({})'.format(os.path.basename(pdf_path), e))
+                print("ERROR: {} ({})".format(os.path.basename(pdf_path), e))
             self.queue.task_done()
 
 
 def walk_borme_root_date(bormes_root, date):
-    pdf_root = os.path.join(bormes_root, 'pdf')
-    year, month, day = str(date.year), '{:02d}'.format(date.month), '{:02d}'.format(date.day)
+    pdf_root = os.path.join(bormes_root, "pdf")
+    year, month, day = (
+        str(date.year),
+        "{:02d}".format(date.month),
+        "{:02d}".format(date.day),
+    )
     pdf_day_dir = os.path.join(pdf_root, year, month, day)
     if not os.path.isdir(pdf_day_dir):
         print("No existe {}".format(pdf_day_dir))
@@ -64,25 +68,40 @@ def walk_borme_root_date(bormes_root, date):
         yield pdf_day_dir, filename
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Convert all BORME PDF files to JSON.')
-    parser.add_argument('-d', '--directory', default=BORME_ROOT, help='Directory to download files (default is {})'.format(BORME_ROOT))
-    parser.add_argument('-f', '--fromdate', default='today', help='ISO formatted date (ex. 2015-01-01) or "init". Default: today')
-    parser.add_argument('-t', '--to', default='today', help='ISO formatted date (ex. 2016-01-01). Default: today')
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Convert all BORME PDF files to JSON.")
+    parser.add_argument(
+        "-d",
+        "--directory",
+        default=BORME_ROOT,
+        help="Directory to download files (default is {})".format(BORME_ROOT),
+    )
+    parser.add_argument(
+        "-f",
+        "--fromdate",
+        default="today",
+        help='ISO formatted date (ex. 2015-01-01) or "init". Default: today',
+    )
+    parser.add_argument(
+        "-t",
+        "--to",
+        default="today",
+        help="ISO formatted date (ex. 2016-01-01). Default: today",
+    )
 
     args = parser.parse_args()
 
-    if args.fromdate == 'init':
+    if args.fromdate == "init":
         date_from = FIRST_BORME[2009]
-    elif args.fromdate == 'today':
+    elif args.fromdate == "today":
         date_from = datetime.date.today()
     else:
-        date_from = datetime.datetime.strptime(args.fromdate, '%Y-%m-%d').date()
+        date_from = datetime.datetime.strptime(args.fromdate, "%Y-%m-%d").date()
 
-    if args.to == 'today':
+    if args.to == "today":
         date_to = datetime.date.today()
     else:
-        date_to = datetime.datetime.strptime(args.to, '%Y-%m-%d').date()
+        date_to = datetime.datetime.strptime(args.to, "%Y-%m-%d").date()
 
     start_time = time.time()
 
@@ -95,18 +114,26 @@ if __name__ == '__main__':
     date = date_from
     while date <= date_to:
         for day_dir, filename in walk_borme_root_date(args.directory, date):
-            if filename and not filename.endswith('.pdf') or filename.endswith('-99.pdf'):
+            if (
+                filename
+                and not filename.endswith(".pdf")
+                or filename.endswith("-99.pdf")
+            ):
                 continue
-            year, month, day = str(date.year), '{:02d}'.format(date.month), '{:02d}'.format(date.day)
+            year, month, day = (
+                str(date.year),
+                "{:02d}".format(date.month),
+                "{:02d}".format(date.day),
+            )
             json_day_dir = os.path.join(args.directory, "json", year, month, day)
             os.makedirs(json_day_dir, exist_ok=True)
 
             pdf_path = os.path.join(day_dir, filename)
-            json_filename = filename.replace('.pdf', '.json')
+            json_filename = filename.replace(".pdf", ".json")
             json_path = os.path.join(json_day_dir, json_filename)
             q.put((pdf_path, json_path))
         date += datetime.timedelta(days=1)
     q.join()
 
     elapsed_time = time.time() - start_time
-    print(f'Elapsed time: {elapsed_time:.2f} seconds')
+    print(f"Elapsed time: {elapsed_time:.2f} seconds")

@@ -29,18 +29,18 @@ class BormeparserUtilsTestCase(unittest.TestCase):
     def test_get_borme_website(self):
         date = datetime.date(2016, 4, 21)
         url = get_borme_website(date, SECCION.A)
-        self.assertEqual(url, 'https://www.boe.es/borme/dias/2016/04/21/index.php?s=A')
+        self.assertEqual(url, "https://www.boe.es/borme/dias/2016/04/21/index.php?s=A")
         url = get_borme_website(date, SECCION.C)
-        self.assertEqual(url, 'https://www.boe.es/borme/dias/2016/04/21/index.php?s=C')
+        self.assertEqual(url, "https://www.boe.es/borme/dias/2016/04/21/index.php?s=C")
 
     def test_acto_to_attr(self):
-        attr1 = acto_to_attr('Nombramientos')
-        attr2 = acto_to_attr('Ceses/Dimisiones')
-        attr3 = acto_to_attr('Fusión por absorción')
-        self.assertEqual(attr1, 'nombramientos')
-        self.assertEqual(attr2, 'ceses_dimisiones')
-        self.assertEqual(attr3, 'fusion_absorcion')
+        attr1 = acto_to_attr("Nombramientos")
+        attr2 = acto_to_attr("Ceses/Dimisiones")
+        attr3 = acto_to_attr("Fusión por absorción")
+        self.assertEqual(attr1, "nombramientos")
+        self.assertEqual(attr2, "ceses_dimisiones")
+        self.assertEqual(attr3, "fusion_absorcion")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

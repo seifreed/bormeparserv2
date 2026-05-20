@@ -24,23 +24,28 @@ import os
 import bormeparser
 import bormeparser.backends.pypdf.parser
 
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Convert BORME A PDF files to JSON.')
-    parser.add_argument('filename', help='BORME A PDF filename')
-    parser.add_argument('--debug', action='store_true', default=False, help='Debug mode')
-    parser.add_argument('-o', '--output', help='Output directory or filename (default is current directory)')
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Convert BORME A PDF files to JSON.")
+    parser.add_argument("filename", help="BORME A PDF filename")
+    parser.add_argument(
+        "--debug", action="store_true", default=False, help="Debug mode"
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        help="Output directory or filename (default is current directory)",
+    )
     args = parser.parse_args()
 
     if args.debug:
         bormeparser.borme.logger.setLevel(logging.DEBUG)
         bormeparser.backends.pypdf.parser.logger.setLevel(logging.DEBUG)
 
-    print('\nParsing {}'.format(args.filename))
+    print("\nParsing {}".format(args.filename))
     borme = bormeparser.parse(args.filename, bormeparser.SECCION.A, sanitize=True)
     path = borme.to_json(args.output)
 
     if path:
-        print('Created {}'.format(os.path.abspath(path)))
+        print("Created {}".format(os.path.abspath(path)))
     else:
-        print('Error creating JSON for {}'.format(args.filename))
+        print("Error creating JSON for {}".format(args.filename))

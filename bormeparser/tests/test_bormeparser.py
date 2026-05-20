@@ -26,29 +26,21 @@ require_live = unittest.skipUnless(
 DATE = (2015, 6, 2)
 SUMARIO_URL_HTTPS = "https://www.boe.es/datosabiertos/api/borme/sumario/20150602"
 SUMARIO_URL_HTTP = "http://www.boe.es/datosabiertos/api/borme/sumario/20150602"
-MALAGA_PDF_URL = (
-    "https://www.boe.es/borme/dias/2015/06/02/pdfs/BORME-A-2015-102-29.pdf"
-)
+MALAGA_PDF_URL = "https://www.boe.es/borme/dias/2015/06/02/pdfs/BORME-A-2015-102-29.pdf"
 
 
 class BormeparserUrlBuildersTestCase(unittest.TestCase):
     """Construcción de URLs — puramente funcional, sin red."""
 
     def test_url_xml_tuple(self):
-        self.assertEqual(
-            bormeparser.get_url_xml(DATE, secure=True), SUMARIO_URL_HTTPS
-        )
+        self.assertEqual(bormeparser.get_url_xml(DATE, secure=True), SUMARIO_URL_HTTPS)
 
     def test_url_xml_datetime(self):
         date = datetime.date(*DATE)
-        self.assertEqual(
-            bormeparser.get_url_xml(date, secure=True), SUMARIO_URL_HTTPS
-        )
+        self.assertEqual(bormeparser.get_url_xml(date, secure=True), SUMARIO_URL_HTTPS)
 
     def test_url_xml_insecure(self):
-        self.assertEqual(
-            bormeparser.get_url_xml(DATE, secure=False), SUMARIO_URL_HTTP
-        )
+        self.assertEqual(bormeparser.get_url_xml(DATE, secure=False), SUMARIO_URL_HTTP)
 
 
 class BormeparserInvalidDateTestCase(unittest.TestCase):

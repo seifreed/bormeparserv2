@@ -18,9 +18,9 @@
 
 
 class SECCION:
-    A = 'A'
-    B = 'B'
-    C = 'C'
+    A = "A"
+    B = "B"
+    C = "C"
 
     # Limitación conocida: la sección C llega comprimida en el PDF de
     # sumario y no se detecta desde from_borme — se identifica por el
@@ -37,6 +37,6 @@ class SECCION:
 
 class SUBSECCION:
     # Actos inscritos
-    ACTOS_INSCRITOS = 'A'
+    ACTOS_INSCRITOS = "A"
     # Otros actos publicados en el Registro Mercantil
-    OTROS_ACTOS = 'B'
+    OTROS_ACTOS = "B"

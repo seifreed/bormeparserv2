@@ -78,87 +78,88 @@ class ACTO:
 
     # Palabras clave con argumentos
     _arg_keywords = {
-        'Nombramientos': NOMBRAMIENTOS,
-        'Revocaciones': REVOCACIONES,
-        'Ceses/Dimisiones': CESES_DIMISIONES,
-        'Modificaciones estatutarias': MODIFICACIONES_ESTATUTARIAS,
-        'Cambio de objeto social': CAMBIO_DE_OBJETO_SOCIAL,
-        'Cambio de denominación social': CAMBIO_DE_DENOMINACION_SOCIAL,
-        'Cambio de domicilio social': CAMBIO_DE_DOMICILIO_SOCIAL,
-        'Ampliacion del objeto social': AMPLIACION_DEL_OBJETO_SOCIAL,
-        'Disolución': DISOLUCION,
-        'Reelecciones': REELECCIONES,
-        'Constitución': CONSTITUCION,
-        'Apertura de sucursal': APERTURA_DE_SUCURSAL,
-        'Empresario Individual': EMPRESARIO_INDIVIDUAL,
-        'Articulo 378.5 del Reglamento del Registro Mercantil': ARTICULO_378_5_DEL_RRM,
-        'Otros conceptos': OTROS_CONCEPTOS,
-        'Ampliación de capital': AMPLIACION_DE_CAPITAL,
-        'Reducción de capital': REDUCCION_DE_CAPITAL,
-        'Situación concursal': SITUACION_CONCURSAL,
-        'Fusión por absorción': FUSION_POR_ABSORCION,
-        'Suspensión de pagos': SUSPENSION_DE_PAGOS,
-        'Transformación de sociedad': TRANSFORMACION_DE_SOCIEDAD,
-        'Cancelaciones de oficio de nombramientos': CANCELACIONES_DE_OFICIO_DE_NOMBRAMIENTOS,
-        'Desembolso de dividendos pasivos': DESEMBOLSO_DE_DIVIDENDOS_PASIVOS,
-        'Página web de la sociedad': PAGINA_WEB_DE_LA_SOCIEDAD,
-        'Primera sucursal de sociedad extranjera': PRIMERA_SUCURSAL_DE_SOCIEDAD_EXTRANJERA,
-        'Emisión de obligaciones': EMISION_OBLIGACIONES,
-        'Modificación de poderes': MODIFICACION_PODERES,
-        'Escisión parcial': ESCISION_PARCIAL,
-        'Fusión por unión': FUSION_UNION,
-        'Quiebra': QUIEBRA,
-        'Sucursal': SUCURSAL,
-        'Cesión global de activo y pasivo': CESION_GLOBAL_ACTIVO_PASIVO,
-        'Segregación': SEGREGACION,
-        'Primera inscripcion (O.M. 10/6/1.997)': PRIMERA_INSCRIPCION,
-        'Anotación preventiva. Demanda de impugnación de acuerdos sociales': ANOTACION_PREVENTIVA_DEMANDA,
-        'Anotación preventiva. Declaración de deudor fallido': ANOTACION_PREVENTIVA_DECLARACION,
+        "Nombramientos": NOMBRAMIENTOS,
+        "Revocaciones": REVOCACIONES,
+        "Ceses/Dimisiones": CESES_DIMISIONES,
+        "Modificaciones estatutarias": MODIFICACIONES_ESTATUTARIAS,
+        "Cambio de objeto social": CAMBIO_DE_OBJETO_SOCIAL,
+        "Cambio de denominación social": CAMBIO_DE_DENOMINACION_SOCIAL,
+        "Cambio de domicilio social": CAMBIO_DE_DOMICILIO_SOCIAL,
+        "Ampliacion del objeto social": AMPLIACION_DEL_OBJETO_SOCIAL,
+        "Disolución": DISOLUCION,
+        "Reelecciones": REELECCIONES,
+        "Constitución": CONSTITUCION,
+        "Apertura de sucursal": APERTURA_DE_SUCURSAL,
+        "Empresario Individual": EMPRESARIO_INDIVIDUAL,
+        "Articulo 378.5 del Reglamento del Registro Mercantil": ARTICULO_378_5_DEL_RRM,
+        "Otros conceptos": OTROS_CONCEPTOS,
+        "Ampliación de capital": AMPLIACION_DE_CAPITAL,
+        "Reducción de capital": REDUCCION_DE_CAPITAL,
+        "Situación concursal": SITUACION_CONCURSAL,
+        "Fusión por absorción": FUSION_POR_ABSORCION,
+        "Suspensión de pagos": SUSPENSION_DE_PAGOS,
+        "Transformación de sociedad": TRANSFORMACION_DE_SOCIEDAD,
+        "Cancelaciones de oficio de nombramientos": CANCELACIONES_DE_OFICIO_DE_NOMBRAMIENTOS,
+        "Desembolso de dividendos pasivos": DESEMBOLSO_DE_DIVIDENDOS_PASIVOS,
+        "Página web de la sociedad": PAGINA_WEB_DE_LA_SOCIEDAD,
+        "Primera sucursal de sociedad extranjera": PRIMERA_SUCURSAL_DE_SOCIEDAD_EXTRANJERA,
+        "Emisión de obligaciones": EMISION_OBLIGACIONES,
+        "Modificación de poderes": MODIFICACION_PODERES,
+        "Escisión parcial": ESCISION_PARCIAL,
+        "Fusión por unión": FUSION_UNION,
+        "Quiebra": QUIEBRA,
+        "Sucursal": SUCURSAL,
+        "Cesión global de activo y pasivo": CESION_GLOBAL_ACTIVO_PASIVO,
+        "Segregación": SEGREGACION,
+        "Primera inscripcion (O.M. 10/6/1.997)": PRIMERA_INSCRIPCION,
+        "Anotación preventiva. Demanda de impugnación de acuerdos sociales": ANOTACION_PREVENTIVA_DEMANDA,
+        "Anotación preventiva. Declaración de deudor fallido": ANOTACION_PREVENTIVA_DECLARACION,
     }
 
     # Palabras clave sin argumentos
     _noarg_keywords = {
-        'Crédito incobrable': CREDITO_INCOBRABLE,
-        'Sociedad unipersonal': SOCIEDAD_UNIPERSONAL,
-        'Extinción': EXTINCION,
-        'Pérdida del caracter de unipersonalidad': PERDIDA_DEL_CARACTER_DE_UNIPERSONALIDAD,
-        'Reapertura hoja registral': REAPERTURA_HOJA_REGISTRAL,
-        'Adaptación Ley 2/95': ADAPTACION_LEY_2_95,
-        'Adaptación Ley 44/2015': ADAPTACION_LEY_44_2015,
-        'Adaptada segun D.T. 2 apartado 2 Ley 2/95': ADAPTACION_LEY_2_95,
-        'Cierre provisional hoja registral por baja en el índice de Entidades Jurídicas': CIERRE_PROVISIONAL_BAJA_EN_EL_INDICE_DE_ENTIDADES_JURIDICAS,
-        'Cierre provisional de la hoja registral por revocación del NIF': CIERRE_PROVISIONAL_REVOCACION_NIF,
-        'Cierre provisional hoja registral por revocación del NIFde Entidades Jurídicas': CIERRE_PROVISIONAL_REVOCACION_NIF,
-        'Cierre provisional hoja registral art. 137.2 Ley 43/1995 Impuesto de Sociedades': CIERRE_PROVISIONAL_IMPUESTO_SOCIEDADES,
-        'Reactivación de la sociedad (Art. 242 del Reglamento del Registro Mercantil)': REACTIVACION_DE_LA_SOCIEDAD,
-        'Adaptación de sociedad': ADAPTACION_DE_LA_SOCIEDAD,
-        'Cierre de Sucursal': CIERRE_SUCURSAL,
+        "Crédito incobrable": CREDITO_INCOBRABLE,
+        "Sociedad unipersonal": SOCIEDAD_UNIPERSONAL,
+        "Extinción": EXTINCION,
+        "Pérdida del caracter de unipersonalidad": PERDIDA_DEL_CARACTER_DE_UNIPERSONALIDAD,
+        "Reapertura hoja registral": REAPERTURA_HOJA_REGISTRAL,
+        "Adaptación Ley 2/95": ADAPTACION_LEY_2_95,
+        "Adaptación Ley 44/2015": ADAPTACION_LEY_44_2015,
+        "Adaptada segun D.T. 2 apartado 2 Ley 2/95": ADAPTACION_LEY_2_95,
+        "Cierre provisional hoja registral por baja en el índice de Entidades Jurídicas": CIERRE_PROVISIONAL_BAJA_EN_EL_INDICE_DE_ENTIDADES_JURIDICAS,
+        "Cierre provisional de la hoja registral por revocación del NIF": CIERRE_PROVISIONAL_REVOCACION_NIF,
+        "Cierre provisional hoja registral por revocación del NIFde Entidades Jurídicas": CIERRE_PROVISIONAL_REVOCACION_NIF,
+        "Cierre provisional hoja registral art. 137.2 Ley 43/1995 Impuesto de Sociedades": CIERRE_PROVISIONAL_IMPUESTO_SOCIEDADES,
+        "Reactivación de la sociedad (Art. 242 del Reglamento del Registro Mercantil)": REACTIVACION_DE_LA_SOCIEDAD,
+        "Adaptación de sociedad": ADAPTACION_DE_LA_SOCIEDAD,
+        "Cierre de Sucursal": CIERRE_SUCURSAL,
     }
 
     # Palabras clave seguidas por :
     _colon_keywords = {
-        'Modificación de duración': MODIFICACION_DE_DURACION,
-        'Fe de erratas': FE_DE_ERRATAS,
+        "Modificación de duración": MODIFICACION_DE_DURACION,
+        "Fe de erratas": FE_DE_ERRATAS,
     }
 
     _bold_keywords = {
-        'Declaración de unipersonalidad': DECLARACION_DE_UNIPERSONALIDAD,
-        'Sociedad unipersonal': SOCIEDAD_UNIPERSONAL,
-        'Acuerdo de ampliación de capital social sin ejecutar. Importe del acuerdo': ACUERDO_AMPLIACION_CAPITAL_SOCIAL_SIN_EJECUTAR,
-        'Escisión total': ESCISION_TOTAL,
+        "Declaración de unipersonalidad": DECLARACION_DE_UNIPERSONALIDAD,
+        "Sociedad unipersonal": SOCIEDAD_UNIPERSONAL,
+        "Acuerdo de ampliación de capital social sin ejecutar. Importe del acuerdo": ACUERDO_AMPLIACION_CAPITAL_SOCIAL_SIN_EJECUTAR,
+        "Escisión total": ESCISION_TOTAL,
     }
 
     # Palabra clave
-    _ending_keywords = {
-        'Datos registrales': DATOS_REGISTRALES
-    }
+    _ending_keywords = {"Datos registrales": DATOS_REGISTRALES}
 
     ARG_KEYWORDS = list(_arg_keywords.keys())
     NOARG_KEYWORDS = list(_noarg_keywords.keys())
     COLON_KEYWORDS = list(_colon_keywords.keys())
     BOLD_KEYWORDS = list(_bold_keywords.keys())
     ENDING_KEYWORDS = list(_ending_keywords.keys())
-    ALL_KEYWORDS = ARG_KEYWORDS + NOARG_KEYWORDS + COLON_KEYWORDS + BOLD_KEYWORDS + ENDING_KEYWORDS
+    ALL_KEYWORDS = (
+        ARG_KEYWORDS + NOARG_KEYWORDS + COLON_KEYWORDS + BOLD_KEYWORDS + ENDING_KEYWORDS
+    )
+
 
 """
     DICT_KEYWORDS = {kw: remove_accents(kw).replace(' del ', ' ').replace(' por ', ' ').replace(' de ', ' ')
