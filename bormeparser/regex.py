@@ -409,8 +409,13 @@ def borme_c_separa_empresas_titulo(titulo):
         empresas.append(empresa)
 
     if len(empresas) > 1:
-        # ['COEMA']
-        empresas = [e for e in empresas if len(e) > 4]
+        # Filtra entradas residuales (acrónimos sueltos como 'COEMA') que
+        # asoman cuando el split por paréntesis trocea un nombre real.
+        # Si el filtro vacía la lista, dejamos las originales: el caller
+        # asume ``empresas[0]`` y un IndexError aquí enmascararía el bug.
+        filtered = [e for e in empresas if len(e) > 4]
+        if filtered:
+            empresas = filtered
 
     return empresas
 

@@ -39,6 +39,10 @@ def check_range(begin, end, provincia, seccion, directory, download_xml):
     next_date = begin
     results = {"good": 0, "missing": 0, "incorrect": 0}
     summary = []
+    # bxml se rellena dentro del bucle; lo dejamos a None para no
+    # disparar NameError si begin > end o el primer XML no se descarga.
+    bxml = None
+    xml_path = ""
 
     while next_date and next_date <= end:
         logger.info("Checking files from {}".format(next_date.isoformat()))
@@ -87,6 +91,9 @@ def check_range(begin, end, provincia, seccion, directory, download_xml):
 
         next_date = bxml.next_borme
 
+    if bxml is None:
+        print("\nNo BORMEs to check in the requested range.")
+        return
     if bxml.date != end:
         print("\nWarning, could not continue and reach the end date.")
         print("Try removing " + xml_path + " and then run with --download-xml.")
