@@ -1021,5 +1021,5 @@ class CARGO:
     def from_string(string):
         try:
             return CARGO._keywords[string]
-        except KeyError:
-            raise BormeInvalidCargoException(string)
+        except KeyError as exc:
+            raise BormeInvalidCargoException(string) from exc

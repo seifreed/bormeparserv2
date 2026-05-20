@@ -271,10 +271,10 @@ class Borme:
     def get_anuncio(self, anuncio_id):
         try:
             return self.anuncios[anuncio_id]
-        except KeyError:
+        except KeyError as exc:
             raise BormeAnuncioNotFound(
                 "Anuncio {} not found in BORME {}".format(anuncio_id, str(self))
-            )
+            ) from exc
 
     def get_anuncios_ids(self):
         """

@@ -345,26 +345,8 @@ def regex_constitucion(data):
     if address:
         address = address.group(1).strip().title()
 
-    capital = re.search("Capital: (.*?){0}".format(all_or_ng), data)
-    if capital:
-        try:
-            capital = parse_capital(capital)
-        except ValueError:
-            raise ValueError("Capital ni Ptas ni Euros: {0}".format(capital))
-
-    suscrito = re.search("Capital suscrito: (.*?){0}".format(all_or_ng), data)
-    if suscrito:
-        try:
-            suscrito = parse_capital(suscrito)
-        except ValueError:
-            raise ValueError("Suscrito ni Ptas ni Euros: {0}".format(suscrito))
-
-    desembolsado = re.search("Desembolsado: (.*?){0}".format(all_or_ng), data)
-    if desembolsado:
-        try:
-            desembolsado = parse_capital(desembolsado)
-        except ValueError:
-            raise ValueError("Desembolsado ni Ptas ni Euros: {0}".format(desembolsado))
+    capital_match = re.search("Capital: (.*?){0}".format(all_or_ng), data)
+    capital = parse_capital(capital_match) if capital_match else None
 
     return (date, activity, address, capital)
 
