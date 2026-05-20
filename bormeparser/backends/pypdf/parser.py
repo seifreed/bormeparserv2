@@ -14,7 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Parseo de los PDF de la sección A del BORME usando ``pypdf``.
+
+El PDF llega como un stream de líneas con marcadores que delimitan
+metadatos del boletín (``/Fecha``, ``/Numero_BORME``, …) y los actos
+mercantiles (``/Cabecera_acto``, ``/Texto_acto``). El parser es un
+state-machine que recorre esas líneas una a una; el estado mutable vive
+en :class:`_ParseState` y cada tipo de línea tiene su propio handler.
+"""
+
+from __future__ import annotations
+
 import logging
+from dataclasses import dataclass
+from typing import Iterator
 
 from pypdf import PdfReader
 
@@ -38,6 +51,30 @@ from bormeparser.regex import (
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class _ParseState:
+    """Estado mutable del bucle de :meth:`PyPDFParser._parse`.
+
+    La lista de actos no vive aquí: cuelga de :attr:`PyPDFParser.actos`
+    porque los helpers ``_parse_acto*`` la mutan directamente.
+    """
+
+    cabecera: bool = False
+    texto: bool = False
+    changing_page: bool = False
+    last_font: int = 0
+    nombreacto: str | None = None
+    data: str = ""
+    # Metadato del boletín que se está capturando actualmente
+    # (``"fecha"``, ``"num"``, …) o ``None`` si no hay captura activa.
+    capture: str | None = None
+    # Cabecera procesada más reciente: se rellena en cuanto se cierra el
+    # primer ``/Cabecera_acto`` y se reutiliza al finalizar cada anuncio.
+    anuncio_id: int | None = None
+    empresa: str | None = None
+    extra: dict | None = None
+
+
 class PyPDFParser(BormeAParserBackend):
     """Parse BORME-A PDFs using the pypdf library.
 
@@ -48,269 +85,288 @@ class PyPDFParser(BormeAParserBackend):
         log_level: Logging level for the parser (default WARN).
     """
 
+    # Marker → (capture mode, DATA key it fills). Listed in the same
+    # order BORME PDFs emit them.
+    _METADATA_MARKERS = (
+        ("/Fecha", "fecha", "borme_fecha"),
+        ("/Numero_BORME", "num", "borme_num"),
+        ("/Seccion", "seccion", "borme_seccion"),
+        ("/Subseccion", "subseccion", "borme_subseccion"),
+        ("/Provincia", "provincia", "borme_provincia"),
+        ("/Codigo_verificacion", "cve", "borme_cve"),
+    )
+
+    _DATA_TEMPLATE = {
+        "borme_fecha": None,
+        "borme_num": None,
+        "borme_seccion": None,
+        "borme_subseccion": None,
+        "borme_provincia": None,
+        "borme_cve": None,
+    }
+
     def __init__(self, filename, *, sanitize=False, log_level=logging.WARN):
         super().__init__(filename)
         logger.setLevel(log_level)
-        self.actos = []
+        self.actos: list = []
         self.sanitize = sanitize
 
-    # Mapping marker → (capture mode, DATA key it fills).
-    # Listed in the same order the markers appear in BORME PDFs.
-    _METADATA_MARKERS = (
-        ('/Fecha', 'fecha', 'borme_fecha'),
-        ('/Numero_BORME', 'num', 'borme_num'),
-        ('/Seccion', 'seccion', 'borme_seccion'),
-        ('/Subseccion', 'subseccion', 'borme_subseccion'),
-        ('/Provincia', 'provincia', 'borme_provincia'),
-        ('/Codigo_verificacion', 'cve', 'borme_cve'),
-    )
+    # ------------------------------------------------------------------
+    # Main loop
+    # ------------------------------------------------------------------
 
-    def _parse(self):
-        cabecera = False
-        changing_page = False
-        data = ""
-        last_font = 0
-        nombreacto = None
-        texto = False
-
-        # Qué metadato del boletín se está capturando ahora mismo (None si
-        # no estamos dentro de un bloque /Fecha, /Numero_BORME, etc.).
-        capture = None
-
-        # Inicialización defensiva: si el PDF no llega a un /Cabecera_acto
-        # antes del primer ET / fin de fichero, no queremos un NameError.
-        anuncio_id = None
-        empresa = None
-        extra = None
-
-        DATA = {
-            'borme_fecha': None,
-            'borme_num': None,
-            'borme_seccion': None,
-            'borme_subseccion': None,
-            'borme_provincia': None,
-            'borme_cve': None
-        }
+    def _parse(self) -> dict:
+        data_out: dict = dict(self._DATA_TEMPLATE)
+        state = _ParseState()
         self.actos = []
 
-        with open(self.filename, 'rb') as fp:
+        for content in self._iter_page_contents():
+            logger.debug("---- BEGIN OF PAGE ----")
+            for line in content.split("\n"):
+                self._handle_line(line, state, data_out)
+            logger.debug("---- END OF PAGE ----")
+            state.changing_page = True
+
+        if state.nombreacto:
+            self._parse_acto(state.nombreacto, state.data, prefix="END")
+            self._commit_anuncio(state, data_out)
+
+        return data_out
+
+    def _iter_page_contents(self) -> Iterator[str]:
+        """Lee el PDF y produce el contenido decodificado de cada página."""
+        with open(self.filename, "rb") as fp:
             reader = PdfReader(fp)
-            page_contents = []
+            pages = []
             for page in reader.pages:
                 contents = page.get_contents()
                 if contents is None:
                     continue
                 raw = contents.get_data()
                 if isinstance(raw, bytes):
-                    # PDF content streams son bytes con literales latin-1;
-                    # los escapes propios del PDF (\(, \), \\) los deshace
-                    # _clean_data más abajo.
-                    raw = raw.decode('latin-1')
-                page_contents.append(raw)
+                    # Content streams del PDF son bytes con literales
+                    # latin-1; los escapes propios del PDF (\(, \), \\)
+                    # los deshace _clean_data más abajo.
+                    raw = raw.decode("latin-1")
+                pages.append(raw)
+        yield from pages
 
-        for content in page_contents:
-            logger.debug('---- BEGIN OF PAGE ----')
+    def _handle_line(self, line: str, state: _ParseState, data_out: dict) -> None:
+        """Despacha una línea del content stream al handler apropiado."""
+        logger.debug("### LINE: %s", line)
 
-            for line in content.split('\n'):
-                logger.debug('### LINE: %s' % line)
-                if line.startswith('/Cabecera_acto'):
-                    logger.debug('START: cabecera')
-                    cabecera = True
+        if line.startswith("/Cabecera_acto"):
+            self._open_cabecera(state, data_out)
+            return
 
-                    if changing_page:
-                        changing_page = False
+        if line.startswith("/Texto_acto"):
+            state.texto = True
+            return
 
-                    logger.debug('  BT nombreacto: %s' % nombreacto)
-                    logger.debug('  BT data: %s' % data)
+        if self._open_metadata_marker(line, state, data_out):
+            return
 
-                    if nombreacto:
-                        self._parse_acto(nombreacto, data, prefix='BT')
-                        nombreacto = None
-                        if anuncio_id is not None:
-                            DATA[anuncio_id] = {
-                                'Empresa': empresa,
-                                'Extra': extra,
-                                'Actos': self.actos
-                            }
+        if line == "BT":
+            return
 
-                    data = ""
-                    self.actos = []
-                    continue
+        if line == "ET":
+            self._close_text_block(state)
+            return
 
-                if line.startswith('/Texto_acto'):
-                    logger.debug('START: texto')
-                    logger.debug('  nombreacto: %s' % nombreacto)
-                    logger.debug('  data: %s' % data)
-                    texto = True
-                    continue
+        if not (state.texto or state.cabecera or state.capture):
+            return
 
-                matched_marker = False
-                for marker, mode, key in self._METADATA_MARKERS:
-                    if line.startswith(marker):
-                        if not DATA[key]:
-                            logger.debug('START: %s', mode)
-                            capture = mode
-                        matched_marker = True
-                        break
-                if matched_marker:
-                    continue
+        if line == "/F1 8 Tf":
+            self._handle_font_bold(state)
+            return
 
-                if line == 'BT':
-                    # Begin text object
-                    continue
+        if line == "/F2 8 Tf":
+            self._handle_font_normal(state)
+            return
 
-                if line == 'ET':
-                    # End text object
-                    if cabecera:
-                        logger.debug('END: cabecera')
-                        cabecera = False
-                        data = self._clean_data(data)
-                        anuncio_id, empresa, extra = regex_empresa(data, sanitize=self.sanitize)
-                        logger.debug('  anuncio_id: %s' % anuncio_id)
-                        logger.debug('  empresa: %s' % empresa)
-                        logger.debug('  extra: {}'.format(extra))
-                        data = ""
-                    if texto:
-                        logger.debug('END: texto')
-                        texto = False
-                        logger.debug('  nombreacto: %s' % nombreacto)
-                        logger.debug('  data: %s' % data)
-                    continue
+        match = REGEX_PDF_TEXT.match(line)
+        if match:
+            self._handle_text_chunk(match.group(1), state, data_out)
 
-                if not (texto or cabecera or capture):
-                    continue
+    # ------------------------------------------------------------------
+    # Handlers
+    # ------------------------------------------------------------------
 
-                if line == '/F1 8 Tf':
-                    # Font 1: bold
-                    logger.debug('START: font bold. %s %s' % (changing_page, last_font))
-                    if changing_page:
-                        # FIXME: Estoy suponiendo que una cabecera no se queda partida entre dos paginas
-                        if nombreacto and last_font == 2:
-                            self._parse_acto(nombreacto, data, prefix='F1')
-                            nombreacto = None
-                            data = ""
-                        changing_page = False
-                    else:
-                        if nombreacto:
-                            self._parse_acto(nombreacto, data, prefix='F1')
-                            nombreacto = None
-                            data = ""
+    def _open_cabecera(self, state: _ParseState, data_out: dict) -> None:
+        """Procesa el marcador ``/Cabecera_acto``: cierra el anuncio en curso
+        (si lo hay) y abre uno nuevo."""
+        state.cabecera = True
+        if state.changing_page:
+            state.changing_page = False
 
-                    logger.debug('  nombreacto: %s' % nombreacto)
-                    logger.debug('  data: %s' % data)
-                    last_font = 1
-                    continue
+        if state.nombreacto:
+            self._parse_acto(state.nombreacto, state.data, prefix="BT")
+            state.nombreacto = None
+            self._commit_anuncio(state, data_out)
 
-                if line == '/F2 8 Tf':
-                    # Font 2: normal
-                    logger.debug('START: font normal. %s %s' % (changing_page, last_font))
-                    logger.debug('  nombreacto2: %s' % nombreacto)
-                    logger.debug('  data: %s' % data)
+        state.data = ""
+        self.actos = []
 
-                    if changing_page:
-                        changing_page = False
-                        if not nombreacto:
-                            nombreacto = self._clean_data(data)[:-1]
-                        if last_font != 1:
-                            last_font = 2
-                            continue
-                    nombreacto = self._clean_data(data)[:-1]
+    def _open_metadata_marker(
+        self, line: str, state: _ParseState, data_out: dict
+    ) -> bool:
+        """Si ``line`` es uno de los marcadores de metadato del boletín,
+        activa la captura y devuelve True. En otro caso devuelve False."""
+        for marker, mode, key in self._METADATA_MARKERS:
+            if line.startswith(marker):
+                if not data_out[key]:
+                    logger.debug("START: %s", mode)
+                    state.capture = mode
+                return True
+        return False
 
-                    while True:
-                        end, nombreacto = self._parse_acto_bold(nombreacto, data)
-                        if end:
-                            break
+    def _close_text_block(self, state: _ParseState) -> None:
+        """Procesa el marcador ``ET`` cerrando la cabecera o el bloque de texto."""
+        if state.cabecera:
+            state.cabecera = False
+            cabecera_text = self._clean_data(state.data)
+            state.anuncio_id, state.empresa, state.extra = regex_empresa(
+                cabecera_text, sanitize=self.sanitize
+            )
+            logger.debug("anuncio_id=%s empresa=%s", state.anuncio_id, state.empresa)
+            state.data = ""
+        if state.texto:
+            state.texto = False
 
-                    if is_acto_bold_mix(nombreacto):
-                        nombreacto = "Escisión total"
-                        data = "Sociedades beneficiarias de la escisión:"
-                    else:
-                        data = ""
-                    logger.debug('  data_1: %s' % data)
-                    last_font = 2
-                    continue
+    def _handle_font_bold(self, state: _ParseState) -> None:
+        """Procesa el cambio a fuente F1 (bold): cierra el acto en curso si
+        veníamos de F2 (o si no hay cambio de página)."""
+        logger.debug(
+            "START: font bold. changing_page=%s last_font=%s",
+            state.changing_page,
+            state.last_font,
+        )
+        should_close = (
+            state.nombreacto is not None
+            and (not state.changing_page or state.last_font == 2)
+        )
+        if should_close:
+            self._parse_acto(state.nombreacto, state.data, prefix="F1")
+            state.nombreacto = None
+            state.data = ""
+        # changing_page se consume al primer cambio de fuente posterior.
+        state.changing_page = False
+        state.last_font = 1
 
-                m = REGEX_PDF_TEXT.match(line)
-                if m:
-                    text = m.group(1)
-                    if capture == 'fecha':
-                        DATA['borme_fecha'] = text
-                        logger.debug('fecha: %s', text)
-                    elif capture == 'num':
-                        DATA['borme_num'] = int(REGEX_BORME_NUM.match(text).group(1))
-                        logger.debug('num: %d', DATA['borme_num'])
-                    elif capture == 'seccion':
-                        DATA['borme_seccion'] = text
-                        logger.debug('seccion: %s', text)
-                    elif capture == 'subseccion':
-                        DATA['borme_subseccion'] = text
-                        logger.debug('subseccion: %s', text)
-                    elif capture == 'provincia':
-                        DATA['borme_provincia'] = text
-                        logger.debug('provincia: %s', text)
-                    elif capture == 'cve':
-                        DATA['borme_cve'] = REGEX_BORME_CVE.match(text).group(1)
-                        logger.debug('cve: %s', DATA['borme_cve'])
-                    capture = None
-                    data += ' ' + text
-                    logger.debug('TOTAL DATA: %s', data)
+    def _handle_font_normal(self, state: _ParseState) -> None:
+        """Procesa el cambio a fuente F2 (normal): extrae los actos en bold
+        acumulados y prepara ``data`` para el cuerpo del acto."""
+        logger.debug(
+            "START: font normal. changing_page=%s last_font=%s",
+            state.changing_page,
+            state.last_font,
+        )
 
-            logger.debug('---- END OF PAGE ----')
-            changing_page = True
+        if state.changing_page:
+            state.changing_page = False
+            if not state.nombreacto:
+                state.nombreacto = self._clean_data(state.data)[:-1]
+            if state.last_font != 1:
+                state.last_font = 2
+                return
 
-        if nombreacto:
-            self._parse_acto(nombreacto, data, prefix='END')
-            if anuncio_id is not None:
-                DATA[anuncio_id] = {
-                    'Empresa': empresa,
-                    'Extra': extra,
-                    'Actos': self.actos
-                }
+        state.nombreacto = self._clean_data(state.data)[:-1]
+        while True:
+            end, state.nombreacto = self._parse_acto_bold(state.nombreacto, state.data)
+            if end:
+                break
 
-        return DATA
+        if is_acto_bold_mix(state.nombreacto):
+            state.nombreacto = "Escisión total"
+            state.data = "Sociedades beneficiarias de la escisión:"
+        else:
+            state.data = ""
+        state.last_font = 2
 
-    def _clean_data(self, data):
-        """ Unscape parenthesis and removes double spaces """
-        return data.replace(r'\(', '(').replace(r'\)', ')').replace('  ', ' ').strip()
+    def _handle_text_chunk(self, text: str, state: _ParseState, data_out: dict) -> None:
+        """Procesa un fragmento de texto extraído del PDF: lo asigna al
+        metadato en captura (si lo hay) y lo acumula en ``state.data``."""
+        if state.capture == "fecha":
+            data_out["borme_fecha"] = text
+            logger.debug("fecha: %s", text)
+        elif state.capture == "num":
+            data_out["borme_num"] = int(REGEX_BORME_NUM.match(text).group(1))
+            logger.debug("num: %d", data_out["borme_num"])
+        elif state.capture == "seccion":
+            data_out["borme_seccion"] = text
+            logger.debug("seccion: %s", text)
+        elif state.capture == "subseccion":
+            data_out["borme_subseccion"] = text
+            logger.debug("subseccion: %s", text)
+        elif state.capture == "provincia":
+            data_out["borme_provincia"] = text
+            logger.debug("provincia: %s", text)
+        elif state.capture == "cve":
+            data_out["borme_cve"] = REGEX_BORME_CVE.match(text).group(1)
+            logger.debug("cve: %s", data_out["borme_cve"])
+        state.capture = None
+        state.data += " " + text
+        logger.debug("TOTAL DATA: %s", state.data)
 
-    def _parse_acto(self, nombreacto, data, prefix=''):
+    def _commit_anuncio(self, state: _ParseState, data_out: dict) -> None:
+        """Persiste el anuncio actual en ``data_out`` si la cabecera ha sido
+        procesada. No hace nada si todavía no ha aparecido un
+        ``/Cabecera_acto`` (PDF anómalo)."""
+        if state.anuncio_id is None:
+            return
+        data_out[state.anuncio_id] = {
+            "Empresa": state.empresa,
+            "Extra": state.extra,
+            "Actos": list(self.actos),
+        }
+
+    # ------------------------------------------------------------------
+    # Helpers reutilizados por los handlers
+    # ------------------------------------------------------------------
+
+    def _clean_data(self, data: str) -> str:
+        """Deshace los escapes \\( \\) del PDF y colapsa dobles espacios."""
+        return (
+            data.replace(r"\(", "(")
+            .replace(r"\)", ")")
+            .replace("  ", " ")
+            .strip()
+        )
+
+    def _parse_acto(self, nombreacto: str, data: str, prefix: str = "") -> None:
         data = self._clean_data(data)
         if is_acto_cargo(nombreacto):
             cargos = regex_cargos(data, sanitize=self.sanitize)
             if not cargos:
-                logger.warning('No se encontraron cargos en la cadena: %s' % data)
+                logger.warning("No se encontraron cargos en la cadena: %s", data)
             data = cargos
 
-        logger.debug('  %s nombreactoW: %s' % (prefix, nombreacto))
-        logger.debug('  %s dataW: %s' % (prefix, data))
+        logger.debug("%s nombreacto=%s data=%s", prefix, nombreacto, data)
         self.actos.append({nombreacto: data})
 
     def _parse_acto_bold(self, nombreacto, data):
-        end = False
-
+        """Extrae un acto bold/colon/noarg del bloque que sigue al cambio de
+        fuente. Devuelve ``(end, nombreacto_restante)``: cuando ``end`` es
+        True, el llamador debe parar de iterar."""
         if is_acto_bold_mix(nombreacto):
-            end = True
-        elif is_acto_bold(nombreacto):
+            return True, nombreacto
+
+        if is_acto_bold(nombreacto):
             acto_colon, arg_colon, nombreacto = regex_bold_acto(nombreacto)
             self.actos.append({acto_colon: arg_colon})
+            logger.debug("F2 bold: %s -- %s", acto_colon, arg_colon)
+            return False, nombreacto
 
-            logger.debug('  F2 nombreactoW: %s -- %s' % (acto_colon, arg_colon))
-            logger.debug('  nombreacto: %s' % nombreacto)
-            logger.debug('  data: %s' % data)
-        elif REGEX_ARGCOLON.match(nombreacto):
+        if REGEX_ARGCOLON.match(nombreacto):
             acto_colon, arg_colon, nombreacto = regex_argcolon(nombreacto)
-            # FIXME: check
             self.actos.append({acto_colon: arg_colon})
+            logger.debug("F2 colon: %s -- %s", acto_colon, arg_colon)
+            return False, nombreacto
 
-            logger.debug('  F2 nombreactoW: %s -- %s' % (acto_colon, arg_colon))
-            logger.debug('  nombreacto: %s' % nombreacto)
-            logger.debug('  data: %s' % data)
-        elif REGEX_NOARG.match(nombreacto):
+        if REGEX_NOARG.match(nombreacto):
             acto_noarg, nombreacto = regex_noarg(nombreacto)
             self.actos.append({acto_noarg: None})
-            logger.debug('  F2 acto_noargW: %s -- True' % acto_noarg)
-            logger.debug('  nombreacto: %s' % nombreacto)
-            logger.debug('  data: %s' % data)
-        else:
-            end = True
-        return end, nombreacto
+            logger.debug("F2 noarg: %s", acto_noarg)
+            return False, nombreacto
+
+        return True, nombreacto
