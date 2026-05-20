@@ -23,6 +23,7 @@ import datetime
 import logging
 import os
 import os.path
+import re
 from typing import Iterable
 
 from .acto import ACTO
@@ -31,6 +32,10 @@ from .exceptions import BormeAlreadyDownloadedException, BormeAnuncioNotFound
 from .provincia import Provincia
 from .regex import is_acto_cargo
 from .utils import get_borme_xml_filepath
+
+# Reconoce el prefijo del nombre estándar publicado por el BOE:
+# ``BORME-A-2015-27-10.pdf`` ⇒ sección ``A``.
+_REGEX_BORME_FILENAME = re.compile(r"^BORME-([A-Z])-")
 
 logger = logging.getLogger(__name__)
 
@@ -212,10 +217,36 @@ class Borme:
 
     @classmethod
     def from_file(cls, filename: str) -> "Borme":
-        raise NotImplementedError(
-            "Borme.from_file(pdf_path) not implemented yet; use "
-            "bormeparser.parse(pdf_path, SECCION.A) for now"
-        )
+        """Construye un :class:`Borme` a partir de un PDF/XML del BORME.
+
+        La sección se deduce del nombre del fichero
+        (``BORME-A-…``, ``BORME-B-…``). Para sección C el backend
+        actual devuelve un diccionario en lugar de un :class:`Borme`,
+        de modo que esa entrada debe parsearse por medios distintos.
+        """
+        from .parser import DEFAULT_PARSER, parse
+
+        basename = os.path.basename(filename)
+        match = _REGEX_BORME_FILENAME.match(basename)
+        if match is None:
+            raise ValueError(
+                f"Nombre de fichero BORME no reconocido: {basename!r}. "
+                "Se espera 'BORME-<seccion>-...'"
+            )
+        seccion = match.group(1)
+        if seccion not in DEFAULT_PARSER:
+            raise ValueError(
+                f"Sección {seccion!r} no soportada por Borme.from_file. "
+                f"Secciones disponibles: {sorted(DEFAULT_PARSER)}"
+            )
+        result = parse(filename, seccion)
+        if not isinstance(result, cls):
+            raise TypeError(
+                f"El backend de sección {seccion!r} devolvió "
+                f"{type(result).__name__} en lugar de Borme; "
+                "no representable como un único Borme."
+            )
+        return result
 
     def _set_anuncios(self, anuncios: Iterable[BormeAnuncio] | None) -> None:
         self.anuncios = {a.id: a for a in (anuncios or [])}

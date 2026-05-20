@@ -21,7 +21,9 @@ import unittest
 from bormeparser.regex import regex_cargos, regex_empresa, regex_bold_acto, is_company
 from bormeparser.regex import (
     is_acto_cargo_entrante,
+    regex_argcolon,
     regex_empresa_tipo,
+    regex_noarg,
     borme_c_separa_empresas_titulo,
 )
 
@@ -262,6 +264,29 @@ class BormeparserRegexBormeC(unittest.TestCase):
         # self.assertEqual(empresas6, ['SOCIEDAD ANONIMA INDUSTRIAS CELULOSA ARAGONESA', 'CABALUR, SOCIEDAD LIMITADA UNIPERSONAL'])
         # empresas7 = borme_c_separa_empresas_titulo(self.titulo7)
         # self.assertEqual(empresas7, ['SICA, S.L.', 'CAOLINA, S.L. DE CARÁCTER UNIPERSONAL'])
+
+
+class BormeparserRegexNoMatchTestCase(unittest.TestCase):
+    """Antes de la fix, todas estas funciones llamaban a ``.groups()`` o
+    ``.group()`` sobre el resultado de ``re.match`` sin comprobar ``None``,
+    de modo que un input no esperado provocaba ``AttributeError`` opaco
+    en lugar de un error de dominio."""
+
+    def test_regex_argcolon_no_match(self):
+        with self.assertRaises(ValueError):
+            regex_argcolon("entrada que no encaja con el patrón")
+
+    def test_regex_noarg_no_match(self):
+        with self.assertRaises(ValueError):
+            regex_noarg("entrada que no encaja con el patrón")
+
+    def test_regex_empresa_no_match(self):
+        with self.assertRaises(ValueError):
+            regex_empresa("entrada sin separador de id")
+
+    def test_regex_bold_acto_no_match(self):
+        with self.assertRaises(ValueError):
+            regex_bold_acto("entrada que no encaja con el patrón")
 
 
 if __name__ == "__main__":

@@ -37,13 +37,14 @@ class Provincia:
     def __lt__(self, other):
         return self.name < other.name
 
-    # TODO: tildes
     def __eq__(self, other):
-        """Hace posible comparar la clase con una cadena (nombre de provincia)"""
+        """Hace posible comparar la clase con una cadena (nombre de provincia).
+        La comparación con cadenas es insensible a mayúsculas y acentos
+        para tolerar variantes como ``CADIZ`` ↔ ``Cádiz``."""
         if isinstance(other, self.__class__):
             return self.__dict__ == other.__dict__
         elif isinstance(other, str):
-            return self.name.upper() == other.upper()
+            return remove_accents(self.name).upper() == remove_accents(other).upper()
         else:
             return False
 

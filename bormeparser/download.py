@@ -248,16 +248,19 @@ def get_url_pdfs(date, seccion=None, provincia=None, secure=USE_HTTPS):
     raise MissingFilterException("You must specify either provincia or seccion or both")
 
 
-def download_url(url, filename=None, try_again=0):
+def download_url(url, filename, try_again=0):
+    """Descarga ``url`` y escribe el contenido en ``filename``. Si el fichero
+    ya existe se considera idempotente y devuelve False sin volver a
+    descargar. Reintenta hasta 3 veces ante errores transitorios."""
     logger.debug("Downloading URL: %s", url)
-    if filename and os.path.exists(filename):
+    if os.path.exists(filename):
         logger.debug("%s already exists!", os.path.basename(filename))
         return False
     try:
         response = requests.get(url, stream=True, timeout=HTTP_TIMEOUT)
     except requests.RequestException:
         if try_again < 3:
-            return download_url(url, filename=filename, try_again=try_again + 1)
+            return download_url(url, filename, try_again=try_again + 1)
         raise
 
     response.raise_for_status()
@@ -280,37 +283,56 @@ def download_urls(urls, path):
     return files
 
 
-def download_urls_multi(urls, path, threads=THREADS):
-    """Versión multihilo de :func:`download_urls`. ``urls`` es ``{_: url}``."""
-    queue = Queue()
-    files = []
+def _start_workers(queue, files, threads):
+    workers = []
     for thread_id in range(threads):
         worker = _DownloadWorker(thread_id, queue, files)
         worker.daemon = True
         worker.start()
+        workers.append(worker)
+    return workers
+
+
+def _stop_workers(queue, workers):
+    """Envía un centinela a cada worker y espera a que terminen.
+
+    Sin esto los hilos daemon quedarían bloqueados en ``queue.get()``
+    para siempre; aunque el proceso los mata al salir, una llamada
+    repetida acumularía hilos zombies en procesos largos."""
+    for _ in workers:
+        queue.put(None)
+    for worker in workers:
+        worker.join()
+
+
+def download_urls_multi(urls, path, threads=THREADS):
+    """Versión multihilo de :func:`download_urls`. ``urls`` es ``{_: url}``."""
+    queue: Queue = Queue()
+    files: list[str] = []
+    workers = _start_workers(queue, files, threads)
     for url in urls.values():
         filename = url.split("/")[-1]
         queue.put((url, os.path.join(path, filename)))
     queue.join()
+    _stop_workers(queue, workers)
     return files
 
 
 def download_urls_multi_names(urls, path, threads=THREADS):
     """Variante con nombres explícitos: ``urls`` es ``{filename: url}``."""
-    queue = Queue()
-    files = []
-    for thread_id in range(threads):
-        worker = _DownloadWorker(thread_id, queue, files)
-        worker.daemon = True
-        worker.start()
+    queue: Queue = Queue()
+    files: list[str] = []
+    workers = _start_workers(queue, files, threads)
     for filename, url in urls.items():
         queue.put((url, os.path.join(path, filename)))
     queue.join()
+    _stop_workers(queue, workers)
     return files
 
 
 class _DownloadWorker(Thread):
-    """Worker thread que descarga URLs de una cola compartida."""
+    """Worker thread que descarga URLs de una cola compartida hasta recibir
+    el centinela ``None``."""
 
     def __init__(self, thread_id, queue, files):
         super().__init__()
@@ -320,9 +342,15 @@ class _DownloadWorker(Thread):
 
     def run(self):
         while True:
-            url, full_path = self.queue.get()
+            item = self.queue.get()
+            if item is None:
+                self.queue.task_done()
+                return
+            url, full_path = item
             time.sleep(0.6)
-            if download_url(url, full_path):
-                self.files.append(full_path)
-                logger.info("Downloaded %s", os.path.basename(full_path))
-            self.queue.task_done()
+            try:
+                if download_url(url, full_path):
+                    self.files.append(full_path)
+                    logger.info("Downloaded %s", os.path.basename(full_path))
+            finally:
+                self.queue.task_done()

@@ -135,6 +135,29 @@ class BormeATestCase(unittest.TestCase):
         temp_fp.close()
 
 
+class BormeFromFileTestCase(unittest.TestCase):
+    """Regresión: ``Borme.from_file`` levantaba ``NotImplementedError``;
+    debe detectar la sección por el prefijo del nombre y delegar en
+    ``bormeparser.parse``."""
+
+    def test_from_file_seccion_a(self):
+        path = os.path.join(EXAMPLES_PATH, "BORME-A-2015-27-10.pdf")
+        b = Borme.from_file(path)
+        self.assertEqual(b.cve, "BORME-A-2015-27-10")
+        self.assertEqual(b.seccion, SECCION.A)
+        self.assertEqual(b.date, datetime.date(year=2015, month=2, day=10))
+
+    def test_from_file_invalid_name(self):
+        # La validación del nombre ocurre antes de tocar el sistema de
+        # ficheros, así que el path no necesita existir.
+        with self.assertRaises(ValueError):
+            Borme.from_file("not-a-borme.pdf")
+
+    def test_from_file_unsupported_section(self):
+        with self.assertRaises(ValueError):
+            Borme.from_file("BORME-Z-2020-01-01.pdf")
+
+
 class FakeBormeTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

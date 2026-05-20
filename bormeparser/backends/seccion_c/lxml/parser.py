@@ -47,16 +47,17 @@ class LxmlBormeCParser(BormeCParserBackend):
         return cifs
 
     def parse(self):
-        fp = open(self.filename, "r", encoding="iso-8859-1")
-
-        content = fp.read()
-        fp.close()
+        with open(self.filename, "r", encoding="iso-8859-1") as fp:
+            content = fp.read()
         if content.startswith("<?xml"):
             return self._parse_xml()
         elif content.startswith("<!DOCTYPE HTML PUBLIC"):
             return self._parse_html(content)
         elif self.filename.lower().endswith(".pdf"):
-            raise NotImplementedError
+            raise NotImplementedError(
+                "Parsing BORME-C PDF files is not implemented; "
+                "use the XML or HTML version published by the BOE."
+            )
         else:
             raise ValueError("Cannot detect BORME C type")
 
@@ -132,14 +133,14 @@ class LxmlBormeCParser(BormeCParserBackend):
         html = etree.HTML(content)
 
         body = html.xpath('//div[@id="contenedor"][1]')[0]
-        empresa = body.xpath('//p[@class="documento-tit"]/text()')[
-            0
-        ]  # TODO: Partir por los intros y borrar lo que haya entre paréntesis
+        empresa = body.xpath('//p[@class="documento-tit"]/text()')[0]
         texto = "\n\n".join(body.xpath('//div[@id="textoxslt"]/p/text()'))
         title = body.xpath('//div[@class="poolBdatos"]/h3/text()[1]')[
             0
         ]  # "CONVOCATORIAS DE JUNTAS (BORME 101 de 27/5/2011)"
         title_groups = re.search(r"(.*) \(BORME (\d+) de (\d+)/(\d+)/(\d+)\)", title)
+        if title_groups is None:
+            raise ValueError(f"No se pudo parsear el título BORME-C HTML: {title!r}")
         departamento, diario_numero = title_groups.group(1), title_groups.group(2)
         fecha_publicacion = datetime.date(
             int(title_groups.group(5)),

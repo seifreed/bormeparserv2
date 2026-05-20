@@ -64,10 +64,14 @@ SIGLAS = {
     "S.I.C.A.V. SA": "SICAV",
     "SA SICAV": "SICAV",
     "SICAV SA": "SICAV",
+    # Unión Temporal de Empresas (Ley 18/1982, de 26 de mayo) — el BORME
+    # publica esta forma social con el nombre íntegro de la ley adosado al
+    # nombre social.
+    "UNION TEMPORAL DE EMPRESAS LEY 18 1982 DE 26 DE MAYO": "UTE",
+    "UNION TEMPORAL DE EMPRESAS": "UTE",
 }
 
 
-# TODO: UNION TEMPORAL DE EMPRESAS LEY 18 1982 DE 26 DE MAYO
 def clean_empresa(nombre):
     nombre = nombre.rstrip(".")
 

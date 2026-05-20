@@ -19,6 +19,8 @@
 import datetime
 import unittest
 
+from bormeparser.clean import clean_empresa
+from bormeparser.provincia import PROVINCIA
 from bormeparser.utils import get_borme_website
 from bormeparser.utils import acto_to_attr
 from bormeparser.seccion import SECCION
@@ -40,6 +42,47 @@ class BormeparserUtilsTestCase(unittest.TestCase):
         self.assertEqual(attr1, "nombramientos")
         self.assertEqual(attr2, "ceses_dimisiones")
         self.assertEqual(attr3, "fusion_absorcion")
+
+
+class ProvinciaEqTestCase(unittest.TestCase):
+    """Regresión: la comparación con cadenas debe ser insensible a
+    mayúsculas Y a acentos (antes solo a mayúsculas, lo que hacía que
+    ``PROVINCIA.CADIZ == "CADIZ"`` devolviera ``False``)."""
+
+    def test_eq_accents(self):
+        self.assertTrue(PROVINCIA.CADIZ == "Cádiz")
+        self.assertTrue(PROVINCIA.CADIZ == "Cadiz")
+        self.assertTrue(PROVINCIA.CADIZ == "CADIZ")
+        self.assertTrue(PROVINCIA.CADIZ == "cadiz")
+        self.assertTrue(PROVINCIA.LEON == "León")
+        self.assertTrue(PROVINCIA.LEON == "LEON")
+
+    def test_eq_distinct(self):
+        self.assertFalse(PROVINCIA.MADRID == "Cádiz")
+        self.assertFalse(PROVINCIA.CADIZ == "Sevilla")
+
+    def test_eq_other_type(self):
+        self.assertFalse(PROVINCIA.MADRID == 28)
+        # Comparación con None: usamos __eq__ directo para evitar el
+        # rewrite que hace pytest/ruff y comprobar el branch falso final.
+        self.assertFalse(PROVINCIA.MADRID.__eq__(None))
+
+
+class CleanEmpresaUTETestCase(unittest.TestCase):
+    """Regresión: ``UNION TEMPORAL DE EMPRESAS [LEY 18 1982 …]`` se
+    abreviaba a sí misma (no estaba en SIGLAS), produciendo nombres
+    de empresa larguísimos en el JSON resultante."""
+
+    def test_full_law_reference(self):
+        cleaned = clean_empresa(
+            "EJEMPLO UNION TEMPORAL DE EMPRESAS LEY 18 1982 DE 26 DE MAYO"
+        )
+        self.assertEqual(cleaned, "EJEMPLO UTE")
+
+    def test_short_form(self):
+        self.assertEqual(
+            clean_empresa("EJEMPLO UNION TEMPORAL DE EMPRESAS"), "EJEMPLO UTE"
+        )
 
 
 if __name__ == "__main__":

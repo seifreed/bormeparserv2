@@ -159,18 +159,20 @@ def is_company(data):
     return True
 
 
-# HACK
 def regex_argcolon(data):
     """Captura el acto y su argumento y el siguiente acto"""
-    acto_colon, arg_colon, nombreacto = REGEX_ARGCOLON.match(data).groups()
-    return acto_colon, arg_colon, nombreacto
+    match = REGEX_ARGCOLON.match(data)
+    if match is None:
+        raise ValueError(f"regex_argcolon: patrón no coincide con {data!r}")
+    return match.groups()
 
 
-# HACK
 def regex_noarg(data):
     """Captura el acto sin argumento y el siguiente acto"""
-    nombreacto, siguiente_acto = REGEX_NOARG.match(data).groups()
-    return nombreacto, siguiente_acto
+    match = REGEX_NOARG.match(data)
+    if match is None:
+        raise ValueError(f"regex_noarg: patrón no coincide con {data!r}")
+    return match.groups()
 
 
 def regex_empresa_tipo(data):
@@ -211,7 +213,10 @@ def regex_empresa(data, sanitize=True):
         else:
             extra["registro"] = REGISTROS[registro]
     else:
-        acto_id, empresa = REGEX_EMPRESA.match(data).groups()
+        match = REGEX_EMPRESA.match(data)
+        if match is None:
+            raise ValueError(f"regex_empresa: patrón no coincide con {data!r}")
+        acto_id, empresa = match.groups()
         registro = None
 
     if empresa.endswith(" EN LIQUIDACION"):
@@ -258,7 +263,10 @@ def regex_bold_acto(data):
     data: "Declaración de unipersonalidad. Socio único: BRENNAN KEVIN LIONEL. Nombramientos."
           "Sociedad unipersonal. Cambio de identidad del socio único: OLSZEWSKI GRZEGORZ. Ceses/Dimisiones."
     """
-    acto_colon, arg_colon, nombreacto, nombreacto2 = REGEX_BOLD.match(data).groups()
+    match = REGEX_BOLD.match(data)
+    if match is None:
+        raise ValueError(f"regex_bold_acto: patrón no coincide con {data!r}")
+    acto_colon, arg_colon, nombreacto, nombreacto2 = match.groups()
     nombreacto += nombreacto2
     return acto_colon, arg_colon, nombreacto
 
@@ -408,7 +416,6 @@ def borme_c_separa_empresas_titulo(titulo):
         empresa = empresa.rstrip(",")
         empresa = empresa.strip()
         empresas.append(empresa)
-        # TODO: regex_empresa
 
     if len(empresas) > 1:
         # ['COEMA']
@@ -418,7 +425,6 @@ def borme_c_separa_empresas_titulo(titulo):
 
 
 def capitalize_sentence(string):
-    # TODO: espacio de más tras coma/punto
     string = re.sub(r"([,/\.]+)(?! )", r"\1 ", string)
     if string == string.upper():
         string = string.lower()
