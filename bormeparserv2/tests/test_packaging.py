@@ -64,6 +64,21 @@ class DockerIgnoreSecurityTestCase(unittest.TestCase):
             self.assertIn(required, entries)
 
 
+class DockerfileSecurityTestCase(unittest.TestCase):
+    """La imagen final debe ejecutar las CLIs sin privilegios de root."""
+
+    def test_final_image_declares_non_root_user(self):
+        path = os.path.join(REPO_ROOT, "Dockerfile")
+        with open(path, encoding="utf-8") as fp:
+            lines = [
+                line.strip()
+                for line in fp
+                if line.strip() and not line.startswith("#")
+            ]
+        self.assertIn("RUN useradd --create-home --shell /usr/sbin/nologin borme", lines)
+        self.assertIn("USER borme", lines)
+
+
 def _build(distribution: DistType) -> str:
     """Construye ``sdist`` o ``wheel`` invocando ``build.ProjectBuilder``
     en proceso (no usa ``subprocess`` para no disparar B404/B603 en

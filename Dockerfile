@@ -10,4 +10,6 @@ FROM python:3.13-bookworm
 COPY --from=builder /build/scripts/* /usr/local/bin/
 COPY --from=builder /build/wheels /tmp/wheels
 RUN pip install --no-cache-dir /tmp/wheels/* && rm -rf /tmp/wheels
-WORKDIR /root
+RUN useradd --create-home --shell /usr/sbin/nologin borme
+WORKDIR /home/borme
+USER borme
