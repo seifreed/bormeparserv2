@@ -299,7 +299,3 @@ class ActoIdsUniqueTestCase(unittest.TestCase):
             if not attr.startswith("_") and isinstance(getattr(ACTO, attr), int)
         ]
         self.assertEqual(len(ids), len(set(ids)), "Hay IDs de acto duplicados")
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -39,12 +39,13 @@ def _build(distribution: DistType) -> str:
     """Construye ``sdist`` o ``wheel`` invocando ``build.ProjectBuilder``
     en proceso (no usa ``subprocess`` para no disparar B404/B603 en
     bandit). Devuelve la ruta absoluta del artefacto producido.
+
+    ``python-build`` está declarado como dependencia de desarrollo en
+    ``requirements_dev.txt``; siempre debe estar disponible cuando se
+    ejecutan los tests.
     """
-    try:
-        from build import ProjectBuilder
-        from build.env import DefaultIsolatedEnv
-    except ImportError:
-        raise unittest.SkipTest("python-build no instalado")
+    from build import ProjectBuilder
+    from build.env import DefaultIsolatedEnv
 
     tmp = tempfile.mkdtemp(prefix="bormeparser_pkg_")
     with DefaultIsolatedEnv() as env:
@@ -124,7 +125,3 @@ class WheelShipsRuntimeFixturesTestCase(unittest.TestCase):
             names = zf.namelist()
         offenders = [n for n in names if "/tests/" in n]
         self.assertEqual(offenders, [], msg=f"tests leaked into wheel: {offenders!r}")
-
-
-if __name__ == "__main__":
-    unittest.main()

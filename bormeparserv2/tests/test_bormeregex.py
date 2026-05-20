@@ -361,7 +361,3 @@ class PyPDFParserCleanDataTestCase(unittest.TestCase):
 
         instance = PyPDFParser.__new__(PyPDFParser)
         self.assertEqual(instance._clean_data(r"foo \(bar\) baz"), "foo (bar) baz")
-
-
-if __name__ == "__main__":
-    unittest.main()

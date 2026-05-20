@@ -222,7 +222,3 @@ class SeccionFromBormeTestCase(unittest.TestCase):
             SECCION.from_borme("SECCIÓN PRIMERA", "Texto desconocido")
         with self.assertRaises(ValueError):
             SECCION.from_borme("OTRA SECCIÓN", "Actos inscritos")
-
-
-if __name__ == "__main__":
-    unittest.main()

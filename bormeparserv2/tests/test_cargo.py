@@ -38,7 +38,3 @@ class CargoTestCase(unittest.TestCase):
         self.assertRaises(
             BormeInvalidCargoException, CARGO.from_string, "Cargo invalido"
         )
-
-
-if __name__ == "__main__":
-    unittest.main()

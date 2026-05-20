@@ -174,7 +174,3 @@ class AllProvinciasArgparseChoicesTestCase(unittest.TestCase):
             with self.subTest(name=name):
                 prov = PROVINCIA.coerce(name)
                 self.assertIsInstance(prov, Provincia)
-
-
-if __name__ == "__main__":
-    unittest.main()

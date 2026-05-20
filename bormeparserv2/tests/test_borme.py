@@ -740,7 +740,3 @@ class BormeCTestCase2(unittest.TestCase):
             os.path.join(EXAMPLES_PATH, "BORME-C-2011-20488.html"),
         )
         self.assertEqual(self.borme["seccion"], SECCION.C)
-
-
-if __name__ == "__main__":
-    unittest.main()

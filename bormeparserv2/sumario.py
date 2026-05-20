@@ -121,6 +121,16 @@ class BormeXML:
         bxml._load(path)
         return bxml
 
+    def _assert_date_matches(self, requested):
+        """Comprueba que la fecha del sumario cargado coincide con la
+        solicitada. Si difiere lanza ``BormeDoesntExistException`` — defiende
+        contra que la API del BOE responda con el sumario equivocado."""
+        if requested != self.date:
+            raise BormeDoesntExistException(
+                f"El sumario devuelto por el BOE corresponde a {self.date}, "
+                f"se pidió {requested}"
+            )
+
     @staticmethod
     def from_date(date, secure=USE_HTTPS):
         if isinstance(date, tuple):
@@ -129,11 +139,7 @@ class BormeXML:
         bxml.use_https = secure
         bxml._url = get_url_xml(date, secure=secure)
         bxml._load(bxml._url)
-        if date != bxml.date:
-            raise BormeDoesntExistException(
-                f"El sumario devuelto por el BOE corresponde a {bxml.date}, "
-                f"se pidió {date}"
-            )
+        bxml._assert_date_matches(date)
         return bxml
 
     def get_urls_cve(self, seccion=None, provincia=None):

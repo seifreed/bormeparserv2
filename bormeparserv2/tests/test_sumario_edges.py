@@ -59,7 +59,3 @@ class MalformedXmlIsConvertedToDomainErrorTestCase(unittest.TestCase):
             self._from_file_with(
                 '<?xml version="1.0"?><sumario><diario numero="1"/></sumario>'
             )
-
-
-if __name__ == "__main__":
-    unittest.main()

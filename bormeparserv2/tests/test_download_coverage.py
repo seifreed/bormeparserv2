@@ -338,6 +338,23 @@ class FindPdfUrlDirectDefensiveChecksTestCase(unittest.TestCase):
             _find_pdf_url_in_sumario(sumario, SECCION.A, "10")
         self.assertIn("numero", str(ctx.exception))
 
+    def test_find_pdf_entry_returns_identifier_and_url(self):
+        """``_find_pdf_entry_in_sumario`` (helper consumido por
+        ``get_url_pdfs`` combined-branch) devuelve ``(id, url)``."""
+        from bormeparserv2.download import (
+            _fetch_sumario_tree,
+            _find_pdf_entry_in_sumario,
+        )
+
+        # ``_fetch_sumario_tree`` unwrappea el ``<response>`` y devuelve
+        # directamente el ``<sumario>`` interno.
+        sumario = _fetch_sumario_tree(SUMARIO_FIXTURE)
+        identificador, url = _find_pdf_entry_in_sumario(
+            sumario, SECCION.A, "10"  # Cáceres
+        )
+        self.assertEqual(identificador, "BORME-A-2015-183-10")
+        self.assertTrue(url.endswith("BORME-A-2015-183-10.pdf"))
+
 
 class GetUrlSeccionCBadFormatTestCase(unittest.TestCase):
     """``get_url_seccion_c`` con format desconocido → ValueError."""
@@ -393,7 +410,3 @@ class GetUrlPdfsCombinedFilterMissingProvinciaTestCase(unittest.TestCase):
                 provincia=PROVINCIA.MELILLA,
             )
         self.assertIn("No PDF", str(ctx.exception))
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -230,6 +230,23 @@ class SumarioItemWithoutUrlPdfTestCase(unittest.TestCase):
             os.unlink(path)
 
 
+class AssertDateMatchesTestCase(unittest.TestCase):
+    """``BormeXML._assert_date_matches`` lanza si la API del BOE
+    devolviera el sumario equivocado (defensa contra bugs server-side)."""
+
+    def test_mismatch_raises_borme_doesnt_exist(self):
+        bxml = BormeXML.from_file(SUMARIO_FIXTURE)  # date = 2015-09-24
+        with self.assertRaises(BormeDoesntExistException) as ctx:
+            bxml._assert_date_matches(datetime.date(2015, 9, 25))
+        self.assertIn("2015-09-24", str(ctx.exception))
+        self.assertIn("2015-09-25", str(ctx.exception))
+
+    def test_match_returns_silently(self):
+        bxml = BormeXML.from_file(SUMARIO_FIXTURE)
+        # No assertion: el método retorna sin lanzar.
+        bxml._assert_date_matches(datetime.date(2015, 9, 24))
+
+
 @require_live
 class DownloadBormeLiveTestCase(unittest.TestCase):
     """``BormeXML.download_borme`` descarga el conjunto completo del día."""
@@ -251,7 +268,3 @@ class DownloadBormeLiveTestCase(unittest.TestCase):
             self.assertTrue(ok)
             # 2015-02-10 publicó múltiples anuncios de sección C.
             self.assertGreater(len(files), 0)
-
-
-if __name__ == "__main__":
-    unittest.main()

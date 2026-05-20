@@ -58,12 +58,29 @@ def _load_script(script_name: str) -> ModuleType:
     spec = importlib.util.spec_from_file_location(
         mod_name, os.path.join(SCRIPTS_DIR, script_name)
     )
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"cannot load {script_name}")
+    # spec_from_file_location nunca devuelve None para un fichero .py
+    # existente bajo ``SCRIPTS_DIR``; el ``assert`` documenta la
+    # invariante y satisface al typechecker.
+    assert spec is not None and spec.loader is not None, script_name
     mod = importlib.util.module_from_spec(spec)
     sys.modules[mod_name] = mod
     spec.loader.exec_module(mod)
     return mod
+
+
+def _systemexit_to_returncode(exc: SystemExit) -> int:
+    """Mapea el ``code`` de ``SystemExit`` a un entero exit code.
+
+    ``sys.exit()`` sin argumento pasa ``None`` (éxito), ``sys.exit("msg")``
+    pasa un string (fallo con mensaje en stderr), y ``sys.exit(N)`` pasa
+    el entero directamente — esta función normaliza los tres casos.
+    """
+    code = exc.code
+    if code is None:
+        return 0
+    if isinstance(code, int):
+        return code
+    return 1
 
 
 def run_main(script_name: str, *argv: str) -> ScriptResult:
@@ -79,13 +96,7 @@ def run_main(script_name: str, *argv: str) -> ScriptResult:
         try:
             returncode = mod.main(list(argv))
         except SystemExit as exc:
-            code = exc.code
-            if code is None:
-                returncode = 0
-            elif isinstance(code, int):
-                returncode = code
-            else:
-                returncode = 1
+            returncode = _systemexit_to_returncode(exc)
     return ScriptResult(
         returncode=returncode, stdout=out.getvalue(), stderr=err.getvalue()
     )
@@ -284,5 +295,17 @@ class BormePollerScriptTestCase(unittest.TestCase):
         self.assertIn("sumario", result.stdout)
 
 
-if __name__ == "__main__":
-    unittest.main()
+class SystemExitToReturncodeTestCase(unittest.TestCase):
+    """``_systemexit_to_returncode`` normaliza los tres tipos de ``code``."""
+
+    def test_none_maps_to_zero(self):
+        # ``sys.exit()`` sin arg ⇒ code=None ⇒ éxito.
+        self.assertEqual(_systemexit_to_returncode(SystemExit()), 0)
+
+    def test_int_maps_to_itself(self):
+        self.assertEqual(_systemexit_to_returncode(SystemExit(0)), 0)
+        self.assertEqual(_systemexit_to_returncode(SystemExit(2)), 2)
+
+    def test_string_message_maps_to_one(self):
+        # ``sys.exit("msg")`` ⇒ code="msg" ⇒ fallo (exit 1).
+        self.assertEqual(_systemexit_to_returncode(SystemExit("oops")), 1)

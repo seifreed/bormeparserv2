@@ -74,7 +74,3 @@ class ParseInvalidInputsTestCase(unittest.TestCase):
             )
         finally:
             os.unlink(path)
-
-
-if __name__ == "__main__":
-    unittest.main()

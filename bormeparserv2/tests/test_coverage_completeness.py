@@ -314,8 +314,10 @@ class BormeActoDundersTestCase(unittest.TestCase):
         from bormeparserv2.borme import BormeActo
 
         class _Bad(BormeActo):
-            def _set_value(self, value):
-                self.value = value
+            # No implementa _set_name → la base lanza NotImplementedError
+            # antes de llegar a _set_value, así que la subclase no
+            # necesita más sobrecargas.
+            pass
 
         with self.assertRaises(NotImplementedError):
             _Bad("Nombramientos", {"Adm. Unico": {"PEPE"}})
@@ -467,8 +469,10 @@ class RegexBranchesTestCase(unittest.TestCase):
         from bormeparserv2.acto import ACTO
         from bormeparserv2.regex import is_acto_noarg
 
-        if not ACTO.NOARG_KEYWORDS:
-            self.skipTest("No NOARG keywords definidos")
+        # ``ACTO.NOARG_KEYWORDS`` está definido como conjunto no vacío en
+        # ``acto.py``; si en el futuro se vacía el test fallará y forzará
+        # una revisión consciente.
+        self.assertTrue(ACTO.NOARG_KEYWORDS)
         sample = next(iter(ACTO.NOARG_KEYWORDS))
         self.assertTrue(is_acto_noarg(sample))
 
@@ -646,8 +650,10 @@ class MadridBormeParseTestCase(unittest.TestCase):
     def test_madrid_parses_with_many_acts_and_variants(self):
         import bormeparserv2
 
-        if not os.path.isfile(self.MADRID_FIXTURE):
-            self.skipTest(f"missing fixture {self.MADRID_FIXTURE}")
+        # El fixture vive en ``bormeparserv2/examples/`` y se distribuye
+        # con la wheel; si falta indica un error de empaquetado, no un
+        # entorno especial — assertamos en vez de skipTest.
+        self.assertTrue(os.path.isfile(self.MADRID_FIXTURE), self.MADRID_FIXTURE)
         b = bormeparserv2.parse(
             self.MADRID_FIXTURE, bormeparserv2.SECCION.A, sanitize=True
         )
@@ -656,7 +662,3 @@ class MadridBormeParseTestCase(unittest.TestCase):
         self.assertEqual(b.cve, "BORME-A-2015-27-28")
         self.assertEqual(str(b.provincia), "Madrid")
         self.assertGreater(len(b.anuncios), 500)
-
-
-if __name__ == "__main__":
-    unittest.main()

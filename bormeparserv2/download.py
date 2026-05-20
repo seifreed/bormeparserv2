@@ -157,12 +157,15 @@ def download_pdf(date, filename, seccion, provincia, parse=False):
     return downloaded
 
 
-def _find_pdf_url_in_sumario(sumario, seccion, provincia_code):
-    """Localiza el ``<url_pdf>`` correspondiente a una sección/provincia.
+def _find_pdf_entry_in_sumario(sumario, seccion, provincia_code):
+    """Devuelve ``(identificador, url)`` del PDF correspondiente a una
+    sección/provincia, o lanza ``BormeDoesntExistException`` si no aparece.
 
     Se busca por el sufijo ``-{nbo}-{provincia.code}`` del identificador
     BORME, que es estable y no depende del nombre (bilingüe) de la
-    provincia.
+    provincia. Es la única implementación de esta búsqueda: tanto
+    :func:`_find_pdf_url_in_sumario` (que sólo necesita la URL) como el
+    filtro combinado de :func:`get_url_pdfs` la reutilizan.
     """
     diario = sumario.find("diario")
     if diario is None:
@@ -177,12 +180,22 @@ def _find_pdf_url_in_sumario(sumario, seccion, provincia_code):
         if identificador.endswith(suffix):
             url = item.findtext("url_pdf")
             if url:
-                return url
+                return identificador, url
     raise BormeDoesntExistException(
         "No PDF for seccion={} provincia={} in this sumario".format(
             seccion, provincia_code
         )
     )
+
+
+def _find_pdf_url_in_sumario(sumario, seccion, provincia_code):
+    """Wrapper de compatibilidad: devuelve solo la URL del PDF.
+
+    La validación real (``<diario>``, ``numero``, sufijo) vive en
+    :func:`_find_pdf_entry_in_sumario`.
+    """
+    _, url = _find_pdf_entry_in_sumario(sumario, seccion, provincia_code)
+    return url
 
 
 def get_url_pdf(date, seccion, provincia, secure=USE_HTTPS):
@@ -265,28 +278,14 @@ def get_url_pdfs(date, seccion=None, provincia=None, secure=USE_HTTPS):
     if provincia and not seccion:
         return get_url_pdfs_provincia(date, provincia, secure=secure)
     if provincia and seccion:
-        # Filtro combinado: localizamos el único PDF que satisface ambos
-        # criterios en el sumario y devolvemos un dict ``{cve: url}`` para
-        # mantener la firma del resto de variantes.
+        # Filtro combinado: ``_find_pdf_entry_in_sumario`` ya valida
+        # ``<diario>`` y ``numero`` y devuelve ``(identificador, url)``;
+        # lo reusamos para no duplicar la lógica defensiva.
         sumario = _fetch_sumario_tree(get_url_xml(date, secure=secure))
-        diario = sumario.find("diario")
-        if diario is None:
-            raise BormeDoesntExistException("Sumario has no <diario>")
-        nbo = diario.attrib.get("numero")
-        if nbo is None:
-            raise BormeDoesntExistException("<diario> has no numero attribute")
-        suffix = "-{}-{}".format(nbo, provincia.code)
-        for item in diario.iterfind('seccion[@codigo="{}"]/item'.format(seccion)):
-            identificador = item.findtext("identificador") or ""
-            if identificador.endswith(suffix):
-                url = item.findtext("url_pdf")
-                if url:
-                    return {identificador: url}
-        raise BormeDoesntExistException(
-            "No PDF for seccion={} provincia={} in this sumario".format(
-                seccion, provincia.code
-            )
+        identificador, url = _find_pdf_entry_in_sumario(
+            sumario, seccion, provincia.code
         )
+        return {identificador: url}
     raise MissingFilterException("You must specify either provincia or seccion or both")
 
 
