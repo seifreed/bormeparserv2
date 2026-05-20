@@ -180,7 +180,7 @@ assert borme2.cve == borme.cve
 - `pdfminer.six >= 20250506`
 - `requests >= 2.32`
 
-See [`requirements.txt`](requirements.txt) and [`setup.py`](setup.py) for the full list.
+See [`requirements.txt`](requirements.txt) for runtime dependencies and tooling; `setup.py` uses only the runtime section when packaging.
 
 ---
 

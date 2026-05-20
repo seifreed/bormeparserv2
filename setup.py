@@ -10,6 +10,8 @@ def get_install_requires() -> list[str]:
     with open("requirements.txt", encoding="utf-8") as fh:
         for raw in fh:
             line = raw.rstrip()
+            if line == "# Development, test, lint, security and documentation tooling.":
+                break
             if not line or line.startswith(("#", "http", "git")):
                 continue
             requirements.append(line)

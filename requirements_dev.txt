@@ -1,8 +1,0 @@
--r requirements.txt
-bpython==0.23
-build>=1.2
-coverage==6.4.4
-zest.releaser==7.0.0
-# Type stubs para mypy
-types-requests>=2.32
-lxml-stubs>=0.5.1

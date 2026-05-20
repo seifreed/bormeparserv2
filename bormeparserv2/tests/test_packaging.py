@@ -82,9 +82,9 @@ def _build(distribution: DistType) -> str:
     en proceso (no usa ``subprocess`` para no disparar B404/B603 en
     bandit). Devuelve la ruta absoluta del artefacto producido.
 
-    ``python-build`` está declarado como dependencia de desarrollo en
-    ``requirements_dev.txt``; siempre debe estar disponible cuando se
-    ejecutan los tests.
+    ``python-build`` está declarado en la sección de tooling de
+    ``requirements.txt``; siempre debe estar disponible cuando se ejecutan
+    los tests.
     """
     from build import ProjectBuilder
     from build.env import DefaultIsolatedEnv
@@ -167,3 +167,31 @@ class WheelShipsRuntimeFixturesTestCase(unittest.TestCase):
             names = zf.namelist()
         offenders = [n for n in names if "/tests/" in n]
         self.assertEqual(offenders, [], msg=f"tests leaked into wheel: {offenders!r}")
+
+    def test_wheel_metadata_uses_runtime_dependencies_only(self):
+        with zipfile.ZipFile(self.wheel) as zf:
+            metadata_name = next(
+                n for n in zf.namelist() if n.endswith(".dist-info/METADATA")
+            )
+            metadata = zf.read(metadata_name).decode("utf-8").lower()
+
+        for runtime_requirement in (
+            "requires-dist: lxml",
+            "requires-dist: pdfminer.six",
+            "requires-dist: pypdf",
+            "requires-dist: requests",
+        ):
+            self.assertIn(runtime_requirement, metadata)
+
+        for tooling_requirement in (
+            "requires-dist: bandit",
+            "requires-dist: black",
+            "requires-dist: build",
+            "requires-dist: coverage",
+            "requires-dist: coveralls",
+            "requires-dist: mypy",
+            "requires-dist: pip-audit",
+            "requires-dist: ruff",
+            "requires-dist: sphinx",
+        ):
+            self.assertNotIn(tooling_requirement, metadata)
