@@ -28,6 +28,13 @@ Changelog for bormeparser
   -p CACERES`` no descargaba nada porque ``"CACERES" != "CÁCERES"``
   (el sumario emite la forma acentuada). Acepta también instancias de
   :class:`Provincia` directamente.
+- fix(ci): la pipeline de tests usaba ``coverage run --source=bormeparser
+  setup.py test``, pero setuptools 72+ eliminó el comando ``test``. Se
+  cambia a ``coverage run --source=bormeparser -m unittest discover
+  bormeparser.tests`` y se elimina ``test_suite="bormeparser.tests"`` de
+  ``setup.py`` (emitía ``UserWarning: Unknown distribution option``).
+  El paso de instalación usa ``pip install -e .`` en lugar de
+  ``./setup.py develop``.
 - fix(api): la API pública (``get_url_pdf``, ``get_url_pdfs``,
   ``download_pdf``, ``download_pdfs``, ``BormeXML._iter_items``)
   normaliza el parámetro ``provincia`` a través del nuevo

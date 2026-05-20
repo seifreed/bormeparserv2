@@ -96,9 +96,9 @@ jobs:
           python -m pip install --upgrade pip wheel
           pip install coveralls
           pip install -r requirements.txt
-          ./setup.py -q develop
+          pip install -e .
       - name: Run tests
-        run: coverage run --source=bormeparser setup.py test
+        run: coverage run --source=bormeparser -m unittest discover bormeparser.tests
       - name: Publish to coveralls.io
         if: matrix.python-version == '3.13'
         run: coveralls --service=github
