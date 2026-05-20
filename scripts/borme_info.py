@@ -37,14 +37,26 @@ def print_anuncio(anuncio):
     print()
 
 
-if __name__ == "__main__":
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Shows BORME A info.")
     parser.add_argument("filename", help="BORME A PDF filename")
-    parser.add_argument("-n", "--number", nargs="*", type=int, help="Show Verbose mode")
+    # ``action='append'`` evita la ambigüedad de ``nargs='*'``: con
+    # ``nargs='*' type=int`` argparse devoraba ``filename`` como número
+    # más (``invalid int value: '<ruta al PDF>'``). Ahora se invoca como
+    # ``-n 57315 -n 57316`` y el positional queda separado sin tener que
+    # forzar ``--``.
+    parser.add_argument(
+        "-n",
+        "--number",
+        action="append",
+        type=int,
+        metavar="NUMBER",
+        help="Filtra anuncios por id; repetir el flag para varios",
+    )
     parser.add_argument(
         "-v", "--verbose", action="store_true", default=False, help="Verbose mode"
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if args.verbose:
         # Sin basicConfig los loggers no tienen handler y los mensajes
@@ -67,7 +79,7 @@ if __name__ == "__main__":
                         n, borme.anuncios_rango[0], borme.anuncios_rango[1]
                     )
                 )
-                sys.exit(1)
+                return 1
     else:
         anuncios = borme.get_anuncios()
 
@@ -83,3 +95,8 @@ if __name__ == "__main__":
         print("  Provincia: {}".format(borme.provincia))
         print("  Seccion: {}".format(borme.seccion))
         print("  Anuncios incluidos: {}".format(len(borme.get_anuncios())))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

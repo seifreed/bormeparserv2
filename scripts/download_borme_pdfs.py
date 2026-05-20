@@ -26,6 +26,7 @@ import argparse
 import datetime
 import logging
 import os
+import sys
 
 BORME_ROOT = bormeparser.CONFIG["borme_root"]
 
@@ -85,7 +86,7 @@ def download_range(begin, end, directory, seccion, provincia=None):
     logger.info("\n{} total files were downloaded".format(total_downloaded))
 
 
-if __name__ == "__main__":
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Download BORME PDF files.")
     parser.add_argument(
         "-f",
@@ -121,7 +122,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-v", "--verbose", action="store_true", default=False, help="Verbose mode"
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     bormeparser.borme.logger.setLevel(logging.ERROR)
     if args.verbose:
@@ -151,3 +152,9 @@ if __name__ == "__main__":
                 date_from
             )
         )
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

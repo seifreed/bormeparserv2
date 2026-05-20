@@ -17,30 +17,34 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import argparse
+import sys
 
 from pypdf import PdfReader
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Debug PDF content.")
     parser.add_argument("filename", help="BORME A PDF filename")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
+    # PdfReader lee el stream de forma perezosa: ``page.get_contents()``
+    # vuelve al fichero para resolver objetos indirectos. Si el ``with``
+    # cierra el handle antes del bucle, pypdf revienta con
+    # ``ValueError: seek of closed file``.
     with open(args.filename, "rb") as fp:
         reader = PdfReader(fp)
-        pages = list(reader.pages)
-
-    for page in pages:
-        contents = page.get_contents()
-        if contents is None:
-            continue
-        # Mismo decode que ``PyPDFParser._iter_page_contents``: el
-        # content stream del PDF es latin-1, no unicode_escape (que
-        # interpretaría secuencias ``\n`` literales como saltos).
-        content = contents.get_data().decode("latin-1")
-        for line in content.split("\n"):
-            print(line)
+        for page in reader.pages:
+            contents = page.get_contents()
+            if contents is None:
+                continue
+            # Mismo decode que ``PyPDFParser._iter_page_contents``: el
+            # content stream del PDF es latin-1, no unicode_escape (que
+            # interpretaría secuencias ``\n`` literales como saltos).
+            content = contents.get_data().decode("latin-1")
+            for line in content.split("\n"):
+                print(line)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

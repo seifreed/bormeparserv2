@@ -4,7 +4,25 @@ Changelog for bormeparser
 0.5.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- fix(docker): pin ``wheel==0.47.0`` y ``--no-cache-dir`` en ambos ``pip
+  install`` para cerrar los avisos ``DL3013``/``DL3042`` de hadolint.
+- fix(scripts): los scripts CLI ahora exponen ``main(argv=None) -> int``
+  y son testables sin ``subprocess`` (los tests de regresión nuevos
+  viven en ``bormeparser/tests/test_scripts.py`` y ejercitan cada
+  script contra fixtures reales sin mocks).
+- fix(scripts/borme_info): ``-n`` pasa a ``action='append'``; antes
+  ``nargs='*'`` se comía el positional ``filename``.
+- fix(scripts/debug_content_pdf): el bucle de páginas se ejecuta dentro
+  del ``with open(...)``; pypdf reabre el stream para resolver objetos
+  indirectos y la versión anterior fallaba con ``ValueError: seek of
+  closed file``.
+- fix(scripts/borme_json_all): ``walk_borme_root`` deja de usar
+  ``next(os.walk(...))`` (que disparaba ``StopIteration`` →
+  ``RuntimeError`` por PEP 479 cuando faltaba ``pdf/``) y emite ahora
+  un ``FileNotFoundError`` con la estructura esperada.
+- fix(scripts/borme_poller): añadido ``argparse`` con ``--help``,
+  ``--once``, ``--url``, ``--delay`` y ``--logfile``. Antes ``--help``
+  iniciaba el bucle de polling silenciosamente.
 
 
 0.5.0 (2022-09-27)

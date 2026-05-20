@@ -20,11 +20,13 @@
 import argparse
 import logging
 import os
+import sys
 
 import bormeparser
 import bormeparser.backends.pypdf.parser
 
-if __name__ == "__main__":
+
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Convert BORME A PDF files to JSON.")
     parser.add_argument("filename", help="BORME A PDF filename")
     parser.add_argument(
@@ -35,7 +37,7 @@ if __name__ == "__main__":
         "--output",
         help="Output directory or filename (default is current directory)",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if args.debug:
         # basicConfig conecta un handler; sin él los DEBUG se pierden
@@ -50,5 +52,10 @@ if __name__ == "__main__":
 
     if path:
         print("Created {}".format(os.path.abspath(path)))
-    else:
-        print("Error creating JSON for {}".format(args.filename))
+        return 0
+    print("Error creating JSON for {}".format(args.filename))
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

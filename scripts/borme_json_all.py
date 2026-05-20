@@ -56,32 +56,52 @@ class ThreadConvertJSON(Thread):
                 self.queue.task_done()
 
 
+def _listdir_sorted(path):
+    """Devuelve los hijos de ``path`` ordenados o ``[]`` si no existe."""
+    if not os.path.isdir(path):
+        return []
+    return sorted(os.listdir(path))
+
+
 def walk_borme_root(bormes_root, json_root=None):
+    """Recorre ``<bormes_root>/pdf/AAAA/MM/DD/`` emitiendo cada PDF.
+
+    Si la subcarpeta ``pdf/`` no existe o está vacía el generador no
+    produce nada. La versión anterior usaba ``next(os.walk(...))`` que
+    lanzaba ``StopIteration`` (transformado en ``RuntimeError`` por
+    PEP 479) cuando faltaba algún nivel.
+    """
     pdf_root = os.path.join(bormes_root, "pdf")
     if json_root is None:
         json_root = os.path.join(bormes_root, "json")
 
-    _, year_dirs, _ = next(os.walk(pdf_root))
-    for year in year_dirs:
+    if not os.path.isdir(pdf_root):
+        raise FileNotFoundError(
+            f"No existe {pdf_root}. Estructura esperada: " f"<dir>/pdf/AAAA/MM/DD/*.pdf"
+        )
+
+    for year in _listdir_sorted(pdf_root):
         year_dir = os.path.join(pdf_root, year)
+        if not os.path.isdir(year_dir):
+            continue
         json_year_dir = os.path.join(json_root, year)
-        _, month_dirs, _ = next(os.walk(year_dir))
-        for month in month_dirs:
+        for month in _listdir_sorted(year_dir):
             month_dir = os.path.join(year_dir, month)
+            if not os.path.isdir(month_dir):
+                continue
             json_month_dir = os.path.join(json_year_dir, month)
-            _, day_dirs, _ = next(os.walk(month_dir))
-            for day in day_dirs:
+            for day in _listdir_sorted(month_dir):
                 day_dir = os.path.join(month_dir, day)
+                if not os.path.isdir(day_dir):
+                    continue
                 json_day_dir = os.path.join(json_month_dir, day)
-
                 os.makedirs(json_day_dir, exist_ok=True)
+                for filename in _listdir_sorted(day_dir):
+                    if os.path.isfile(os.path.join(day_dir, filename)):
+                        yield day_dir, json_day_dir, filename
 
-                _, _, files = next(os.walk(day_dir))
-                for filename in files:
-                    yield day_dir, json_day_dir, filename
 
-
-if __name__ == "__main__":
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Convert all BORME PDF files to JSON.")
     parser.add_argument(
         "-d",
@@ -89,7 +109,7 @@ if __name__ == "__main__":
         default=BORME_ROOT,
         help="Directory to download files (default is {})".format(BORME_ROOT),
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     start_time = time.time()
 
@@ -105,9 +125,15 @@ if __name__ == "__main__":
     json_root = os.path.join(args.directory, json_folder)
     if os.path.exists(json_root):
         print("{} already exists".format(json_root))
-        sys.exit(1)
+        return 1
 
-    for day_dir, json_day_dir, filename in walk_borme_root(args.directory, json_root):
+    try:
+        items = list(walk_borme_root(args.directory, json_root))
+    except FileNotFoundError as exc:
+        print(exc, file=sys.stderr)
+        return 1
+
+    for day_dir, json_day_dir, filename in items:
         if not filename.endswith(".pdf") or filename.endswith("-99.pdf"):
             continue
         pdf_path = os.path.join(day_dir, filename)
@@ -125,3 +151,8 @@ if __name__ == "__main__":
 
     elapsed_time = time.time() - start_time
     print(f"Elapsed time: {elapsed_time:.2f} seconds")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

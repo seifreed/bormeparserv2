@@ -19,6 +19,7 @@
 import argparse
 import datetime
 import os
+import sys
 import time
 from queue import Queue
 from threading import Thread
@@ -73,7 +74,7 @@ def walk_borme_root_date(bormes_root, date):
         yield pdf_day_dir, filename
 
 
-if __name__ == "__main__":
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Convert all BORME PDF files to JSON.")
     parser.add_argument(
         "-d",
@@ -94,7 +95,7 @@ if __name__ == "__main__":
         help="ISO formatted date (ex. 2016-01-01). Default: today",
     )
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if args.fromdate == "init":
         date_from = FIRST_BORME[2009]
@@ -146,3 +147,8 @@ if __name__ == "__main__":
 
     elapsed_time = time.time() - start_time
     print(f"Elapsed time: {elapsed_time:.2f} seconds")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

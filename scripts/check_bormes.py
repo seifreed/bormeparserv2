@@ -26,6 +26,7 @@ import argparse
 import datetime
 import logging
 import os
+import sys
 
 BORME_ROOT = bormeparser.CONFIG["borme_root"]
 
@@ -114,7 +115,7 @@ def check_range(begin, end, provincia, seccion, directory, download_xml):
     print("\tMissing: {}".format(results["missing"]))
 
 
-if __name__ == "__main__":
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Check BORME files are present and not corrupt."
     )
@@ -159,7 +160,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-v", "--verbose", action="store_true", default=False, help="Verbose mode"
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if args.verbose:
         bormeparser.download.logger.setLevel(logging.DEBUG)
@@ -195,3 +196,9 @@ if __name__ == "__main__":
                 date_from
             )
         )
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
