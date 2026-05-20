@@ -59,6 +59,28 @@ class BormeparserUtilsTestCase(unittest.TestCase):
         )
 
 
+class BormeFromJsonFileLikeTestCase(unittest.TestCase):
+    """Regresión: ``Borme.from_json`` accedía a ``source.name`` aunque
+    el file-like no lo expusiera (``io.StringIO`` / ``io.BytesIO``)."""
+
+    JSON_PAYLOAD = (
+        '{"cve": "BORME-A-2015-27-10", "date": "2015-02-10", '
+        '"seccion": "A", "provincia": "Cáceres", "num": 27, '
+        '"from_anuncio": 0, "to_anuncio": 0, "anuncios": {}, '
+        '"num_anuncios": 0, "raw_version": "1", "version": "2001"}'
+    )
+
+    def test_stringio_without_name(self):
+        import io
+
+        from bormeparser.borme import Borme
+
+        buf = io.StringIO(self.JSON_PAYLOAD)
+        borme = Borme.from_json(buf)
+        self.assertEqual(borme.cve, "BORME-A-2015-27-10")
+        self.assertIsNone(borme.filename)
+
+
 class ProvinciaEqTestCase(unittest.TestCase):
     """Regresión: la comparación con cadenas debe ser insensible a
     mayúsculas Y a acentos (antes solo a mayúsculas, lo que hacía que

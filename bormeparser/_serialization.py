@@ -123,7 +123,9 @@ def borme_from_json(source):
 
     if isinstance(source, io.IOBase):
         data = json.loads(source.read())
-        filename = source.name
+        # Buffers en memoria (io.StringIO, io.BytesIO) no exponen ``name``;
+        # un Borme reconstruido desde ellos simplemente no tiene ``filename``.
+        filename = getattr(source, "name", None)
     else:
         with open(source, encoding="utf-8") as fp:
             data = json.load(fp)

@@ -10,14 +10,15 @@ def get_install_requires() -> list[str]:
     with open("requirements.txt", encoding="utf-8") as fh:
         for raw in fh:
             line = raw.rstrip()
-            if (
-                not line
-                or line.startswith(("#", "http", "git"))
-                or line == "-r base.txt"
-            ):
+            if not line or line.startswith(("#", "http", "git")):
                 continue
             requirements.append(line)
     return requirements
+
+
+def _read_long_description() -> str:
+    with open("README.md", encoding="utf-8") as fh:
+        return fh.read()
 
 
 setup(
@@ -26,7 +27,7 @@ setup(
     package_data={"bormeparser": ["examples/*"]},
     version=VERSION,
     description="bormeparser is a Python library for parsing BORME files",
-    long_description=open("README.md", encoding="utf-8").read(),
+    long_description=_read_long_description(),
     long_description_content_type="text/markdown",
     author="Pablo Castellano",
     author_email="pablo@anche.no",
