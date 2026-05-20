@@ -203,11 +203,12 @@ class BormeXML:
     def _iter_items(self, seccion=None, provincia=None):
         """Itera los ``<item>`` del sumario filtrando por sección/provincia.
 
-        La comparación de provincia es insensible a mayúsculas y acentos:
-        el sumario emite ``CÁCERES``, pero los scripts CLI pasan ``CACERES``
-        (que es el atributo ASCII de :class:`PROVINCIA`). Aceptamos también
-        instancias de :class:`Provincia` (su ``__str__`` devuelve el
-        nombre con acentos, p. ej. ``"Cáceres"``).
+        ``provincia`` admite cualquier forma reconocida por
+        :meth:`PROVINCIA.coerce` (la instancia :class:`Provincia`, el
+        atributo ASCII ``"CACERES"``, el nombre acentuado ``"Cáceres"``,
+        la forma bilingüe del sumario ``"VALENCIA/VALÈNCIA"``…). La
+        comparación contra ``<titulo>`` se hace insensible a mayúsculas
+        y acentos, y tolera títulos bilingües emitidos por el BOE.
         """
         if seccion == SECCION.C:
             base = self.xml.iterfind('diario/seccion[@codigo="C"]/apartado/item')
@@ -218,11 +219,23 @@ class BormeXML:
         else:
             base = self._all_items()
 
-        provincia_norm = remove_accents(str(provincia)).upper() if provincia else None
+        if provincia is not None:
+            from .provincia import PROVINCIA
+
+            provincia = PROVINCIA.coerce(provincia)
+            provincia_norm = remove_accents(provincia.name).upper()
+        else:
+            provincia_norm = None
+
         for item in base:
             if provincia_norm is not None:
                 titulo = item.findtext("titulo") or ""
-                if remove_accents(titulo).upper() != provincia_norm:
+                # El sumario puede emitir el título en forma bilingüe
+                # (``"VALENCIA/VALÈNCIA"``); comparamos cada lado.
+                candidates = [titulo, *titulo.split("/")] if "/" in titulo else [titulo]
+                if not any(
+                    remove_accents(c).upper() == provincia_norm for c in candidates
+                ):
                     continue
             yield item
 

@@ -124,7 +124,55 @@ class PROVINCIA:
         except AttributeError as exc:
             raise ValueError(f"InvalidProvince: {title}") from exc
 
+    @staticmethod
+    def coerce(value):
+        """Devuelve una :class:`Provincia` a partir de ``value``.
+
+        Acepta tanto un objeto :class:`Provincia` (passthrough) como
+        cualquier forma textual que aparezca en el ecosistema BORME:
+
+        - Atributo ASCII de :class:`PROVINCIA` (``"CACERES"``,
+          ``"MADRID"``), tal como lo expone ``ALL_PROVINCIAS`` a
+          ``argparse choices``.
+        - Mismo nombre en minúsculas o con acentos.
+        - Forma acentuada en mayúsculas que emite el sumario
+          (``"CÁCERES"``, ``"VALENCIA/VALÈNCIA"``).
+
+        Lanza ``ValueError`` si el valor no corresponde a ninguna
+        provincia conocida.
+        """
+        if isinstance(value, Provincia):
+            return value
+        if not isinstance(value, str):
+            raise TypeError(
+                f"provincia must be Provincia or str, got {type(value).__name__}"
+            )
+
+        def _attr_lookup(text):
+            cand = remove_accents(text).upper().replace(" ", "_")
+            prov = getattr(PROVINCIA, cand, None)
+            return prov if isinstance(prov, Provincia) else None
+
+        # 1) Coincidencia directa con un atributo de PROVINCIA.
+        if (prov := _attr_lookup(value)) is not None:
+            return prov
+        # 2) Forma bilingüe del sumario (``"VALENCIA/VALÈNCIA"``,
+        # ``"ARABA/ÁLAVA"``): probar cada lado del "/".
+        if "/" in value:
+            for part in value.split("/"):
+                if (prov := _attr_lookup(part)) is not None:
+                    return prov
+        # 3) Coincidencia por el nombre legible (``"Cáceres"``, etc.).
+        try:
+            return PROVINCIA.from_title(value)
+        except ValueError:
+            pass
+        raise ValueError(f"Unknown provincia: {value!r}")
+
 
 ALL_PROVINCIAS = list(
-    filter(lambda x: not x.startswith("__") and x != "from_title", vars(PROVINCIA))
+    filter(
+        lambda x: not x.startswith("__") and x not in ("from_title", "coerce"),
+        vars(PROVINCIA),
+    )
 )

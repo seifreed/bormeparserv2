@@ -28,6 +28,15 @@ Changelog for bormeparser
   -p CACERES`` no descargaba nada porque ``"CACERES" != "CÁCERES"``
   (el sumario emite la forma acentuada). Acepta también instancias de
   :class:`Provincia` directamente.
+- fix(api): la API pública (``get_url_pdf``, ``get_url_pdfs``,
+  ``download_pdf``, ``download_pdfs``, ``BormeXML._iter_items``)
+  normaliza el parámetro ``provincia`` a través del nuevo
+  :meth:`PROVINCIA.coerce`. Antes, pasar el string ASCII ``"CACERES"``
+  a ``get_url_pdf`` reventaba con ``AttributeError`` y pasarlo a
+  ``get_url_pdfs`` devolvía ``{}`` silenciosamente. ``coerce`` acepta
+  instancia, atributo ASCII, nombre con o sin acentos y forma
+  bilingüe del sumario (``"VALENCIA/VALÈNCIA"``), y lanza
+  ``ValueError`` claro si el nombre es desconocido.
 
 
 0.5.0 (2022-09-27)

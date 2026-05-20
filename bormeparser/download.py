@@ -22,6 +22,7 @@ from lxml import etree
 
 from .exceptions import BormeDoesntExistException, MissingFilterException
 from .parser import parse as parse_borme
+from .provincia import PROVINCIA
 from .seccion import SECCION
 
 requests.adapters.DEFAULT_RETRIES = 3
@@ -125,6 +126,8 @@ def download_xml(date, filename, secure=USE_HTTPS):
 
 def download_pdfs(date, path, provincia=None, seccion=None, secure=USE_HTTPS):
     """Descarga BORMEs PDF de la provincia/sección y la fecha indicadas."""
+    if provincia is not None:
+        provincia = PROVINCIA.coerce(provincia)
     urls = get_url_pdfs(date, provincia=provincia, seccion=seccion, secure=secure)
     files = download_urls(urls, path)
     return True, files
@@ -132,6 +135,7 @@ def download_pdfs(date, path, provincia=None, seccion=None, secure=USE_HTTPS):
 
 def download_pdf(date, filename, seccion, provincia, parse=False):
     """Descarga un único BORME-A/B PDF."""
+    provincia = PROVINCIA.coerce(provincia)
     url = get_url_pdf(date, seccion, provincia)
     downloaded = download_url(url, filename)
     if downloaded:
@@ -177,18 +181,21 @@ def get_url_pdf(date, seccion, provincia, secure=USE_HTTPS):
     La URL se lee directamente del sumario en lugar de reconstruirla, así
     seguimos funcionando si el BOE cambia el patrón de paths.
     """
+    provincia = PROVINCIA.coerce(provincia)
     sumario = _fetch_sumario_tree(get_url_xml(date, secure=secure))
     return _find_pdf_url_in_sumario(sumario, seccion, provincia.code)
 
 
 def get_url_pdf_from_xml(date, seccion, provincia, xml_path, secure=USE_HTTPS):
     """Variante de :func:`get_url_pdf` que toma el sumario de un fichero local."""
+    provincia = PROVINCIA.coerce(provincia)
     sumario = _fetch_sumario_tree(xml_path)
     return _find_pdf_url_in_sumario(sumario, seccion, provincia.code)
 
 
 def get_url_pdfs_provincia(date, provincia, secure=USE_HTTPS):
     """Diccionario ``{seccion: url_pdf}`` para una provincia y fecha."""
+    provincia = PROVINCIA.coerce(provincia)
     sumario = _fetch_sumario_tree(get_url_xml(date, secure=secure))
     urls = {}
     for item in sumario.iterfind("diario/seccion/item"):
@@ -241,6 +248,8 @@ def get_url_seccion_c(date, format="xml", secure=USE_HTTPS):
 
 
 def get_url_pdfs(date, seccion=None, provincia=None, secure=USE_HTTPS):
+    if provincia is not None:
+        provincia = PROVINCIA.coerce(provincia)
     if seccion and not provincia:
         return get_url_pdfs_seccion(date, seccion, secure=secure)
     if provincia and not seccion:
