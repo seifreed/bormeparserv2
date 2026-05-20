@@ -73,9 +73,19 @@ def _fetch_sumario_tree(source):
         if response.status_code == 404:
             raise BormeDoesntExistException("BOE has no BORME for {}".format(source))
         response.raise_for_status()
-        root = etree.fromstring(response.content)
+        try:
+            root = etree.fromstring(response.content)
+        except etree.XMLSyntaxError as exc:
+            raise BormeDoesntExistException(
+                f"Malformed sumario XML from {source}: {exc}"
+            ) from exc
     else:
-        root = etree.parse(source).getroot()
+        try:
+            root = etree.parse(source).getroot()
+        except etree.XMLSyntaxError as exc:
+            raise BormeDoesntExistException(
+                f"Malformed sumario XML at {source}: {exc}"
+            ) from exc
 
     if root.tag == "sumario":
         # Local fixture stored directly as <sumario>... (no <response> wrapper).

@@ -22,7 +22,10 @@ de forma diferida vía ``__getattr__`` del módulo.
 """
 
 import configparser
+import logging
 import os
+
+logger = logging.getLogger(__name__)
 
 CONFIG_FILE = os.path.expanduser("~/.bormecfg")
 DEFAULTS = {
@@ -36,7 +39,10 @@ def get_config():
     """Devuelve la configuración efectiva (defaults + ``~/.bormecfg``).
 
     Se cachea tras la primera lectura. Llamar a :func:`reload_config`
-    para forzar una nueva lectura (útil en tests).
+    para forzar una nueva lectura (útil en tests). Si el fichero existe
+    pero está malformado (p. ej. sin cabecera de sección), se ignora y
+    se usan los defaults — un ``~/.bormecfg`` roto no debe reventar
+    ``import bormeparser``.
     """
     global _cached_config
     if _cached_config is not None:
@@ -45,11 +51,19 @@ def get_config():
     merged = dict(DEFAULTS)
     if os.path.isfile(CONFIG_FILE):
         parser = configparser.ConfigParser()
-        parser.read(CONFIG_FILE)
-        # El fichero histórico usa la sección [general]; si no está,
-        # caer en los defaults antes que reventar con KeyError.
-        if parser.has_section("general"):
-            merged.update(parser["general"])
+        try:
+            parser.read(CONFIG_FILE)
+        except configparser.Error as exc:
+            logger.warning(
+                "Ignoring malformed %s (%s); falling back to defaults",
+                CONFIG_FILE,
+                exc,
+            )
+        else:
+            # El fichero histórico usa la sección [general]; si no está,
+            # caer en los defaults antes que reventar con KeyError.
+            if parser.has_section("general"):
+                merged.update(parser["general"])
     _cached_config = merged
     return _cached_config
 

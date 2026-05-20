@@ -213,6 +213,70 @@ class ConfigTestCase(unittest.TestCase):
         finally:
             os.unlink(path)
 
+    def test_malformed_file_falls_back_to_defaults(self):
+        """Regresión: un ``~/.bormecfg`` sin cabecera ``[general]``
+        reventaba ``import bormeparser`` con ``MissingSectionHeaderError``.
+        Ahora se loguea un warning y se usan los defaults."""
+        from bormeparser import config
+
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".cfg", delete=False, encoding="utf-8"
+        ) as fp:
+            fp.write("this is not ini at all\n!!!\n")
+            path = fp.name
+        try:
+            config.CONFIG_FILE = path
+            with self.assertLogs("bormeparser.config", level="WARNING") as captured:
+                cfg = config.get_config()
+            self.assertIn("borme_root", cfg)
+            self.assertEqual(cfg["borme_root"], config.DEFAULTS["borme_root"])
+            self.assertTrue(
+                any("malformed" in m for m in captured.output),
+                msg=f"captured={captured.output!r}",
+            )
+        finally:
+            os.unlink(path)
+
+    def test_borme_root_override_from_general_section(self):
+        """Una entrada ``borme_root`` en ``[general]`` sustituye al default."""
+        from bormeparser import config
+
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".cfg", delete=False, encoding="utf-8"
+        ) as fp:
+            fp.write("[general]\nborme_root=/srv/bormes\n")
+            path = fp.name
+        try:
+            config.CONFIG_FILE = path
+            cfg = config.get_config()
+            self.assertEqual(cfg["borme_root"], "/srv/bormes")
+        finally:
+            os.unlink(path)
+
+    def test_config_file_pointing_to_directory_falls_back(self):
+        """``isfile`` excluye directorios: ``borme_root`` viene de defaults."""
+        from bormeparser import config
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config.CONFIG_FILE = tmpdir
+            cfg = config.get_config()
+            self.assertEqual(cfg["borme_root"], config.DEFAULTS["borme_root"])
+
+    def test_empty_file_falls_back(self):
+        """Un fichero vacío no rompe ConfigParser, pero tampoco aporta nada."""
+        from bormeparser import config
+
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".cfg", delete=False, encoding="utf-8"
+        ) as fp:
+            path = fp.name
+        try:
+            config.CONFIG_FILE = path
+            cfg = config.get_config()
+            self.assertEqual(cfg, config.DEFAULTS)
+        finally:
+            os.unlink(path)
+
 
 class ActoIdsUniqueTestCase(unittest.TestCase):
     """Regresión: ``REACTIVACION_DE_LA_SOCIEDAD`` y

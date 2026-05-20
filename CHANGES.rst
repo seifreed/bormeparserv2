@@ -28,6 +28,18 @@ Changelog for bormeparser
   -p CACERES`` no descargaba nada porque ``"CACERES" != "CÁCERES"``
   (el sumario emite la forma acentuada). Acepta también instancias de
   :class:`Provincia` directamente.
+- fix(config): ``get_config`` reventaba con
+  ``configparser.MissingSectionHeaderError`` si ``~/.bormecfg`` estaba
+  malformado (cualquier ``import bormeparser`` consciente del usuario
+  trazaba). Ahora se loguea un warning y se cae a los defaults. Tests
+  nuevos en ``ConfigTestCase`` cubren fichero vacío, fichero con
+  ``[general]`` que sobreescribe ``borme_root``, y ``CONFIG_FILE`` que
+  apunta a un directorio.
+- fix(sumario): ``BormeXML.from_file`` traduce
+  ``lxml.etree.XMLSyntaxError`` (fichero vacío, truncado, no XML) a
+  ``BormeDoesntExistException`` con un mensaje que apunta al fichero
+  problemático. Antes se filtraba el error de ``lxml`` directamente.
+  Cubierto en ``test_sumario_edges``.
 - fix(packaging): el sdist no incluía ``requirements.txt``, pero
   ``setup.py:get_install_requires`` lo lee en build-time. Resultado:
   ``pip install bormeparser-X.tar.gz`` reventaba con
