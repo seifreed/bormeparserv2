@@ -26,6 +26,7 @@ en :class:`_ParseState` y cada tipo de línea tiene su propio handler.
 from __future__ import annotations
 
 import logging
+import re
 from dataclasses import dataclass
 from typing import Iterator
 
@@ -325,9 +326,14 @@ class PyPDFParser(BormeAParserBackend):
     # Helpers reutilizados por los handlers
     # ------------------------------------------------------------------
 
+    _COLLAPSE_SPACES = re.compile(r" {2,}")
+
     def _clean_data(self, data: str) -> str:
-        """Deshace los escapes \\( \\) del PDF y colapsa dobles espacios."""
-        return data.replace(r"\(", "(").replace(r"\)", ")").replace("  ", " ").strip()
+        """Deshace los escapes ``\\(`` / ``\\)`` del PDF y colapsa cualquier
+        run de espacios (no solo pares: ``str.replace("  ", " ")`` solo
+        pisa una vez la cadena y deja triples y mayores intactos)."""
+        data = data.replace(r"\(", "(").replace(r"\)", ")")
+        return self._COLLAPSE_SPACES.sub(" ", data).strip()
 
     def _parse_acto(self, nombreacto: str, data: str, prefix: str = "") -> None:
         data = self._clean_data(data)

@@ -250,6 +250,10 @@ def regex_cargos(data, sanitize=True):
             e = e.strip(" .")
             if sanitize:
                 e = clean_empresa(e)
+            # Cadenas como ``Auditor: SL;.`` o ``Auditor: .`` colaban
+            # entradas vacías al set; las descartamos explícitamente.
+            if not e:
+                continue
             entidades.add(e)
         if cargo[0] in cargos:
             cargos[cargo[0]].update(entidades)

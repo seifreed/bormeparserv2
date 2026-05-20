@@ -295,6 +295,21 @@ class BormeparserRegexNoMatchTestCase(unittest.TestCase):
             regex_fecha("no es una fecha BORME")
 
 
+class BormeparserRegexCargosEmptyEntitiesTestCase(unittest.TestCase):
+    """Regresión: cadenas como ``Auditor: SL;.`` colaban entradas vacías
+    al set de entidades (al splitear por ``;`` y dejar el sufijo ``.``)."""
+
+    def test_trailing_semicolon_does_not_add_empty(self):
+        from bormeparser.regex import regex_cargos
+
+        self.assertEqual(regex_cargos("Auditor: SL;."), {"Auditor": {"SL"}})
+
+    def test_only_dot_yields_empty_set(self):
+        from bormeparser.regex import regex_cargos
+
+        self.assertEqual(regex_cargos("Auditor: ."), {"Auditor": set()})
+
+
 class BormeparserRegexConstitucionTestCase(unittest.TestCase):
     """Regresión: en ``regex_constitucion`` los literales ``"Domicilio"``
     y ``"Capital"`` estaban escritos como ``"Domicilio" "Capital"`` —
@@ -323,6 +338,29 @@ class BormeparserRegexConstitucionTestCase(unittest.TestCase):
 
         _, _, _, capital = regex_constitucion(self.DATA)
         self.assertEqual(capital, 3000.0)
+
+
+class PyPDFParserCleanDataTestCase(unittest.TestCase):
+    """Regresión: ``_clean_data`` usaba ``str.replace('  ', ' ')`` que solo
+    pasa una vez la cadena, dejando runs ≥3 espacios intactos."""
+
+    def test_collapses_triple_space(self):
+        from bormeparser.backends.pypdf.parser import PyPDFParser
+
+        instance = PyPDFParser.__new__(PyPDFParser)
+        self.assertEqual(instance._clean_data("a   b"), "a b")
+
+    def test_collapses_long_runs(self):
+        from bormeparser.backends.pypdf.parser import PyPDFParser
+
+        instance = PyPDFParser.__new__(PyPDFParser)
+        self.assertEqual(instance._clean_data("a     b    c"), "a b c")
+
+    def test_unescapes_parentheses(self):
+        from bormeparser.backends.pypdf.parser import PyPDFParser
+
+        instance = PyPDFParser.__new__(PyPDFParser)
+        self.assertEqual(instance._clean_data(r"foo \(bar\) baz"), "foo (bar) baz")
 
 
 if __name__ == "__main__":
