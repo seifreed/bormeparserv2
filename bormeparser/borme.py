@@ -290,7 +290,9 @@ class Borme:
 
     def download(self, filename):
         if self.filename is not None:
-            raise BormeAlreadyDownloadedException(filename)
+            # La excepción debe identificar el fichero ya existente, no
+            # el que se ha intentado escribir ahora.
+            raise BormeAlreadyDownloadedException(self.filename)
         downloaded = download_pdf(self.date, filename, self.seccion, self.provincia)
         if downloaded:
             self.filename = filename

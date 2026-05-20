@@ -59,8 +59,12 @@ def acto_to_attr(acto):
         .replace(" de ", " ")
     )
     attr = attr.replace(" ", "_").replace("/", "_").replace(".", "_").lower()
-    attr = re.sub("[^A-Za-z_]+", "", attr)
-    return attr.rstrip("_")
+    # Conserva dígitos: "Adaptación Ley 44/2015" debe distinguirse de
+    # "Adaptación Ley 2/95", no colisionar en "adaptacion_ley".
+    attr = re.sub(r"[^A-Za-z0-9_]+", "", attr)
+    # Colapsa runs de guiones bajos que dejan los separadores múltiples.
+    attr = re.sub(r"_+", "_", attr)
+    return attr.strip("_")
 
 
 def _resolve_borme_root(directory):

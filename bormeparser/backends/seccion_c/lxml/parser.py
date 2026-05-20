@@ -104,7 +104,7 @@ class LxmlBormeCParser(BormeCParserBackend):
         empresa = empresas[0]
         relacionadas = empresas[1:]
 
-        if departamento == EMISOR.FUSIONES_ABORCIONES:
+        if departamento == EMISOR.FUSIONES_ABSORCIONES:
             logger.warning("En fusiones y absorciones debe haber al menos 2 empresas.")
             # assert(len(empresas) > 1)
 

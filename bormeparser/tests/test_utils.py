@@ -43,6 +43,21 @@ class BormeparserUtilsTestCase(unittest.TestCase):
         self.assertEqual(attr2, "ceses_dimisiones")
         self.assertEqual(attr3, "fusion_absorcion")
 
+    def test_acto_to_attr_preserves_digits(self):
+        """Regresión: antes ``re.sub('[^A-Za-z_]+', '', attr)`` borraba
+        los dígitos, colapsando dos actos distintos (``Adaptación Ley
+        2/95`` y ``Adaptación Ley 44/2015``) al mismo slug."""
+        self.assertEqual(acto_to_attr("Adaptación Ley 2/95"), "adaptacion_ley_2_95")
+        self.assertEqual(
+            acto_to_attr("Adaptación Ley 44/2015"), "adaptacion_ley_44_2015"
+        )
+
+    def test_acto_to_attr_collapses_underscores(self):
+        self.assertEqual(
+            acto_to_attr("Articulo 378.5 del Reglamento del Registro Mercantil"),
+            "articulo_378_5_reglamento_registro_mercantil",
+        )
+
 
 class ProvinciaEqTestCase(unittest.TestCase):
     """Regresión: la comparación con cadenas debe ser insensible a
