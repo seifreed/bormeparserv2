@@ -54,19 +54,34 @@ class PyPDFParser(BormeAParserBackend):
         self.actos = []
         self.sanitize = sanitize
 
+    # Mapping marker → (capture mode, DATA key it fills).
+    # Listed in the same order the markers appear in BORME PDFs.
+    _METADATA_MARKERS = (
+        ('/Fecha', 'fecha', 'borme_fecha'),
+        ('/Numero_BORME', 'num', 'borme_num'),
+        ('/Seccion', 'seccion', 'borme_seccion'),
+        ('/Subseccion', 'subseccion', 'borme_subseccion'),
+        ('/Provincia', 'provincia', 'borme_provincia'),
+        ('/Codigo_verificacion', 'cve', 'borme_cve'),
+    )
+
     def _parse(self):
         cabecera = False
         changing_page = False
-        cve = False
         data = ""
-        fecha = False
         last_font = 0
         nombreacto = None
-        numero = False
-        provincia = False
-        seccion = False
-        subseccion = False
         texto = False
+
+        # Qué metadato del boletín se está capturando ahora mismo (None si
+        # no estamos dentro de un bloque /Fecha, /Numero_BORME, etc.).
+        capture = None
+
+        # Inicialización defensiva: si el PDF no llega a un /Cabecera_acto
+        # antes del primer ET / fin de fichero, no queremos un NameError.
+        anuncio_id = None
+        empresa = None
+        extra = None
 
         DATA = {
             'borme_fecha': None,
@@ -111,11 +126,12 @@ class PyPDFParser(BormeAParserBackend):
                     if nombreacto:
                         self._parse_acto(nombreacto, data, prefix='BT')
                         nombreacto = None
-                        DATA[anuncio_id] = {
-                            'Empresa': empresa,
-                            'Extra': extra,
-                            'Actos': self.actos
-                        }
+                        if anuncio_id is not None:
+                            DATA[anuncio_id] = {
+                                'Empresa': empresa,
+                                'Extra': extra,
+                                'Actos': self.actos
+                            }
 
                     data = ""
                     self.actos = []
@@ -128,40 +144,15 @@ class PyPDFParser(BormeAParserBackend):
                     texto = True
                     continue
 
-                if line.startswith('/Fecha'):
-                    if not DATA['borme_fecha']:
-                        logger.debug('START: fecha')
-                        fecha = True
-                    continue
-
-                if line.startswith('/Numero_BORME'):
-                    if not DATA['borme_num']:
-                        logger.debug('START: numero')
-                        numero = True
-                    continue
-
-                if line.startswith('/Seccion'):
-                    if not DATA['borme_seccion']:
-                        logger.debug('START: seccion')
-                        seccion = True
-                    continue
-
-                if line.startswith('/Subseccion'):
-                    if not DATA['borme_subseccion']:
-                        logger.debug('START: subseccion')
-                        subseccion = True
-                    continue
-
-                if line.startswith('/Provincia'):
-                    if not DATA['borme_provincia']:
-                        logger.debug('START: provincia')
-                        provincia = True
-                    continue
-
-                if line.startswith('/Codigo_verificacion'):
-                    if not DATA['borme_cve']:
-                        logger.debug('START: cve')
-                        cve = True
+                matched_marker = False
+                for marker, mode, key in self._METADATA_MARKERS:
+                    if line.startswith(marker):
+                        if not DATA[key]:
+                            logger.debug('START: %s', mode)
+                            capture = mode
+                        matched_marker = True
+                        break
+                if matched_marker:
                     continue
 
                 if line == 'BT':
@@ -186,7 +177,7 @@ class PyPDFParser(BormeAParserBackend):
                         logger.debug('  data: %s' % data)
                     continue
 
-                if not any([texto, cabecera, fecha, numero, seccion, subseccion, provincia, cve]):
+                if not (texto or cabecera or capture):
                     continue
 
                 if line == '/F1 8 Tf':
@@ -241,45 +232,40 @@ class PyPDFParser(BormeAParserBackend):
 
                 m = REGEX_PDF_TEXT.match(line)
                 if m:
-                    if fecha:
-                        DATA['borme_fecha'] = m.group(1)
-                        fecha = False
-                        logger.debug('fecha: %s' % DATA['borme_fecha'])
-                    if numero:
-                        text = m.group(1)
+                    text = m.group(1)
+                    if capture == 'fecha':
+                        DATA['borme_fecha'] = text
+                        logger.debug('fecha: %s', text)
+                    elif capture == 'num':
                         DATA['borme_num'] = int(REGEX_BORME_NUM.match(text).group(1))
-                        numero = False
-                        logger.debug('num: %d' % DATA['borme_num'])
-                    if seccion:
-                        DATA['borme_seccion'] = m.group(1)
-                        seccion = False
-                        logger.debug('seccion: %s' % DATA['borme_seccion'])
-                    if subseccion:
-                        DATA['borme_subseccion'] = m.group(1)
-                        subseccion = False
-                        logger.debug('subseccion: %s' % DATA['borme_subseccion'])
-                    if provincia:
-                        DATA['borme_provincia'] = m.group(1)
-                        provincia = False
-                        logger.debug('provincia: %s' % DATA['borme_provincia'])
-                    if cve:
-                        text = m.group(1)
+                        logger.debug('num: %d', DATA['borme_num'])
+                    elif capture == 'seccion':
+                        DATA['borme_seccion'] = text
+                        logger.debug('seccion: %s', text)
+                    elif capture == 'subseccion':
+                        DATA['borme_subseccion'] = text
+                        logger.debug('subseccion: %s', text)
+                    elif capture == 'provincia':
+                        DATA['borme_provincia'] = text
+                        logger.debug('provincia: %s', text)
+                    elif capture == 'cve':
                         DATA['borme_cve'] = REGEX_BORME_CVE.match(text).group(1)
-                        cve = False
-                        logger.debug('cve: %s' % DATA['borme_cve'])
-                    data += ' ' + m.group(1)
-                    logger.debug('TOTAL DATA: %s' % data)
+                        logger.debug('cve: %s', DATA['borme_cve'])
+                    capture = None
+                    data += ' ' + text
+                    logger.debug('TOTAL DATA: %s', data)
 
             logger.debug('---- END OF PAGE ----')
             changing_page = True
 
         if nombreacto:
             self._parse_acto(nombreacto, data, prefix='END')
-            DATA[anuncio_id] = {
-                'Empresa': empresa,
-                'Extra': extra,
-                'Actos': self.actos
-            }
+            if anuncio_id is not None:
+                DATA[anuncio_id] = {
+                    'Empresa': empresa,
+                    'Extra': extra,
+                    'Actos': self.actos
+                }
 
         return DATA
 
