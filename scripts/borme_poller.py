@@ -41,12 +41,13 @@ def parse_content(content):
     fp = open(LOGFILE, 'a')
     fp.write(str(datetime.datetime.now()) + '\n')
     print(datetime.datetime.now())
+    minutes = int(DELAY / 60)
     if '<error>' in content:
-        fp.write('Not available yet. I will try again in %d minutes.' % (DELAY / 60))
-        print('Not available yet. I will try again in %d minutes.' % (DELAY / 60))
+        message = f'Not available yet. I will try again in {minutes} minutes.'
     else:
-        fp.write('AVAILABLE! (%d bytes)' % len(content))
-        print('AVAILABLE! (%d bytes)' % len(content))
+        message = f'AVAILABLE! ({len(content)} bytes)'
+    fp.write(message)
+    print(message)
         found = True
 
     fp.write('\n\n')

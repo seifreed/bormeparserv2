@@ -22,18 +22,17 @@ class SECCION:
     B = 'B'
     C = 'C'
 
-    # TODO: No detecta tipo C, viene el texto comprimido
+    # Limitación conocida: la sección C llega comprimida en el PDF de
+    # sumario y no se detecta desde from_borme — se identifica por el
+    # CVE (BORME-C-…) en otra capa.
     @staticmethod
     def from_borme(seccion, subseccion):
-        if seccion in ('SECCIÓN PRIMERA', 'SECCIÓN PRIMERA'):
-            if subseccion == 'Actos inscritos':
+        if seccion == "SECCIÓN PRIMERA":
+            if subseccion == "Actos inscritos":
                 return SECCION.A
-            elif subseccion == 'Otros actos publicados en el Registro Mercantil':
+            if subseccion == "Otros actos publicados en el Registro Mercantil":
                 return SECCION.B
-            else:
-                raise ValueError('InvalidSeccion: %s %s' % (seccion, subseccion))
-        else:
-            raise ValueError('InvalidSeccion: %s %s' % (seccion, subseccion))
+        raise ValueError(f"InvalidSeccion: {seccion!r} {subseccion!r}")
 
 
 class SUBSECCION:

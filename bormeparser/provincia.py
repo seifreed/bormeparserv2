@@ -25,13 +25,13 @@ class Provincia:
 
     @property
     def code(self):
-        return '%02d' % self._code
+        return f"{self._code:02d}"
 
     def __str__(self):
         return self.name
 
     def __repr__(self):
-        return '%s: %s' % (self.__class__, self.name)
+        return f"{self.__class__}: {self.name}"
 
     def __lt__(self, other):
         return self.name < other.name
@@ -115,11 +115,11 @@ class PROVINCIA:
     @staticmethod
     def from_title(title):
         try:
-            if title == 'ARABA/ÁLAVA':
+            if title == "ARABA/ÁLAVA":
                 return PROVINCIA.ALAVA
-            title = remove_accents(title).replace(' ', '_')
-            return getattr(PROVINCIA, title)
-        except AttributeError:
-            raise ValueError('InvalidProvince: %s' % title)
+            normalized = remove_accents(title).replace(" ", "_")
+            return getattr(PROVINCIA, normalized)
+        except AttributeError as exc:
+            raise ValueError(f"InvalidProvince: {title}") from exc
 
 ALL_PROVINCIAS = list(filter(lambda x: not x.startswith('__') and x != 'from_title', vars(PROVINCIA)))

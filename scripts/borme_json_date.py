@@ -39,7 +39,7 @@ class ThreadConvertJSON(Thread):
     def run(self):
         while True:
             pdf_path, json_path = self.queue.get()
-            print('Creating %s ...' % json_path)
+            print(f'Creating {json_path} ...')
             try:
                 borme = bormeparser.parse(
                     pdf_path, bormeparser.SECCION.A, sanitize=True
@@ -109,4 +109,4 @@ if __name__ == '__main__':
     q.join()
 
     elapsed_time = time.time() - start_time
-    print('Elapsed time: %.2f seconds' % elapsed_time)
+    print(f'Elapsed time: {elapsed_time:.2f} seconds')
