@@ -30,9 +30,7 @@ def parse_html_text(content):
 def safe_filename(filename):
     """Devuelve ``filename`` si es un nombre plano, no una ruta."""
     if not isinstance(filename, str):
-        raise TypeError(
-            f"filename must be str, got {type(filename).__name__}"
-        )
+        raise TypeError(f"filename must be str, got {type(filename).__name__}")
     if not filename or filename in (".", "..") or "\x00" in filename:
         raise ValueError(f"Unsafe filename: {filename!r}")
     if (

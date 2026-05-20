@@ -42,9 +42,7 @@ class DockerIgnoreSecurityTestCase(unittest.TestCase):
         path = os.path.join(REPO_ROOT, ".dockerignore")
         with open(path, encoding="utf-8") as fp:
             entries = {
-                line.strip()
-                for line in fp
-                if line.strip() and not line.startswith("#")
+                line.strip() for line in fp if line.strip() and not line.startswith("#")
             }
         for required in (
             ".git",
@@ -71,11 +69,11 @@ class DockerfileSecurityTestCase(unittest.TestCase):
         path = os.path.join(REPO_ROOT, "Dockerfile")
         with open(path, encoding="utf-8") as fp:
             lines = [
-                line.strip()
-                for line in fp
-                if line.strip() and not line.startswith("#")
+                line.strip() for line in fp if line.strip() and not line.startswith("#")
             ]
-        self.assertIn("RUN useradd --create-home --shell /usr/sbin/nologin borme", lines)
+        self.assertIn(
+            "RUN useradd --create-home --shell /usr/sbin/nologin borme", lines
+        )
         self.assertIn("USER borme", lines)
 
 

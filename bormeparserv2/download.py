@@ -364,10 +364,7 @@ def download_urls(urls, path):
 
 
 def _url_download_tasks(urls, path):
-    return [
-        (url, safe_join(path, filename_from_url(url)))
-        for url in urls.values()
-    ]
+    return [(url, safe_join(path, filename_from_url(url))) for url in urls.values()]
 
 
 def _named_download_tasks(urls, path):
