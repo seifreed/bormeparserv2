@@ -169,5 +169,60 @@ class CleanEmpresaUTETestCase(unittest.TestCase):
         )
 
 
+class BormeFilesystemPathsTestCase(unittest.TestCase):
+    """Cobertura mínima de ``get_borme_pdf_path`` y ``get_borme_xml_filepath``.
+
+    Estas funciones son la base del layout en disco que usan los scripts
+    (``check_bormes.py``, ``download_borme_pdfs.py``). Un cambio en el
+    formato del path rompe a usuarios silenciosamente.
+    """
+
+    def test_pdf_path_layout(self):
+        from bormeparser.utils import get_borme_pdf_path
+
+        date = datetime.date(2015, 2, 10)
+        path = get_borme_pdf_path(date, "/srv/bormes")
+        self.assertEqual(path, "/srv/bormes/pdf/2015/02/10")
+
+    def test_xml_filepath_layout(self):
+        from bormeparser.utils import get_borme_xml_filepath
+
+        date = datetime.date(2015, 2, 10)
+        path = get_borme_xml_filepath(date, "/srv/bormes")
+        self.assertEqual(path, "/srv/bormes/xml/2015/02/BORME-S-20150210.xml")
+
+    def test_pdf_path_zero_pads_month_and_day(self):
+        from bormeparser.utils import get_borme_pdf_path
+
+        date = datetime.date(2026, 1, 9)
+        path = get_borme_pdf_path(date, "/srv/bormes")
+        # Zero-padded month and day: regresión si se rompen los formatters.
+        self.assertEqual(path, "/srv/bormes/pdf/2026/01/09")
+
+
+class SeccionFromBormeTestCase(unittest.TestCase):
+    """``SECCION.from_borme`` mapea cabeceras del PDF de sumario."""
+
+    def test_seccion_primera_actos_inscritos_is_A(self):
+        self.assertEqual(
+            SECCION.from_borme("SECCIÓN PRIMERA", "Actos inscritos"), SECCION.A
+        )
+
+    def test_seccion_primera_otros_actos_is_B(self):
+        self.assertEqual(
+            SECCION.from_borme(
+                "SECCIÓN PRIMERA",
+                "Otros actos publicados en el Registro Mercantil",
+            ),
+            SECCION.B,
+        )
+
+    def test_unknown_seccion_raises_valueerror(self):
+        with self.assertRaises(ValueError):
+            SECCION.from_borme("SECCIÓN PRIMERA", "Texto desconocido")
+        with self.assertRaises(ValueError):
+            SECCION.from_borme("OTRA SECCIÓN", "Actos inscritos")
+
+
 if __name__ == "__main__":
     unittest.main()
