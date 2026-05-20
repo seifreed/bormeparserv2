@@ -1,7 +1,7 @@
 # Auditoría de seguridad
 
-Estado: en curso  
-Fecha: 2026-05-20  
+Estado: pase final completado
+Fecha: 2026-05-20
 Rama auditada: `master`
 
 ## Alcance actual
@@ -22,6 +22,10 @@ aplicación tiene estas superficies de riesgo:
 - Revisión manual dirigida de entradas XML/HTML/PDF, red, rutas y escrituras.
 - Búsquedas estáticas con `rg` de sinks: `requests`, `open`, `os.path.join`,
   XML/lxml, JSON, subprocess/eval/exec/pickle/yaml/tar/zip y secretos.
+- Inventario completo con `git ls-files | sort`: 96 ficheros rastreados.
+- Revisión de tipos y hashes de fixtures PDF/XML/HTML de `bormeparserv2/examples`.
+- Revisión de documentación, traducciones `.po`, catálogos `.mo`, licencia,
+  changelog y metadatos de empaquetado.
 - `bandit -r bormeparserv2 scripts -x bormeparserv2/tests -f txt`: 0 hallazgos.
 - `pip-audit -r requirements.txt`: 0 vulnerabilidades conocidas.
 - `pip-audit -r requirements_dev.txt`: 0 vulnerabilidades conocidas.
@@ -33,9 +37,10 @@ aplicación tiene estas superficies de riesgo:
 - `mypy bormeparserv2`: OK.
 - `python -m unittest discover -s bormeparserv2/tests -p 'test*.py'`: 252 tests
   OK, 27 omitidos.
-- `docker build --progress=plain -t bormeparserv2-security-audit:nonroot .`: OK.
-- `docker run --rm bormeparserv2-security-audit:nonroot id -u`: `1000`.
-- `docker run --rm bormeparserv2-security-audit:nonroot sh -lc 'pwd && whoami'`:
+- `make -C docs html SPHINXOPTS='-W'`: OK.
+- `docker build --progress=plain -t bormeparserv2-security-audit:final .`: OK.
+- `docker run --rm bormeparserv2-security-audit:final id -u`: `1000`.
+- `docker run --rm bormeparserv2-security-audit:final sh -lc 'pwd && whoami'`:
   `/home/borme`, `borme`.
 
 ## Hallazgos corregidos
@@ -96,12 +101,14 @@ aplicación tiene estas superficies de riesgo:
   regresiones de XXE, traversal, descargas parciales, Docker context y non-root.
 - Packaging/Docker/CI: revisados y endurecidos.
 - Dependencias: sin vulnerabilidades conocidas por `pip-audit`.
-- Documentación y traducciones: sin código ejecutado en runtime; pendiente de
-  pase final de consistencia para cerrar el objetivo de "todos los ficheros".
+- Documentación y traducciones: revisadas. Los `.rst`, `.md` y `.po` son texto;
+  los `.mo` son catálogos gettext compilados y no forman parte de la ejecución
+  runtime de la librería. Sphinx compila con warnings tratados como error.
+- Fixtures `bormeparserv2/examples/*`: revisados por tipo y hash; se usan en
+  tests de parsing y roundtrip. No contienen código ejecutable.
 
-## Pendiente para cerrar el objetivo
+## Cierre
 
-- Completar pase final de todos los ficheros rastreados por git, incluyendo
-  documentación, `.po/.mo`, fixtures y metadatos.
-- Re-ejecutar gates finales en árbol limpio.
-- Sólo entonces marcar el objetivo como completado.
+No quedan hallazgos de seguridad abiertos en los 96 ficheros rastreados tras el
+pase final. Las defensas añadidas están cubiertas por regresiones específicas y
+las comprobaciones automáticas listadas arriba pasan en árbol limpio.
