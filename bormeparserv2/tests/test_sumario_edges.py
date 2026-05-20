@@ -14,15 +14,15 @@ Los usuarios del paquete consumen ``BormeXML.from_file`` con ficheros
 que pueden haber sido truncados, vacíos o sustituidos por basura. La
 infraestructura ``lxml`` lanza ``XMLSyntaxError``, que es un detalle de
 implementación: el paquete debe traducir esos errores a la jerarquía
-declarada en ``bormeparser.exceptions``.
+declarada en ``bormeparserv2.exceptions``.
 """
 
 import os
 import tempfile
 import unittest
 
-from bormeparser.exceptions import BormeDoesntExistException
-from bormeparser.sumario import BormeXML
+from bormeparserv2.exceptions import BormeDoesntExistException
+from bormeparserv2.sumario import BormeXML
 
 
 class MalformedXmlIsConvertedToDomainErrorTestCase(unittest.TestCase):

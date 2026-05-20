@@ -1,14 +1,26 @@
-Changelog for bormeparser
-=========================
+Changelog for bormeparserv2
+===========================
 
 0.5.1 (unreleased)
 ------------------
 
+- **Fork bormeparserv2.** El paquete pasa a llamarse ``bormeparserv2``,
+  tanto el nombre de distribución (``pip install bormeparserv2``) como
+  el de importación (``import bormeparserv2``). El repositorio nuevo es
+  `github.com/seifreed/bormeparserv2
+  <https://github.com/seifreed/bormeparserv2>`_, mantenido por Marc
+  Rivero López. El proyecto original sigue siendo
+  `github.com/PabloCastellano/bormeparser
+  <https://github.com/PabloCastellano/bormeparser>`_, de Pablo Castellano
+  (`@_pablog <https://x.com/_pablog>`_); todo el crédito de la
+  arquitectura y del trabajo previo a la versión 0.5.0 es suyo. La
+  variable de entorno para los tests live cambia de ``BORMEPARSER_LIVE``
+  a ``BORMEPARSERV2_LIVE``.
 - fix(docker): pin ``wheel==0.47.0`` y ``--no-cache-dir`` en ambos ``pip
   install`` para cerrar los avisos ``DL3013``/``DL3042`` de hadolint.
 - fix(scripts): los scripts CLI ahora exponen ``main(argv=None) -> int``
   y son testables sin ``subprocess`` (los tests de regresión nuevos
-  viven en ``bormeparser/tests/test_scripts.py`` y ejercitan cada
+  viven en ``bormeparserv2/tests/test_scripts.py`` y ejercitan cada
   script contra fixtures reales sin mocks).
 - fix(scripts/borme_info): ``-n`` pasa a ``action='append'``; antes
   ``nargs='*'`` se comía el positional ``filename``.
@@ -30,7 +42,7 @@ Changelog for bormeparser
   :class:`Provincia` directamente.
 - fix(config): ``get_config`` reventaba con
   ``configparser.MissingSectionHeaderError`` si ``~/.bormecfg`` estaba
-  malformado (cualquier ``import bormeparser`` consciente del usuario
+  malformado (cualquier ``import bormeparserv2`` consciente del usuario
   trazaba). Ahora se loguea un warning y se cae a los defaults. Tests
   nuevos en ``ConfigTestCase`` cubren fichero vacío, fichero con
   ``[general]`` que sobreescribe ``borme_root``, y ``CONFIG_FILE`` que
@@ -42,15 +54,15 @@ Changelog for bormeparser
   Cubierto en ``test_sumario_edges``.
 - fix(packaging): el sdist no incluía ``requirements.txt``, pero
   ``setup.py:get_install_requires`` lo lee en build-time. Resultado:
-  ``pip install bormeparser-X.tar.gz`` reventaba con
+  ``pip install bormeparserv2-X.tar.gz`` reventaba con
   ``FileNotFoundError: requirements.txt`` antes de instalar nada.
   ``MANIFEST.in`` ahora lo incluye explícitamente. Cubierto por
   ``test_packaging.SdistShipsAllBuildtimeRequirementsTestCase``.
 - fix(ci): la pipeline de tests usaba ``coverage run --source=bormeparser
   setup.py test``, pero setuptools 72+ eliminó el comando ``test``. Se
-  cambia a ``coverage run --source=bormeparser -m unittest discover
-  bormeparser.tests`` y se elimina ``test_suite="bormeparser.tests"`` de
-  ``setup.py`` (emitía ``UserWarning: Unknown distribution option``).
+  cambia a ``coverage run --source=bormeparserv2 -m unittest discover
+  bormeparserv2.tests`` y se elimina ``test_suite="bormeparserv2.tests"``
+  de ``setup.py`` (emitía ``UserWarning: Unknown distribution option``).
   El paso de instalación usa ``pip install -e .`` en lugar de
   ``./setup.py develop``.
 - fix(api): la API pública (``get_url_pdf``, ``get_url_pdfs``,

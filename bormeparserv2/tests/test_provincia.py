@@ -24,9 +24,9 @@ import datetime
 import os
 import unittest
 
-from bormeparser import PROVINCIA, SECCION
-from bormeparser.provincia import Provincia
-from bormeparser.sumario import BormeXML
+from bormeparserv2 import PROVINCIA, SECCION
+from bormeparserv2.provincia import Provincia
+from bormeparserv2.sumario import BormeXML
 
 EXAMPLES = os.path.join(os.path.dirname(__file__), "..", "examples")
 SUMARIO_FIXTURE = os.path.normpath(os.path.join(EXAMPLES, "BORME-S-20150924.xml"))
@@ -131,7 +131,7 @@ class DownloadApiAcceptsAllProvinciaFormsTestCase(unittest.TestCase):
         # funciones de download.py que se montan sobre fetchers reales,
         # pero las llamamos con un sumario local pre-cargado a través de
         # ``get_url_pdf_from_xml``.
-        from bormeparser.download import get_url_pdf_from_xml
+        from bormeparserv2.download import get_url_pdf_from_xml
 
         self.get_url_pdf_from_xml = get_url_pdf_from_xml
         self.xml_path = SUMARIO_FIXTURE
@@ -168,7 +168,7 @@ class AllProvinciasArgparseChoicesTestCase(unittest.TestCase):
     """
 
     def test_every_argparse_choice_coerces(self):
-        from bormeparser.provincia import ALL_PROVINCIAS
+        from bormeparserv2.provincia import ALL_PROVINCIAS
 
         for name in ALL_PROVINCIAS:
             with self.subTest(name=name):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# bormeparser documentation build configuration file, created by
+# bormeparserv2 documentation build configuration file, created by
 # sphinx-quickstart on Sat Jun 27 16:25:25 2015.
 #
 # This file is execfile()d with the current directory set to its
@@ -44,9 +44,12 @@ source_suffix = ".rst"
 master_doc = "index"
 
 # General information about the project.
-project = "bormeparser"
-copyright = "2015-2022, Pablo Castellano"
-author = "Pablo Castellano"
+project = "bormeparserv2"
+copyright = (
+    "2015-2022, Pablo Castellano (autor original); "
+    "2026-, Marc Rivero López (fork bormeparserv2)"
+)
+author = "Marc Rivero López"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -220,9 +223,9 @@ latex_elements = {
 latex_documents = [
     (
         master_doc,
-        "bormeparser.tex",
-        "bormeparser Documentation",
-        "Pablo Castellano",
+        "bormeparserv2.tex",
+        "bormeparserv2 Documentation",
+        "Marc Rivero López",
         "manual",
     ),
 ]
@@ -252,7 +255,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "bormeparser", "bormeparser Documentation", [author], 1)]
+man_pages = [(master_doc, "bormeparserv2", "bormeparserv2 Documentation", [author], 1)]
 
 # If true, show URL addresses after external links.
 # man_show_urls = False
@@ -266,10 +269,10 @@ man_pages = [(master_doc, "bormeparser", "bormeparser Documentation", [author], 
 texinfo_documents = [
     (
         master_doc,
-        "bormeparser",
-        "bormeparser Documentation",
+        "bormeparserv2",
+        "bormeparserv2 Documentation",
         author,
-        "bormeparser",
+        "bormeparserv2",
         "A Python library for parsing BORME files (Boletín Oficial del Registro Mercantil in Spain).",
         "Miscellaneous",
     ),

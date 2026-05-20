@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# test_bormeparser.py - Tests para la API pública de bormeparser
+# test_bormeparser.py - Tests para la API pública de bormeparserv2
 # Copyright (C) 2015-2022 Pablo Castellano <pablo@anche.no>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -13,14 +13,14 @@ import os
 import tempfile
 import unittest
 
-import bormeparser
-from bormeparser.borme import Borme
-from bormeparser.exceptions import BormeDoesntExistException
+import bormeparserv2
+from bormeparserv2.borme import Borme
+from bormeparserv2.exceptions import BormeDoesntExistException
 
-LIVE = os.environ.get("BORMEPARSER_LIVE") == "1"
+LIVE = os.environ.get("BORMEPARSERV2_LIVE") == "1"
 require_live = unittest.skipUnless(
     LIVE,
-    "set BORMEPARSER_LIVE=1 to run tests that hit boe.es",
+    "set BORMEPARSERV2_LIVE=1 to run tests that hit boe.es",
 )
 
 DATE = (2015, 6, 2)
@@ -33,14 +33,20 @@ class BormeparserUrlBuildersTestCase(unittest.TestCase):
     """Construcción de URLs — puramente funcional, sin red."""
 
     def test_url_xml_tuple(self):
-        self.assertEqual(bormeparser.get_url_xml(DATE, secure=True), SUMARIO_URL_HTTPS)
+        self.assertEqual(
+            bormeparserv2.get_url_xml(DATE, secure=True), SUMARIO_URL_HTTPS
+        )
 
     def test_url_xml_datetime(self):
         date = datetime.date(*DATE)
-        self.assertEqual(bormeparser.get_url_xml(date, secure=True), SUMARIO_URL_HTTPS)
+        self.assertEqual(
+            bormeparserv2.get_url_xml(date, secure=True), SUMARIO_URL_HTTPS
+        )
 
     def test_url_xml_insecure(self):
-        self.assertEqual(bormeparser.get_url_xml(DATE, secure=False), SUMARIO_URL_HTTP)
+        self.assertEqual(
+            bormeparserv2.get_url_xml(DATE, secure=False), SUMARIO_URL_HTTP
+        )
 
 
 class BormeparserInvalidDateTestCase(unittest.TestCase):
@@ -49,23 +55,23 @@ class BormeparserInvalidDateTestCase(unittest.TestCase):
     bad_date = (2015, 6, 31)
 
     def test_url_xml_raises(self):
-        self.assertRaises(ValueError, bormeparser.get_url_xml, self.bad_date)
+        self.assertRaises(ValueError, bormeparserv2.get_url_xml, self.bad_date)
 
     def test_url_pdf_raises(self):
         self.assertRaises(
             ValueError,
-            bormeparser.get_url_pdf,
+            bormeparserv2.get_url_pdf,
             self.bad_date,
-            bormeparser.SECCION.A,
-            bormeparser.PROVINCIA.MALAGA,
+            bormeparserv2.SECCION.A,
+            bormeparserv2.PROVINCIA.MALAGA,
         )
 
     def test_url_pdfs_raises(self):
         self.assertRaises(
             ValueError,
-            bormeparser.get_url_pdfs,
+            bormeparserv2.get_url_pdfs,
             self.bad_date,
-            bormeparser.SECCION.A,
+            bormeparserv2.SECCION.A,
         )
 
 
@@ -74,13 +80,13 @@ class BormeparserLivePdfUrlsTestCase(unittest.TestCase):
     """Construcción de URLs de PDF que consulta el sumario remoto."""
 
     def test_url_pdf_malaga(self):
-        url = bormeparser.get_url_pdf(
-            DATE, bormeparser.SECCION.A, bormeparser.PROVINCIA.MALAGA
+        url = bormeparserv2.get_url_pdf(
+            DATE, bormeparserv2.SECCION.A, bormeparserv2.PROVINCIA.MALAGA
         )
         self.assertEqual(url, MALAGA_PDF_URL)
 
     def test_url_pdfs_seccion_contains_all_provinces(self):
-        urls = bormeparser.get_url_pdfs(DATE, seccion=bormeparser.SECCION.A)
+        urls = bormeparserv2.get_url_pdfs(DATE, seccion=bormeparserv2.SECCION.A)
         self.assertIn("MÁLAGA", urls)
         self.assertEqual(urls["MÁLAGA"], MALAGA_PDF_URL)
         self.assertTrue(
@@ -97,18 +103,18 @@ class BormeparserLiveBormeDoesntExistTestCase(unittest.TestCase):
     def test_url_pdf_raises(self):
         self.assertRaises(
             BormeDoesntExistException,
-            bormeparser.get_url_pdf,
+            bormeparserv2.get_url_pdf,
             self.weekend_date,
-            bormeparser.SECCION.A,
-            bormeparser.PROVINCIA.MALAGA,
+            bormeparserv2.SECCION.A,
+            bormeparserv2.PROVINCIA.MALAGA,
         )
 
     def test_url_pdfs_raises(self):
         self.assertRaises(
             BormeDoesntExistException,
-            bormeparser.get_url_pdfs,
+            bormeparserv2.get_url_pdfs,
             self.weekend_date,
-            bormeparser.SECCION.A,
+            bormeparserv2.SECCION.A,
         )
 
 
@@ -117,7 +123,7 @@ class BormeparserLiveDownloadTestCase(unittest.TestCase):
     def test_download_xml(self):
         path = os.path.join(tempfile.gettempdir(), "20150602.xml")
         try:
-            downloaded = bormeparser.download_xml(DATE, path)
+            downloaded = bormeparserv2.download_xml(DATE, path)
             self.assertTrue(downloaded)
             self.assertGreater(os.path.getsize(path), 1000)
         finally:
@@ -127,11 +133,11 @@ class BormeparserLiveDownloadTestCase(unittest.TestCase):
     def test_download_pdf(self):
         path = os.path.join(tempfile.gettempdir(), "BORME-A-2015-102-29.pdf")
         try:
-            downloaded = bormeparser.download_pdf(
+            downloaded = bormeparserv2.download_pdf(
                 DATE,
                 path,
-                bormeparser.SECCION.A,
-                bormeparser.PROVINCIA.MALAGA,
+                bormeparserv2.SECCION.A,
+                bormeparserv2.PROVINCIA.MALAGA,
             )
             self.assertTrue(downloaded)
             self.assertGreater(os.path.getsize(path), 10000)
@@ -142,11 +148,11 @@ class BormeparserLiveDownloadTestCase(unittest.TestCase):
     def test_download_and_parse_pdf(self):
         path = os.path.join(tempfile.gettempdir(), "BORME-A-2015-102-29.pdf")
         try:
-            borme = bormeparser.download_pdf(
+            borme = bormeparserv2.download_pdf(
                 DATE,
                 path,
-                bormeparser.SECCION.A,
-                bormeparser.PROVINCIA.MALAGA,
+                bormeparserv2.SECCION.A,
+                bormeparserv2.PROVINCIA.MALAGA,
                 parse=True,
             )
             self.assertIsInstance(borme, Borme)
@@ -161,27 +167,27 @@ class ConfigTestCase(unittest.TestCase):
 
     def setUp(self):
         # Mantenemos el cache aislado entre tests.
-        from bormeparser import config
+        from bormeparserv2 import config
 
         self._previous_cache = config._cached_config
         config._cached_config = None
         self._previous_path = config.CONFIG_FILE
 
     def tearDown(self):
-        from bormeparser import config
+        from bormeparserv2 import config
 
         config._cached_config = self._previous_cache
         config.CONFIG_FILE = self._previous_path
 
     def test_no_file_uses_defaults(self):
-        from bormeparser import config
+        from bormeparserv2 import config
 
         config.CONFIG_FILE = "/does/not/exist/.bormecfg"
         cfg = config.get_config()
         self.assertIn("borme_root", cfg)
 
     def test_missing_general_section_falls_back(self):
-        from bormeparser import config
+        from bormeparserv2 import config
 
         with tempfile.NamedTemporaryFile(
             "w", suffix=".cfg", delete=False, encoding="utf-8"
@@ -196,7 +202,7 @@ class ConfigTestCase(unittest.TestCase):
             os.unlink(path)
 
     def test_partial_general_merges_defaults(self):
-        from bormeparser import config
+        from bormeparserv2 import config
 
         with tempfile.NamedTemporaryFile(
             "w", suffix=".cfg", delete=False, encoding="utf-8"
@@ -215,9 +221,9 @@ class ConfigTestCase(unittest.TestCase):
 
     def test_malformed_file_falls_back_to_defaults(self):
         """Regresión: un ``~/.bormecfg`` sin cabecera ``[general]``
-        reventaba ``import bormeparser`` con ``MissingSectionHeaderError``.
+        reventaba ``import bormeparserv2`` con ``MissingSectionHeaderError``.
         Ahora se loguea un warning y se usan los defaults."""
-        from bormeparser import config
+        from bormeparserv2 import config
 
         with tempfile.NamedTemporaryFile(
             "w", suffix=".cfg", delete=False, encoding="utf-8"
@@ -226,7 +232,7 @@ class ConfigTestCase(unittest.TestCase):
             path = fp.name
         try:
             config.CONFIG_FILE = path
-            with self.assertLogs("bormeparser.config", level="WARNING") as captured:
+            with self.assertLogs("bormeparserv2.config", level="WARNING") as captured:
                 cfg = config.get_config()
             self.assertIn("borme_root", cfg)
             self.assertEqual(cfg["borme_root"], config.DEFAULTS["borme_root"])
@@ -239,7 +245,7 @@ class ConfigTestCase(unittest.TestCase):
 
     def test_borme_root_override_from_general_section(self):
         """Una entrada ``borme_root`` en ``[general]`` sustituye al default."""
-        from bormeparser import config
+        from bormeparserv2 import config
 
         with tempfile.NamedTemporaryFile(
             "w", suffix=".cfg", delete=False, encoding="utf-8"
@@ -255,7 +261,7 @@ class ConfigTestCase(unittest.TestCase):
 
     def test_config_file_pointing_to_directory_falls_back(self):
         """``isfile`` excluye directorios: ``borme_root`` viene de defaults."""
-        from bormeparser import config
+        from bormeparserv2 import config
 
         with tempfile.TemporaryDirectory() as tmpdir:
             config.CONFIG_FILE = tmpdir
@@ -264,7 +270,7 @@ class ConfigTestCase(unittest.TestCase):
 
     def test_empty_file_falls_back(self):
         """Un fichero vacío no rompe ConfigParser, pero tampoco aporta nada."""
-        from bormeparser import config
+        from bormeparserv2 import config
 
         with tempfile.NamedTemporaryFile(
             "w", suffix=".cfg", delete=False, encoding="utf-8"
@@ -284,7 +290,7 @@ class ActoIdsUniqueTestCase(unittest.TestCase):
     búsquedas por id devolvían el primero indistintamente."""
 
     def test_acto_ids_unique(self):
-        from bormeparser.acto import ACTO
+        from bormeparserv2.acto import ACTO
 
         # Recogemos los enteros declarados como atributos de la clase.
         ids = [

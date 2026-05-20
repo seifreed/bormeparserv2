@@ -4,16 +4,16 @@ Tutorial
 Uso básico
 ----------
 
-bormeparser proporciona distintas funciones para tratar los archivos del BORME.
+bormeparserv2 proporciona distintas funciones para tratar los archivos del BORME.
 
 Empezamos con las funciones para generar las urls de descarga:
 
 .. code-block:: python
 
-    import bormeparser
+    import bormeparserv2
     date = (2015, 6, 2)
-    xml_url = bormeparser.get_url_xml(date)
-    pdf_url = bormeparser.get_url_pdf(date, bormeparser.SECCION.A, bormeparser.PROVINCIA.MALAGA)
+    xml_url = bormeparserv2.get_url_xml(date)
+    pdf_url = bormeparserv2.get_url_pdf(date, bormeparserv2.SECCION.A, bormeparserv2.PROVINCIA.MALAGA)
 
 .. code-block:: python
 
@@ -26,30 +26,30 @@ Pero podemos usar otras funciones para descargar el BORME directamente de ese d�
 
 .. code-block:: python
 
-    import bormeparser
+    import bormeparserv2
 
     date = (2015, 6, 2)
     path = '/tmp/BORME-A-2015-102-29.pdf'
-    downloaded = bormeparser.download_pdf(date, path, bormeparser.SECCION.A, bormeparser.PROVINCIA.MALAGA)
+    downloaded = bormeparserv2.download_pdf(date, path, bormeparserv2.SECCION.A, bormeparserv2.PROVINCIA.MALAGA)
 
 .. code-block:: python
 
     >>> print(downloaded)
     True
 
-Para conocer la url de un PDF, bormeparser internamente descarga el archivo XML del día y ahí encuentra la ruta.
+Para conocer la url de un PDF, bormeparserv2 internamente descarga el archivo XML del día y ahí encuentra la ruta.
 Podemos obtener dicho archivo XML así:
 
 .. code-block:: python
 
-    >>> bormeparser.download_xml(date, '/tmp/20150602.xml')
+    >>> bormeparserv2.download_xml(date, '/tmp/20150602.xml')
     True
 
 Parsear un archivo PDF de BORME:
 
 .. code-block:: python
 
-    borme = bormeparser.parse('/tmp/BORME-A-2015-102-29.pdf', bormeparser.SECCION.A)
+    borme = bormeparserv2.parse('/tmp/BORME-A-2015-102-29.pdf', bormeparserv2.SECCION.A)
 
 .. code-block:: python
 
@@ -63,7 +63,7 @@ Descargar y parsear un PDF de BORME:
 
 .. code-block:: python
 
-    borme = bormeparser.download_pdf(date, path, bormeparser.SECCION.A, bormeparser.PROVINCIA.MALAGA, parse=True)
+    borme = bormeparserv2.download_pdf(date, path, bormeparserv2.SECCION.A, bormeparserv2.PROVINCIA.MALAGA, parse=True)
 
 Si no ha habido ningún error (problema de conexión, el BORME de esa fecha no existe, ...) la variable borme
 es una instancia de Borme:

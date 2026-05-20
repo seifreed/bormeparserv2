@@ -19,11 +19,11 @@
 import datetime
 import unittest
 
-from bormeparser.clean import clean_empresa
-from bormeparser.provincia import PROVINCIA
-from bormeparser.utils import get_borme_website
-from bormeparser.utils import acto_to_attr
-from bormeparser.seccion import SECCION
+from bormeparserv2.clean import clean_empresa
+from bormeparserv2.provincia import PROVINCIA
+from bormeparserv2.utils import get_borme_website
+from bormeparserv2.utils import acto_to_attr
+from bormeparserv2.seccion import SECCION
 
 
 class BormeparserUtilsTestCase(unittest.TestCase):
@@ -73,7 +73,7 @@ class BormeFromJsonFileLikeTestCase(unittest.TestCase):
     def test_stringio_without_name(self):
         import io
 
-        from bormeparser.borme import Borme
+        from bormeparserv2.borme import Borme
 
         buf = io.StringIO(self.JSON_PAYLOAD)
         borme = Borme.from_json(buf)
@@ -124,9 +124,9 @@ class BormeToJsonExtensionTestCase(unittest.TestCase):
     def _run_to_json(self, pdf_filename):
         import os
         import tempfile
-        from bormeparser.borme import Borme
-        from bormeparser.provincia import PROVINCIA
-        from bormeparser.seccion import SECCION
+        from bormeparserv2.borme import Borme
+        from bormeparserv2.provincia import PROVINCIA
+        from bormeparserv2.seccion import SECCION
 
         borme = Borme(
             datetime.date(2015, 2, 10),
@@ -178,21 +178,21 @@ class BormeFilesystemPathsTestCase(unittest.TestCase):
     """
 
     def test_pdf_path_layout(self):
-        from bormeparser.utils import get_borme_pdf_path
+        from bormeparserv2.utils import get_borme_pdf_path
 
         date = datetime.date(2015, 2, 10)
         path = get_borme_pdf_path(date, "/srv/bormes")
         self.assertEqual(path, "/srv/bormes/pdf/2015/02/10")
 
     def test_xml_filepath_layout(self):
-        from bormeparser.utils import get_borme_xml_filepath
+        from bormeparserv2.utils import get_borme_xml_filepath
 
         date = datetime.date(2015, 2, 10)
         path = get_borme_xml_filepath(date, "/srv/bormes")
         self.assertEqual(path, "/srv/bormes/xml/2015/02/BORME-S-20150210.xml")
 
     def test_pdf_path_zero_pads_month_and_day(self):
-        from bormeparser.utils import get_borme_pdf_path
+        from bormeparserv2.utils import get_borme_pdf_path
 
         date = datetime.date(2026, 1, 9)
         path = get_borme_pdf_path(date, "/srv/bormes")

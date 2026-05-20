@@ -20,11 +20,11 @@
 import datetime
 import re
 
-from bormeparser.acto import ACTO
-from bormeparser.clean import clean_empresa
-from bormeparser.cargo import CARGO
-from bormeparser.registro import REGISTROS, ALL_REGISTROS
-from bormeparser.sociedad import ALL_SOCIEDADES
+from bormeparserv2.acto import ACTO
+from bormeparserv2.clean import clean_empresa
+from bormeparserv2.cargo import CARGO
+from bormeparserv2.registro import REGISTROS, ALL_REGISTROS
+from bormeparserv2.sociedad import ALL_SOCIEDADES
 
 import logging
 

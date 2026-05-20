@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# bormeparser._serialization - (Des)serialización JSON del modelo Borme.
+# bormeparserv2._serialization - (Des)serialización JSON del modelo Borme.
 # Copyright (C) 2015-2022 Pablo Castellano <pablo@anche.no>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -8,7 +8,7 @@
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 
-"""Conversión entre objetos :class:`~bormeparser.borme.Borme` y JSON.
+"""Conversión entre objetos :class:`~bormeparserv2.borme.Borme` y JSON.
 
 La (de)serialización vive aparte del dominio para que ``borme.py`` no
 tenga que conocer formatos persistentes ni el sistema de ficheros.
@@ -135,7 +135,7 @@ def borme_from_json(source):
     # ...). Comparar como cadena fallaría con orden lexicográfico
     # ("10001" < "2001"); fuerza la comparación numérica.
     if int(data["version"]) < int(FILE_VERSION):
-        logger.warning("This JSON was generated with an older version of bormeparser")
+        logger.warning("This JSON was generated with an older version of bormeparserv2")
         logger.warning(
             "Current version is %s, file version is %s",
             FILE_VERSION,

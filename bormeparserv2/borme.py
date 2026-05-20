@@ -304,7 +304,7 @@ class Borme:
         return borme_to_dict(self, include_url=set_url)
 
     def to_json(self, path=None, overwrite=True, pretty=True, include_url=True):
-        """Genera BORME-JSON. Ver :func:`bormeparser._serialization.borme_to_json`."""
+        """Genera BORME-JSON. Ver :func:`bormeparserv2._serialization.borme_to_json`."""
         from ._serialization import borme_to_json
 
         return borme_to_json(

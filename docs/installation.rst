@@ -1,13 +1,16 @@
 Instalación
 ===========
 
-Puedes obtener bormeparser sencillamente desde PyPI::
+Puedes obtener bormeparserv2 desde PyPI::
 
-    pip install bormeparser
+    pip install bormeparserv2
 
-O si lo prefieres, puedes clonar el repositorio e instalarlo desde ahí, compilando previamente sus dependencias::
+O clonar el repositorio e instalarlo desde el código fuente,
+compilando antes las dependencias del sistema::
 
-    sudo apt-get install python3-dev libxslt1-dev
-    git clone https://github.com/PabloCastellano/bormeparser
-    cd bormeparser
-    python setup.py install
+    sudo apt-get install python3-dev libxslt1-dev libffi-dev zlib1g-dev gcc
+    git clone https://github.com/seifreed/bormeparserv2
+    cd bormeparserv2
+    pip install -e .
+
+El proyecto requiere Python 3.13 o 3.14.

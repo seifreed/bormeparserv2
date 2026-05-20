@@ -35,7 +35,7 @@ __all__ = [
 
 
 def __getattr__(name):
-    # ``bormeparser.CONFIG`` se resuelve perezosamente: solo se lee
+    # ``bormeparserv2.CONFIG`` se resuelve perezosamente: solo se lee
     # ``~/.bormecfg`` la primera vez que alguien lo solicita, en lugar
     # de hacerlo al importar el paquete.
     if name == "CONFIG":

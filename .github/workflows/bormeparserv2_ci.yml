@@ -1,4 +1,4 @@
-name: Bormeparser CI
+name: Bormeparserv2 CI
 
 on: ["push", "pull_request"]
 
@@ -48,9 +48,9 @@ jobs:
       - name: black
         run: black --check .
       - name: mypy
-        run: mypy bormeparser
+        run: mypy bormeparserv2
       - name: bandit
-        run: bandit -r bormeparser scripts
+        run: bandit -r bormeparserv2 scripts
       - name: pip-audit
         run: pip-audit --strict -r requirements.txt
 
@@ -75,7 +75,7 @@ jobs:
         uses: raven-actions/actionlint@v2
 
   test:
-    name: 'Bormeparser tests (py${{ matrix.python-version }})'
+    name: 'Bormeparserv2 tests (py${{ matrix.python-version }})'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -98,7 +98,7 @@ jobs:
           pip install -r requirements.txt
           pip install -e .
       - name: Run tests
-        run: coverage run --source=bormeparser -m unittest discover bormeparser.tests
+        run: coverage run --source=bormeparserv2 -m unittest discover bormeparserv2.tests
       - name: Publish to coveralls.io
         if: matrix.python-version == '3.13'
         run: coveralls --service=github

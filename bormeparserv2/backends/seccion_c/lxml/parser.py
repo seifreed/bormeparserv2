@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# bormeparser.backends.seccion_c.basic.parser.py -
+# bormeparserv2.backends.seccion_c.basic.parser.py -
 # Copyright (C) 2015-2022 Pablo Castellano <pablo@anche.no>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from bormeparser.backends.base import BormeCParserBackend
-from bormeparser.seccion import SECCION
-from bormeparser.emisor import EMISOR
-from bormeparser.regex import borme_c_separa_empresas_titulo
+from bormeparserv2.backends.base import BormeCParserBackend
+from bormeparserv2.seccion import SECCION
+from bormeparserv2.emisor import EMISOR
+from bormeparserv2.regex import borme_c_separa_empresas_titulo
 
 from lxml import etree
 

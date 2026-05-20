@@ -13,7 +13,7 @@
 Los tests aquí no usan mocks: invocan el constructor de paquetes real
 (``setuptools.build_meta``) contra el árbol de fuentes y verifican que
 los ficheros producidos contienen lo que la API pública necesita en
-tiempo de ejecución (fixtures de ``bormeparser/examples/`` para los
+tiempo de ejecución (fixtures de ``bormeparserv2/examples/`` para los
 parsers) y en tiempo de instalación (``requirements.txt`` para
 ``setup.py:get_install_requires``).
 
@@ -57,7 +57,7 @@ def _build(distribution: DistType) -> str:
 class SdistShipsAllBuildtimeRequirementsTestCase(unittest.TestCase):
     """``setup.py:get_install_requires`` lee ``requirements.txt``.
 
-    Sin él en el sdist, ``pip install bormeparser-X.tar.gz`` falla con
+    Sin él en el sdist, ``pip install bormeparserv2-X.tar.gz`` falla con
     ``FileNotFoundError: requirements.txt`` en build-time.
     """
 
@@ -112,10 +112,10 @@ class WheelShipsRuntimeFixturesTestCase(unittest.TestCase):
         with zipfile.ZipFile(self.wheel) as zf:
             names = zf.namelist()
         for fixture in (
-            "bormeparser/examples/BORME-A-2015-27-10.pdf",
-            "bormeparser/examples/BORME-C-2011-20488.html",
-            "bormeparser/examples/BORME-C-2011-20488.xml",
-            "bormeparser/examples/BORME-S-20150924.xml",
+            "bormeparserv2/examples/BORME-A-2015-27-10.pdf",
+            "bormeparserv2/examples/BORME-C-2011-20488.html",
+            "bormeparserv2/examples/BORME-C-2011-20488.xml",
+            "bormeparserv2/examples/BORME-S-20150924.xml",
         ):
             self.assertIn(fixture, names, msg=f"missing {fixture}")
 

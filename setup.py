@@ -22,17 +22,24 @@ def _read_long_description() -> str:
 
 
 setup(
-    name="bormeparser",
+    name="bormeparserv2",
     packages=find_packages(exclude=["*.tests"]),
-    package_data={"bormeparser": ["examples/*"]},
+    package_data={"bormeparserv2": ["examples/*"]},
     version=VERSION,
-    description="bormeparser is a Python library for parsing BORME files",
+    description="bormeparserv2 is a Python library for parsing BORME files",
     long_description=_read_long_description(),
     long_description_content_type="text/markdown",
-    author="Pablo Castellano",
-    author_email="pablo@anche.no",
-    url="https://github.com/PabloCastellano/bormeparser/",
-    download_url="https://github.com/PabloCastellano/bormeparser/archive/master.zip",
+    author="Marc Rivero López",
+    author_email="mriverolopez@gmail.com",
+    maintainer="Marc Rivero López",
+    maintainer_email="mriverolopez@gmail.com",
+    url="https://github.com/seifreed/bormeparserv2",
+    download_url="https://github.com/seifreed/bormeparserv2/archive/master.zip",
+    project_urls={
+        "Source": "https://github.com/seifreed/bormeparserv2",
+        "Bug Tracker": "https://github.com/seifreed/bormeparserv2/issues",
+        "Original project": "https://github.com/PabloCastellano/bormeparser",
+    },
     keywords=[
         "BORME",
         "transparency",

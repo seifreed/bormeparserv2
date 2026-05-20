@@ -8,7 +8,7 @@
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 
-"""Pruebas para entradas inválidas a ``bormeparser.parse``.
+"""Pruebas para entradas inválidas a ``bormeparserv2.parse``.
 
 Mantienen el contrato actual de errores: ``FileNotFoundError`` cuando
 el path no existe, ``ValueError`` para una sección sin backend
@@ -20,8 +20,8 @@ import os
 import tempfile
 import unittest
 
-import bormeparser
-from bormeparser import SECCION
+import bormeparserv2
+from bormeparserv2 import SECCION
 
 EXAMPLES = os.path.join(os.path.dirname(__file__), "..", "examples")
 PDF_FIXTURE = os.path.normpath(os.path.join(EXAMPLES, "BORME-A-2015-27-10.pdf"))
@@ -30,16 +30,16 @@ PDF_FIXTURE = os.path.normpath(os.path.join(EXAMPLES, "BORME-A-2015-27-10.pdf"))
 class ParseInvalidInputsTestCase(unittest.TestCase):
     def test_nonexistent_path_raises_filenotfound(self):
         with self.assertRaises(FileNotFoundError):
-            bormeparser.parse("/no/such/path.pdf", SECCION.A)
+            bormeparserv2.parse("/no/such/path.pdf", SECCION.A)
 
     def test_unknown_seccion_raises_valueerror(self):
         with self.assertRaises(ValueError):
-            bormeparser.parse(PDF_FIXTURE, "X")
+            bormeparserv2.parse(PDF_FIXTURE, "X")
 
     def test_borme_a_pdf_with_seccion_c_raises_notimplemented(self):
         # El backend de sección C no acepta PDFs (solo XML/HTML).
         with self.assertRaises(NotImplementedError):
-            bormeparser.parse(PDF_FIXTURE, SECCION.C)
+            bormeparserv2.parse(PDF_FIXTURE, SECCION.C)
 
     def test_non_pdf_for_seccion_a_raises_clear_error(self):
         with tempfile.NamedTemporaryFile(
@@ -49,7 +49,7 @@ class ParseInvalidInputsTestCase(unittest.TestCase):
             path = fp.name
         try:
             with self.assertRaises(Exception) as ctx:
-                bormeparser.parse(path, SECCION.A)
+                bormeparserv2.parse(path, SECCION.A)
             # pypdf lanza ``PdfStreamError``; comprobamos solo que NO
             # se filtra como ``UnicodeDecodeError`` u otra cosa rara que
             # haría imposible diagnosticar.
@@ -66,7 +66,7 @@ class ParseInvalidInputsTestCase(unittest.TestCase):
             path = fp.name
         try:
             with self.assertRaises(Exception) as ctx:
-                bormeparser.parse(path, SECCION.A)
+                bormeparserv2.parse(path, SECCION.A)
             self.assertIn(
                 type(ctx.exception).__name__,
                 ("EmptyFileError", "PdfReadError"),

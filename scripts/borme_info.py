@@ -16,9 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import bormeparser
-import bormeparser.backends.pypdf.parser
-from bormeparser.exceptions import BormeAnuncioNotFound
+import bormeparserv2
+import bormeparserv2.backends.pypdf.parser
+from bormeparserv2.exceptions import BormeAnuncioNotFound
 
 import argparse
 import logging
@@ -62,10 +62,10 @@ def main(argv: list[str] | None = None) -> int:
         # Sin basicConfig los loggers no tienen handler y los mensajes
         # DEBUG se descartan aunque pongas el nivel del logger en DEBUG.
         logging.basicConfig(level=logging.DEBUG)
-        bormeparser.borme.logger.setLevel(logging.DEBUG)
-        bormeparser.backends.pypdf.parser.logger.setLevel(logging.DEBUG)
+        bormeparserv2.borme.logger.setLevel(logging.DEBUG)
+        bormeparserv2.backends.pypdf.parser.logger.setLevel(logging.DEBUG)
 
-    borme = bormeparser.parse(args.filename, bormeparser.SECCION.A)
+    borme = bormeparserv2.parse(args.filename, bormeparserv2.SECCION.A)
 
     if args.number:
         anuncios = []

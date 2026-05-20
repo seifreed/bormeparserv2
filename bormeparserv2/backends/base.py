@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# bormeparser.backends.base - Clases base para los backends de parseo.
+# bormeparserv2.backends.base - Clases base para los backends de parseo.
 # Copyright (C) 2015-2022 Pablo Castellano <pablo@anche.no>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -15,9 +15,9 @@
 
 import os
 
-from bormeparser import PROVINCIA, SECCION
-from bormeparser.borme import Borme, BormeAnuncio
-from bormeparser.regex import regex_fecha
+from bormeparserv2 import PROVINCIA, SECCION
+from bormeparserv2.borme import Borme, BormeAnuncio
+from bormeparserv2.regex import regex_fecha
 
 
 class _FileBackend:

@@ -22,14 +22,14 @@ import os
 import tempfile
 import unittest
 
-import bormeparser
-from bormeparser.borme import Borme, BormeActoCargo, BormeActoTexto, BormeAnuncio
-from bormeparser.sumario import BormeXML
-from bormeparser.exceptions import BormeDoesntExistException
-from bormeparser.seccion import SECCION
-from bormeparser.provincia import PROVINCIA
+import bormeparserv2
+from bormeparserv2.borme import Borme, BormeActoCargo, BormeActoTexto, BormeAnuncio
+from bormeparserv2.sumario import BormeXML
+from bormeparserv2.exceptions import BormeDoesntExistException
+from bormeparserv2.seccion import SECCION
+from bormeparserv2.provincia import PROVINCIA
 
-EXAMPLES_PATH = os.path.join(os.path.dirname(bormeparser.__file__), "examples")
+EXAMPLES_PATH = os.path.join(os.path.dirname(bormeparserv2.__file__), "examples")
 
 DATA1 = {
     214: {
@@ -57,7 +57,7 @@ DATA1 = {
 class BormeATestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.borme = bormeparser.parse(
+        cls.borme = bormeparserv2.parse(
             os.path.join(EXAMPLES_PATH, "BORME-A-2015-27-10.pdf"), SECCION.A
         )
 
@@ -138,7 +138,7 @@ class BormeATestCase(unittest.TestCase):
 class BormeFromFileTestCase(unittest.TestCase):
     """Regresión: ``Borme.from_file`` levantaba ``NotImplementedError``;
     debe detectar la sección por el prefijo del nombre y delegar en
-    ``bormeparser.parse``."""
+    ``bormeparserv2.parse``."""
 
     def test_from_file_seccion_a(self):
         path = os.path.join(EXAMPLES_PATH, "BORME-A-2015-27-10.pdf")
@@ -164,7 +164,7 @@ class BormeAlreadyDownloadedTestCase(unittest.TestCase):
     no con ``self.filename`` (el fichero que ya existe)."""
 
     def test_existing_filename_propagated(self):
-        from bormeparser.exceptions import BormeAlreadyDownloadedException
+        from bormeparserv2.exceptions import BormeAlreadyDownloadedException
 
         borme = Borme(
             (2015, 2, 10),
@@ -304,10 +304,10 @@ class BormeActoTestCase(unittest.TestCase):
         self.assertRaises(ValueError, BormeActoTexto, "Nombramientos", ["mal"])
 
 
-LIVE = os.environ.get("BORMEPARSER_LIVE") == "1"
+LIVE = os.environ.get("BORMEPARSERV2_LIVE") == "1"
 require_live = unittest.skipUnless(
     LIVE,
-    "set BORMEPARSER_LIVE=1 to run tests that hit boe.es",
+    "set BORMEPARSERV2_LIVE=1 to run tests that hit boe.es",
 )
 
 SUMARIO_URL_HTTPS = "https://www.boe.es/datosabiertos/api/borme/sumario/20150924"
@@ -446,7 +446,7 @@ class BormeXMLTestCase(unittest.TestCase):
             self.bxml.get_url_pdfs(seccion=SECCION.B, provincia="ALMERÍA"), url_cve_b
         )
         self.assertEqual(self.bxml.get_url_pdfs(seccion=SECCION.C), urls_c)
-        from bormeparser.exceptions import MissingFilterException
+        from bormeparserv2.exceptions import MissingFilterException
 
         self.assertRaises(MissingFilterException, self.bxml.get_url_pdfs)
 
@@ -557,7 +557,7 @@ class BormeXMLTestCase(unittest.TestCase):
         (``CACERES``) como ``choices`` de argparse, pero el sumario emite
         ``CÁCERES``. ``_iter_items`` debe normalizar acentos.
         """
-        from bormeparser import PROVINCIA
+        from bormeparserv2 import PROVINCIA
 
         expected = {
             "BORME-A-2015-183-10": (
@@ -671,7 +671,7 @@ class BormeXMLTestCase(unittest.TestCase):
         self.assertEqual(self.bxml.get_sizes(SECCION.C), seccion_c_sizes)
 
     def test_get_url_cve_unknown_raises(self):
-        from bormeparser.exceptions import CveNotFound
+        from bormeparserv2.exceptions import CveNotFound
 
         self.assertRaises(
             CveNotFound,
@@ -690,7 +690,7 @@ class BormeXMLTestCase(unittest.TestCase):
 class BormeCTestCase1(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.borme = bormeparser.parse(
+        cls.borme = bormeparserv2.parse(
             os.path.join(EXAMPLES_PATH, "BORME-C-2011-20488.xml"), SECCION.C
         )
 
@@ -720,7 +720,7 @@ class BormeCTestCase1(unittest.TestCase):
 class BormeCTestCase2(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.borme = bormeparser.parse(
+        cls.borme = bormeparserv2.parse(
             os.path.join(EXAMPLES_PATH, "BORME-C-2011-20488.html"), SECCION.C
         )
 

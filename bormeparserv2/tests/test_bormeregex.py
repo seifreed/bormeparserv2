@@ -18,8 +18,8 @@
 
 import unittest
 
-from bormeparser.regex import regex_cargos, regex_empresa, regex_bold_acto, is_company
-from bormeparser.regex import (
+from bormeparserv2.regex import regex_cargos, regex_empresa, regex_bold_acto, is_company
+from bormeparserv2.regex import (
     is_acto_cargo_entrante,
     regex_argcolon,
     regex_empresa_tipo,
@@ -289,7 +289,7 @@ class BormeparserRegexNoMatchTestCase(unittest.TestCase):
             regex_bold_acto("entrada que no encaja con el patrón")
 
     def test_regex_fecha_no_match(self):
-        from bormeparser.regex import regex_fecha
+        from bormeparserv2.regex import regex_fecha
 
         with self.assertRaises(ValueError):
             regex_fecha("no es una fecha BORME")
@@ -300,12 +300,12 @@ class BormeparserRegexCargosEmptyEntitiesTestCase(unittest.TestCase):
     al set de entidades (al splitear por ``;`` y dejar el sufijo ``.``)."""
 
     def test_trailing_semicolon_does_not_add_empty(self):
-        from bormeparser.regex import regex_cargos
+        from bormeparserv2.regex import regex_cargos
 
         self.assertEqual(regex_cargos("Auditor: SL;."), {"Auditor": {"SL"}})
 
     def test_only_dot_yields_empty_set(self):
-        from bormeparser.regex import regex_cargos
+        from bormeparserv2.regex import regex_cargos
 
         self.assertEqual(regex_cargos("Auditor: ."), {"Auditor": set()})
 
@@ -326,7 +326,7 @@ class BormeparserRegexConstitucionTestCase(unittest.TestCase):
     )
 
     def test_objeto_social_stops_at_domicilio(self):
-        from bormeparser.regex import regex_constitucion
+        from bormeparserv2.regex import regex_constitucion
 
         _, activity, _, _ = regex_constitucion(self.DATA)
         # El "Objeto social" debe acabar antes de "Domicilio:"; un
@@ -334,7 +334,7 @@ class BormeparserRegexConstitucionTestCase(unittest.TestCase):
         self.assertNotIn("Domicilio", activity)
 
     def test_capital_parsed(self):
-        from bormeparser.regex import regex_constitucion
+        from bormeparserv2.regex import regex_constitucion
 
         _, _, _, capital = regex_constitucion(self.DATA)
         self.assertEqual(capital, 3000.0)
@@ -345,19 +345,19 @@ class PyPDFParserCleanDataTestCase(unittest.TestCase):
     pasa una vez la cadena, dejando runs ≥3 espacios intactos."""
 
     def test_collapses_triple_space(self):
-        from bormeparser.backends.pypdf.parser import PyPDFParser
+        from bormeparserv2.backends.pypdf.parser import PyPDFParser
 
         instance = PyPDFParser.__new__(PyPDFParser)
         self.assertEqual(instance._clean_data("a   b"), "a b")
 
     def test_collapses_long_runs(self):
-        from bormeparser.backends.pypdf.parser import PyPDFParser
+        from bormeparserv2.backends.pypdf.parser import PyPDFParser
 
         instance = PyPDFParser.__new__(PyPDFParser)
         self.assertEqual(instance._clean_data("a     b    c"), "a b c")
 
     def test_unescapes_parentheses(self):
-        from bormeparser.backends.pypdf.parser import PyPDFParser
+        from bormeparserv2.backends.pypdf.parser import PyPDFParser
 
         instance = PyPDFParser.__new__(PyPDFParser)
         self.assertEqual(instance._clean_data(r"foo \(bar\) baz"), "foo (bar) baz")

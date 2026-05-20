@@ -1,7 +1,7 @@
 Introducción
 ============
 
-**bormeparser** es una librería de Python para parsear los archivos del BORME (Boletín Oficial del Registro Mercantil en España).
+**bormeparserv2** es una librería de Python para parsear los archivos del BORME (Boletín Oficial del Registro Mercantil en España).
 
 Qué es BORME
 ------------

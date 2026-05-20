@@ -1,4 +1,4 @@
-# bormeparser.backends.pypdf.parser
+# bormeparserv2.backends.pypdf.parser
 # Copyright (C) 2015-2022 Pablo Castellano <pablo@anche.no>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -32,8 +32,8 @@ from typing import Iterator
 
 from pypdf import PdfReader
 
-from bormeparser.backends.base import BormeAParserBackend
-from bormeparser.regex import (
+from bormeparserv2.backends.base import BormeAParserBackend
+from bormeparserv2.regex import (
     REGEX_ARGCOLON,
     REGEX_BORME_CVE,
     REGEX_BORME_NUM,

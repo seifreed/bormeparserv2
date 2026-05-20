@@ -1,5 +1,5 @@
-Changelog for bormeparser
-=========================
+Changelog for bormeparserv2
+===========================
 
 0.4.1 (unreleased)
 ------------------
@@ -69,7 +69,7 @@ Changelog for bormeparser
 - Borme.to_json ahora permite especificar un path (archivo o directorio) en lugar de solo archivo
 - Borme._set_url evita conexión a Internet si existe BORME-XML
 - Sociedades y registros tienen su propio módulo
-- Funciones de limpieza de datos en bormeparser.clean
+- Funciones de limpieza de datos en bormeparserv2.clean
 - Incluye nombre del R.M. en BORME-JSON
 - Cambios menores en los scripts
 - Borme.XML devuelve str en lugar de list si solo hay un elemento
@@ -79,7 +79,7 @@ Changelog for bormeparser
 ------------------
 
 - BormeXML: get_url_pdfs, get_cves y get_sizes ahora permiten especificar sección y provincia
-- Nueva constante ALL_PROVINCIAS en bormeparser.provincia
+- Nueva constante ALL_PROVINCIAS en bormeparserv2.provincia
 - Detección de nuevos tipos de sociedades
 - Scripts: limpieza, uso de argparse en los scripts, unificación de parámetros
 - Mejoras menores en la documentación

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# bormeparser.config - Configuración del proyecto (lectura perezosa).
+# bormeparserv2.config - Configuración del proyecto (lectura perezosa).
 # Copyright (C) 2015-2022 Pablo Castellano <pablo@anche.no>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -14,10 +14,10 @@ La configuración se lee la primera vez que se solicita (no al importar),
 así un test o un servicio que nunca toque disco no necesita un
 ``~/.bormecfg``. El uso típico es::
 
-    from bormeparser.config import get_config
+    from bormeparserv2.config import get_config
     root = get_config()["borme_root"]
 
-El nombre histórico ``bormeparser.CONFIG`` sigue funcionando: se resuelve
+El nombre histórico ``bormeparserv2.CONFIG`` sigue funcionando: se resuelve
 de forma diferida vía ``__getattr__`` del módulo.
 """
 
@@ -42,7 +42,7 @@ def get_config():
     para forzar una nueva lectura (útil en tests). Si el fichero existe
     pero está malformado (p. ej. sin cabecera de sección), se ignora y
     se usan los defaults — un ``~/.bormecfg`` roto no debe reventar
-    ``import bormeparser``.
+    ``import bormeparserv2``.
     """
     global _cached_config
     if _cached_config is not None:
@@ -75,7 +75,7 @@ def reload_config():
 
 
 def __getattr__(name):
-    # Backwards compatibility: ``from bormeparser.config import CONFIG``
+    # Backwards compatibility: ``from bormeparserv2.config import CONFIG``
     # sigue funcionando, pero el fichero solo se lee si CONFIG se usa.
     if name == "CONFIG":
         return get_config()

@@ -1,15 +1,15 @@
-.. bormeparser documentation master file, created by
+.. bormeparserv2 documentation master file, created by
    sphinx-quickstart on Sat Jun 27 16:25:25 2015.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-¡Bienvenido a la documentación de bormeparser!
-==============================================
+¡Bienvenido a la documentación de bormeparserv2!
+=================================================
 
 
-Esta documentación describe el funcionamiento de **bormeparser**.
+Esta documentación describe el funcionamiento de **bormeparserv2**.
 
-Esta documentación está disponible en http://bormeparser.readthedocs.org/. Si la estás leyendo desde otro sitio, es posible que no sea la última versión.
+Esta documentación está disponible en https://github.com/seifreed/bormeparserv2. Si la estás leyendo desde otro sitio, es posible que no sea la última versión.
 
 This documentation is provided by the author "as is" without any express or implied warranties.
 

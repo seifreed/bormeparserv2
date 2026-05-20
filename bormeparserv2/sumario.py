@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# bormeparser.sumario - Parseo del sumario diario del BORME.
+# bormeparserv2.sumario - Parseo del sumario diario del BORME.
 # Copyright (C) 2015-2022 Pablo Castellano <pablo@anche.no>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -13,7 +13,7 @@ datos abiertos (``boe.es/datosabiertos/api/borme/sumario``).
 
 Esta capa es **infraestructura**: traduce el XML del BOE en estructuras
 manejables (`BormeXML`) sin saber nada del modelo de dominio
-(:class:`bormeparser.borme.Borme` y compañía).
+(:class:`bormeparserv2.borme.Borme` y compañía).
 """
 
 import datetime
@@ -58,7 +58,7 @@ class BormeXML:
 
     La instancia almacena el árbol XML y expone consultas declarativas
     contra él (`get_url_pdfs`, `get_cves`, `get_sizes`, …). Toda la I/O
-    de descarga vive en :mod:`bormeparser.download`.
+    de descarga vive en :mod:`bormeparserv2.download`.
     """
 
     def __init__(self):

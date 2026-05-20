@@ -1,66 +1,259 @@
-[![Travis bormeparser](https://travis-ci.org/PabloCastellano/bormeparser.svg?branch=master)](https://travis-ci.org/PabloCastellano/bormeparser)
-[![Pypi bormeparser](https://badge.fury.io/py/bormeparser.png)]( https://pypi.python.org/pypi/bormeparser)
-[![Downloads bormeparser](https://img.shields.io/pypi/dm/bormeparser.svg)](https://pypi.python.org/pypi/bormeparser)
-[![Coverage Status](https://coveralls.io/repos/PabloCastellano/bormeparser/badge.svg)](https://coveralls.io/r/PabloCastellano/bormeparser)
-[![Documentation Status](https://readthedocs.org/projects/bormeparser/badge/?version=latest)](https://readthedocs.org/projects/bormeparser/?badge=latest)
+<p align="center">
+  <img src="https://img.shields.io/badge/bormeparserv2-BORME%20Parser-blue?style=for-the-badge" alt="bormeparserv2">
+</p>
 
-**NOTE: This repository is unmaintained. Looking for a solution to retrieve information about Spanish companies via API while having enterprise support? Check out [LibreBOR](https://librebor.me) y [LibreBOR API Documentation](https://docs.librebor.me/).**
+<h1 align="center">bormeparserv2</h1>
 
-bormeparser
-===========
+<p align="center">
+  <strong>Python library for parsing Spain's Official Gazette of Companies Registry (BORME)</strong>
+</p>
 
-**bormeparser** is a Python library for parsing BORME files (Boletín Oficial del Registro Mercantil in Spain).
+<p align="center">
+  <a href="https://pypi.org/project/bormeparserv2/"><img src="https://img.shields.io/pypi/v/bormeparserv2?style=flat-square&logo=pypi&logoColor=white" alt="PyPI"></a>
+  <a href="https://pypi.org/project/bormeparserv2/"><img src="https://img.shields.io/pypi/pyversions/bormeparserv2?style=flat-square&logo=python&logoColor=white" alt="Python versions"></a>
+  <a href="https://github.com/seifreed/bormeparserv2/blob/master/LICENSE.txt"><img src="https://img.shields.io/badge/license-GPL--3.0--or--later-green?style=flat-square" alt="License"></a>
+  <a href="https://github.com/seifreed/bormeparserv2/actions"><img src="https://img.shields.io/github/actions/workflow/status/seifreed/bormeparserv2/bormeparserv2_ci.yml?style=flat-square&logo=github&label=CI" alt="CI"></a>
+</p>
 
-What is BORME
-=============
+<p align="center">
+  <a href="https://github.com/seifreed/bormeparserv2/stargazers"><img src="https://img.shields.io/github/stars/seifreed/bormeparserv2?style=flat-square" alt="Stars"></a>
+  <a href="https://github.com/seifreed/bormeparserv2/issues"><img src="https://img.shields.io/github/issues/seifreed/bormeparserv2?style=flat-square" alt="Issues"></a>
+  <a href="https://buymeacoffee.com/seifreed"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-yellow?style=flat-square&logo=buy-me-a-coffee&logoColor=white" alt="Buy Me a Coffee"></a>
+</p>
 
-The **Boletín Oficial del Registro Mercantil** (Spanish for *Official Mercantile Register Bulletin*) is a document published daily by
-Registro Mercantil Central (RMC) in Spain which contains newly created societies, societies that have broken up, and some other data
-the companies must communicate.
+<p align="center">
+  <a href="README.md">🇪🇸 Versión en español</a>
+</p>
 
-This library takes advantage of the electronic format of BORMEs that are published since 2009 due to
-[this Spanish law](https://www.boe.es/buscar/doc.php?id=BOE-A-2008-19826).
+---
 
-BORMEs are published at https://boe.es/diario_borme/.
+## Overview
 
-Unfortunately due to some agreements with Mercantile Register they are not allowed
-to publish all data in some useful format like XML and the most interesting information is only available in PDF files.
+**bormeparserv2** is a Python library to download, parse and serialise Spain's [Boletín Oficial del Registro Mercantil](https://www.boe.es/diario_borme/) (BORME). It turns section A/B PDFs (company acts) and section C XML/HTML (legal announcements) into typed Python objects or ready-to-consume JSON.
 
-You can read more about it on:
-- Wikipedia: https://es.wikipedia.org/wiki/Boletín_Oficial_del_Registro_Mercantil
+It is a modernised fork of [PabloCastellano/bormeparser](https://github.com/PabloCastellano/bormeparser), maintained by [Marc Rivero López](https://github.com/seifreed). See the **[Acknowledgements](#acknowledgements)** section for context.
 
-Compiling
-=========
+### Key features
 
-lxml package has some parts that need to be compiled and you need the following dependencies:
+| Feature | Description |
+|---|---|
+| **Typed API** | `Borme`, `BormeAnuncio`, `BormeActo`, `Empresa`, and `PROVINCIA`/`SECCION`/`ACTO`/`CARGO` enums |
+| **Section A/B (PDF)** | `pypdf`-based backend extracting acts per announcement |
+| **Section C (XML/HTML)** | `lxml`-based backend for legal notices and meeting calls |
+| **Download API** | HTTP client against `boe.es/datosabiertos/api/borme/sumario`, multi-threaded, idempotent |
+| **JSON serialisation** | `Borme ↔ JSON` roundtrip with schema versioning |
+| **CLI** | `borme_to_json`, `borme_info`, `check_bormes`, `download_borme_pdfs`, … |
+| **Boundary validation** | `PROVINCIA.coerce(...)` accepts ASCII attribute, accented name, or bilingual XML form |
+| **Officially supported** | Python 3.13 and 3.14 |
 
-    sudo apt-get install python3-dev libxslt1-dev
+---
 
+## Installation
 
-Usage
-=====
+### From PyPI
 
-TBD...
+```bash
+pip install bormeparserv2
+```
 
-Install
-=======
+### From source
 
-You can install it by typing:
+```bash
+git clone https://github.com/seifreed/bormeparserv2.git
+cd bormeparserv2
+python3 -m venv venv
+source venv/bin/activate
+pip install -e .
+```
 
-    python setup.py install
+System dependencies (Debian/Ubuntu):
 
-or you can get it from PYPI by using pip:
+```bash
+sudo apt-get install python3-dev libxslt1-dev libffi-dev zlib1g-dev gcc
+```
 
-    pip install bormeparser
+### Docker
 
-Tests
-=====
+```bash
+docker build -t bormeparserv2 .
+docker run --rm bormeparserv2 borme_info.py /path/to/BORME-A-2015-27-10.pdf
+```
 
-This package contains unittests. You can run them by typing:
+---
 
-    python setup.py test
-    python -m unittest bormeparser.tests.test_bormeregex
+## Quick start
 
-License
-=======
-The code license is GPLv3+
+```python
+import datetime
+import bormeparserv2
+
+# 1) Resolve the PDF URL for a date+provincia and download it
+date = datetime.date(2015, 2, 10)
+url = bormeparserv2.get_url_pdf(date, bormeparserv2.SECCION.A, "CACERES")
+bormeparserv2.download_pdf(date, "/tmp/cc.pdf", bormeparserv2.SECCION.A, "CACERES")
+
+# 2) Parse the PDF into Python objects
+borme = bormeparserv2.parse("/tmp/cc.pdf", bormeparserv2.SECCION.A, sanitize=True)
+print(borme.cve, borme.date, borme.provincia, len(borme.anuncios))
+
+# 3) Serialise to JSON
+borme.to_json("/tmp/cc.json")
+```
+
+CLI equivalent:
+
+```bash
+download_borme_pdfs.py -d /tmp/bormes -f 2015-02-10 -t 2015-02-10 -p CACERES
+borme_to_json.py -o /tmp /tmp/bormes/pdf/2015/02/10/BORME-A-2015-27-10.pdf
+borme_info.py -n 57315 /tmp/bormes/pdf/2015/02/10/BORME-A-2015-27-10.pdf
+```
+
+---
+
+## CLI
+
+| Command | Description |
+|---|---|
+| `download_borme_pdfs.py` | Download PDFs by date range, section and/or provincia |
+| `check_bormes.py` | Verify expected PDFs are on disk with the correct byte size |
+| `borme_to_json.py` | Convert a PDF into canonical JSON |
+| `borme_info.py` | Print announcements (filter with `-n <id>`) |
+| `borme_json_all.py` | Walk a full `pdf/YYYY/MM/DD/` tree and convert everything |
+| `borme_json_date.py` | Convert only the requested date range |
+| `debug_content_pdf.py` | Dump the PDF content stream (debug the pypdf backend) |
+| `borme_poller.py` | Daemon that waits until the daily sumario is published |
+
+Every script accepts `--help`.
+
+---
+
+## Library usage
+
+### Basic API
+
+```python
+import bormeparserv2
+from bormeparserv2 import parse, SECCION, PROVINCIA, BormeXML
+
+# Parse a PDF (section A/B)
+borme = parse("BORME-A-2015-27-10.pdf", SECCION.A, sanitize=True)
+
+# Parse the daily sumario XML
+bxml = BormeXML.from_file("BORME-S-20150924.xml")
+provincias = bxml.get_provincias(SECCION.A)
+url = bxml.get_url_pdfs(seccion=SECCION.A, provincia=PROVINCIA.MADRID)
+
+# Parse section C (XML or HTML)
+data = parse("BORME-C-2011-20488.xml", SECCION.C)
+print(data["empresa"], data["cifs"])
+```
+
+### `PROVINCIA.coerce` — accepts every form
+
+```python
+from bormeparserv2 import PROVINCIA
+
+PROVINCIA.coerce("CACERES")              # → PROVINCIA.CACERES
+PROVINCIA.coerce("Cáceres")              # → PROVINCIA.CACERES
+PROVINCIA.coerce("CÁCERES")              # → PROVINCIA.CACERES
+PROVINCIA.coerce("VALENCIA/VALÈNCIA")    # → PROVINCIA.VALENCIA  (bilingual sumario form)
+PROVINCIA.coerce(PROVINCIA.MADRID)       # passthrough
+```
+
+### JSON roundtrip
+
+```python
+from bormeparserv2 import Borme
+
+borme.to_json("/tmp/out.json")
+borme2 = Borme.from_json("/tmp/out.json")
+assert borme2.cve == borme.cve
+```
+
+---
+
+## Quality and tests
+
+The project runs a strict set of quality gates on every commit:
+
+```bash
+ruff check .                                         # lint
+black --check .                                      # formatting
+mypy bormeparserv2                                   # types
+bandit -r bormeparserv2 scripts                      # security
+pip-audit --strict -r requirements.txt               # dependency CVEs
+hadolint Dockerfile                                  # Dockerfile lint
+actionlint                                           # workflow lint
+cd docs && make html SPHINXOPTS="-W"                 # docs (warnings as errors)
+python -m unittest discover bormeparserv2.tests      # offline suite
+BORMEPARSERV2_LIVE=1 python -m unittest discover bormeparserv2.tests   # also hits boe.es
+```
+
+**Test policy:** no mocks. Every test exercises real code against real fixtures (`bormeparserv2/examples/`) or real `boe.es` endpoints under the `@require_live` decorator. If a feature cannot be tested reproducibly, it is not considered complete.
+
+**Coverage target:** ≥ 88%, measured with `coverage run --source=bormeparserv2 -m unittest discover bormeparserv2.tests`.
+
+---
+
+## Requirements
+
+- Python 3.13 or 3.14
+- `lxml >= 5.3`
+- `pypdf >= 5.0`
+- `pdfminer.six >= 20250506`
+- `requests >= 2.32`
+
+See [`requirements.txt`](requirements.txt) and [`setup.py`](setup.py) for the full list.
+
+---
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/name`)
+3. Make sure **all** quality gates and tests pass, including live tests (`BORMEPARSERV2_LIVE=1`)
+4. Add a regression test per bug, and at least one end-to-end test per feature
+5. Open a Pull Request describing _why_ the change is needed
+
+See [CLAUDE.md](CLAUDE.md) for the full policies (no suppressions, no mocks, mandatory regression tests, no legacy code paths).
+
+---
+
+## Support the project
+
+If you find it useful:
+
+<a href="https://buymeacoffee.com/seifreed" target="_blank">
+  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="50">
+</a>
+
+---
+
+## License
+
+Distributed under the **GPL-3.0-or-later** license. See [LICENSE.txt](LICENSE.txt).
+
+**Attribution**
+- Fork maintainer: **Marc Rivero López** | [mriverolopez@gmail.com](mailto:mriverolopez@gmail.com) | [@seifreed](https://github.com/seifreed)
+- Repository: [github.com/seifreed/bormeparserv2](https://github.com/seifreed/bormeparserv2)
+
+---
+
+## Acknowledgements
+
+bormeparserv2 is a direct fork of [**bormeparser**](https://github.com/PabloCastellano/bormeparser) by **Pablo Castellano** ([@_pablog](https://x.com/_pablog)). The whole backend design, the domain model (`Borme`, `BormeAnuncio`, `BormeActo`, the `ACTO`/`CARGO`/`PROVINCIA`/`SECCION` enums), the parsing regexes and the example fixtures are his work and form the foundation this project is built on.
+
+This fork limits itself to:
+
+- Modernising the code to Python 3.13/3.14 and removing compatibility branches for old interpreters.
+- Migrating to the current BOE endpoints (`datosabiertos/api/borme/sumario/`).
+- Hardening the quality gates (ruff/black/mypy/bandit/pip-audit/hadolint/actionlint/sphinx `-W`) and the no-mocks test suite.
+- Fixing latent regressions found while exercising the API and CLI against real data.
+
+If bormeparserv2 is useful to you, please also ⭐ [the original project](https://github.com/PabloCastellano/bormeparser) — without it, none of this would exist.
+
+---
+
+<p align="center">
+  <sub>Built for transparency analysis, OSINT and economic-intelligence tooling on the Spanish Companies Registry</sub>
+</p>

@@ -21,8 +21,8 @@ import os
 # evitar arrastrar dependencias opcionales (lxml, pypdf) cuando no se
 # usan.
 DEFAULT_PARSER = {
-    "A": ("bormeparser.backends.pypdf.parser", "PyPDFParser"),
-    "C": ("bormeparser.backends.seccion_c.lxml.parser", "LxmlBormeCParser"),
+    "A": ("bormeparserv2.backends.pypdf.parser", "PyPDFParser"),
+    "C": ("bormeparserv2.backends.seccion_c.lxml.parser", "LxmlBormeCParser"),
 }
 
 

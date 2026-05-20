@@ -11,7 +11,7 @@
 """Pruebas reales (sin mocks) de los scripts de la carpeta ``scripts/``.
 
 Cada test invoca el ``main()`` real del script con argumentos reales y
-fixtures reales del paquete ``bormeparser/examples/``. No se monkeypatchean
+fixtures reales del paquete ``bormeparserv2/examples/``. No se monkeypatchean
 parsers, ni se simulan stdin/stdout: cada script se ejecuta tal cual lo
 haría un usuario, pero en el mismo proceso para no depender de subprocess
 (que dispararía B404/B603 en bandit) y poder asertar sobre stdout/stderr
@@ -32,7 +32,7 @@ from types import ModuleType
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SCRIPTS_DIR = os.path.join(REPO_ROOT, "scripts")
-EXAMPLES_DIR = os.path.join(REPO_ROOT, "bormeparser", "examples")
+EXAMPLES_DIR = os.path.join(REPO_ROOT, "bormeparserv2", "examples")
 PDF_FIXTURE = os.path.join(EXAMPLES_DIR, "BORME-A-2015-27-10.pdf")
 
 

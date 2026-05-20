@@ -1,7 +1,16 @@
 Contribuir
 ==========
 
-Puedes mandar tus Pull Requests directamente a través de GitHub, donde también hay una lista de issues
-puedes ayudar a arreglar.
+Las contribuciones a bormeparserv2 son bienvenidas. Puedes mandar
+Pull Requests a través de GitHub:
 
-https://github.com/PabloCastellano/bormeparser/issues
+https://github.com/seifreed/bormeparserv2
+
+El tracker de issues está en:
+
+https://github.com/seifreed/bormeparserv2/issues
+
+Para issues que afecten a versiones anteriores a la 0.5.x —antes del
+fork bormeparserv2—, el proyecto original sigue siendo:
+
+https://github.com/PabloCastellano/bormeparser

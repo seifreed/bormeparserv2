@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# common.py - Common functions for bormeparser scripts
+# common.py - Common functions for bormeparserv2 scripts
 # Copyright (C) 2015-2022 Pablo Castellano <pablo@anche.no>
 #
 # This program is free software: you can redistribute it and/or modify

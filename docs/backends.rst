@@ -8,16 +8,16 @@ Usar un backend específico
 
 .. code-block:: python
 
-    import bormeparser.backends.pypdf
+    import bormeparserv2.backends.pypdf
 
-    parser = bormeparser.backends.pypdf.parser.PyPDFParser('examples/BORME-A-2015-27-10.pdf')
+    parser = bormeparserv2.backends.pypdf.parser.PyPDFParser('examples/BORME-A-2015-27-10.pdf')
     borme = parser.parse()
 
 
 Implementar un nuevo backend
 ----------------------------
 
-Para implementar un nuevo backend, es necesario crear un nuevo paquete en el directorio bormeparser/backends/ con la siguiente estructura::
+Para implementar un nuevo backend, es necesario crear un nuevo paquete en el directorio bormeparserv2/backends/ con la siguiente estructura::
 
     nuevoparser/
     ├── __init__.py
@@ -29,7 +29,7 @@ Para implementar un nuevo backend, es necesario crear un nuevo paquete en el dir
 
 .. code-block:: python
 
-    from bormeparser.backends.base import BormeAParserBackend
+    from bormeparserv2.backends.base import BormeAParserBackend
     
     class NuevoParser(BormeAParserBackend):
         def _parse(self):

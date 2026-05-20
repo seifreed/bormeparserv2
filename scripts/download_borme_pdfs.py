@@ -17,10 +17,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import bormeparser
-from bormeparser.exceptions import BormeDoesntExistException
-from bormeparser.sumario import BormeXML
-from bormeparser.utils import FIRST_BORME, get_borme_xml_filepath, get_borme_pdf_path
+import bormeparserv2
+from bormeparserv2.exceptions import BormeDoesntExistException
+from bormeparserv2.sumario import BormeXML
+from bormeparserv2.utils import FIRST_BORME, get_borme_xml_filepath, get_borme_pdf_path
 
 import argparse
 import datetime
@@ -28,7 +28,7 @@ import logging
 import os
 import sys
 
-BORME_ROOT = bormeparser.CONFIG["borme_root"]
+BORME_ROOT = bormeparserv2.CONFIG["borme_root"]
 
 logger = logging.getLogger(__name__)
 ch = logging.StreamHandler()
@@ -109,14 +109,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "-s",
         "--seccion",
-        default=bormeparser.SECCION.A,
+        default=bormeparserv2.SECCION.A,
         choices=["A", "B", "C"],
         help="BORME seccion",
     )
     parser.add_argument(
         "-p",
         "--provincia",
-        choices=bormeparser.provincia.ALL_PROVINCIAS,
+        choices=bormeparserv2.provincia.ALL_PROVINCIAS,
         help="BORME provincia",
     )
     parser.add_argument(
@@ -124,12 +124,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    bormeparser.borme.logger.setLevel(logging.ERROR)
+    bormeparserv2.borme.logger.setLevel(logging.ERROR)
     if args.verbose:
-        bormeparser.download.logger.setLevel(logging.DEBUG)
+        bormeparserv2.download.logger.setLevel(logging.DEBUG)
         logger.setLevel(logging.DEBUG)
     else:
-        bormeparser.download.logger.setLevel(logging.ERROR)
+        bormeparserv2.download.logger.setLevel(logging.ERROR)
         logger.setLevel(logging.INFO)
 
     if args.fromdate == "init":

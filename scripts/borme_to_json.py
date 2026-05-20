@@ -22,8 +22,8 @@ import logging
 import os
 import sys
 
-import bormeparser
-import bormeparser.backends.pypdf.parser
+import bormeparserv2
+import bormeparserv2.backends.pypdf.parser
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -43,11 +43,11 @@ def main(argv: list[str] | None = None) -> int:
         # basicConfig conecta un handler; sin él los DEBUG se pierden
         # aunque el nivel del logger sea DEBUG.
         logging.basicConfig(level=logging.DEBUG)
-        bormeparser.borme.logger.setLevel(logging.DEBUG)
-        bormeparser.backends.pypdf.parser.logger.setLevel(logging.DEBUG)
+        bormeparserv2.borme.logger.setLevel(logging.DEBUG)
+        bormeparserv2.backends.pypdf.parser.logger.setLevel(logging.DEBUG)
 
     print("\nParsing {}".format(args.filename))
-    borme = bormeparser.parse(args.filename, bormeparser.SECCION.A, sanitize=True)
+    borme = bormeparserv2.parse(args.filename, bormeparserv2.SECCION.A, sanitize=True)
     path = borme.to_json(args.output)
 
     if path:

@@ -23,11 +23,11 @@ import time
 from queue import Queue
 from threading import Thread
 
-import bormeparser
-import bormeparser.borme
+import bormeparserv2
+import bormeparserv2.borme
 from common import get_git_revision_short_hash
 
-BORME_ROOT = bormeparser.CONFIG["borme_root"]
+BORME_ROOT = bormeparserv2.CONFIG["borme_root"]
 THREADS = 6
 
 
@@ -45,8 +45,8 @@ class ThreadConvertJSON(Thread):
             pdf_path, json_path = item
             print(f"Creating {json_path} ...")
             try:
-                borme = bormeparser.parse(
-                    pdf_path, bormeparser.SECCION.A, sanitize=True
+                borme = bormeparserv2.parse(
+                    pdf_path, bormeparserv2.SECCION.A, sanitize=True
                 )
                 borme.to_json(json_path)
                 print("{cve}: OK".format(cve=borme.cve))

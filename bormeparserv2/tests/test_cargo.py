@@ -18,8 +18,8 @@
 
 import unittest
 
-from bormeparser.cargo import CARGO
-from bormeparser.exceptions import BormeInvalidCargoException
+from bormeparserv2.cargo import CARGO
+from bormeparserv2.exceptions import BormeInvalidCargoException
 
 
 class CargoTestCase(unittest.TestCase):
