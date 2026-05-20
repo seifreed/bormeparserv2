@@ -96,7 +96,13 @@ def borme_to_json(borme, path=None, *, overwrite=True, pretty=True, include_url=
     if path is None:
         if not borme.filename:
             raise ValueError("path is required when borme.filename is unset")
-        path = re.sub(r"(\.pdf)$", ".json", os.path.basename(borme.filename))
+        # El BOE publica los PDFs con extensión en minúscula, pero los
+        # mirrors locales y los renombrados manuales pueden conservar
+        # ``.PDF``; la sustitución debe ser insensible a mayúsculas para
+        # no terminar serializando a un fichero ``foo.PDF``.
+        path = re.sub(
+            r"\.pdf$", ".json", os.path.basename(borme.filename), flags=re.IGNORECASE
+        )
 
     if os.path.isfile(path) and not overwrite:
         return False

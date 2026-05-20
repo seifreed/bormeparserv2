@@ -1,7 +1,6 @@
 from .acto import ACTO
 from .borme import Borme
 from .cargo import CARGO
-from .config import CONFIG
 from .download import (
     download_pdf,
     download_pdfs,
@@ -33,3 +32,14 @@ __all__ = [
     "get_url_xml",
     "parse",
 ]
+
+
+def __getattr__(name):
+    # ``bormeparser.CONFIG`` se resuelve perezosamente: solo se lee
+    # ``~/.bormecfg`` la primera vez que alguien lo solicita, en lugar
+    # de hacerlo al importar el paquete.
+    if name == "CONFIG":
+        from .config import get_config
+
+        return get_config()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

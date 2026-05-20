@@ -288,6 +288,42 @@ class BormeparserRegexNoMatchTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             regex_bold_acto("entrada que no encaja con el patrón")
 
+    def test_regex_fecha_no_match(self):
+        from bormeparser.regex import regex_fecha
+
+        with self.assertRaises(ValueError):
+            regex_fecha("no es una fecha BORME")
+
+
+class BormeparserRegexConstitucionTestCase(unittest.TestCase):
+    """Regresión: en ``regex_constitucion`` los literales ``"Domicilio"``
+    y ``"Capital"`` estaban escritos como ``"Domicilio" "Capital"`` —
+    Python concatena cadenas adyacentes, así que la palabra clave
+    real era ``"DomicilioCapital"`` y nunca aparecía en los textos.
+    El lookahead del campo "Objeto social" no se cortaba en
+    "Domicilio:" y arrastraba el resto del párrafo."""
+
+    DATA = (
+        "Comienzo de operaciones: 1.04.15. "
+        "Objeto social: La actividad de blabla. "
+        "Domicilio: C/ RANDOM 1 2 (MALAGA). "
+        "Capital: 3.000,00 Euros."
+    )
+
+    def test_objeto_social_stops_at_domicilio(self):
+        from bormeparser.regex import regex_constitucion
+
+        _, activity, _, _ = regex_constitucion(self.DATA)
+        # El "Objeto social" debe acabar antes de "Domicilio:"; un
+        # bug previo dejaba aquí todo "blabla. Domicilio: ...".
+        self.assertNotIn("Domicilio", activity)
+
+    def test_capital_parsed(self):
+        from bormeparser.regex import regex_constitucion
+
+        _, _, _, capital = regex_constitucion(self.DATA)
+        self.assertEqual(capital, 3000.0)
+
 
 if __name__ == "__main__":
     unittest.main()

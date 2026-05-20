@@ -290,18 +290,22 @@ def regex_constitucion(data):
         "Comienzo de operaciones",
         "Duración",
         "Objeto social",
-        "Domicilio" "Capital",
+        "Domicilio",
+        "Capital",
         "Capital suscrito",
         "Desembolsado",
     ]
     all_keywords.append("$")
     all_or_ng = "(?:{0})".format("|".join(all_keywords))
 
-    date = (
-        re.search("Comienzo de operaciones: (.*?){0}".format(all_or_ng), data)
-        .group(1)
-        .strip()
+    comienzo_match = re.search(
+        "Comienzo de operaciones: (.*?){0}".format(all_or_ng), data
     )
+    if comienzo_match is None:
+        raise ValueError(
+            f"regex_constitucion: no se encontró 'Comienzo de operaciones' en {data!r}"
+        )
+    date = comienzo_match.group(1).strip()
     if len(date) > 1 and date[1] == ".":
         date = date[:7]
     elif len(date) > 2 and date[2] == ".":
@@ -326,7 +330,7 @@ def regex_constitucion(data):
             date = datetime.datetime.strptime(date, "%d.%m.%y").date()
         date = date.isoformat()
     except ValueError:
-        print("ERROR CON Comienzo de operaciones: {0}".format(date))
+        logger.error("ERROR CON Comienzo de operaciones: %s", date)
 
     duration = re.search("Duración: (.*?){0}".format(all_or_ng), data)
     if duration:
@@ -374,9 +378,10 @@ def regex_fecha(data):
     ('2', 'junio', '2015')
     """
 
-    day, month, year = re.match(
-        r"\w+ (\d+) de (\w+) de (\d+)", data, re.UNICODE
-    ).groups()
+    match = re.match(r"\w+ (\d+) de (\w+) de (\d+)", data, re.UNICODE)
+    if match is None:
+        raise ValueError(f"regex_fecha: patrón no coincide con {data!r}")
+    day, month, year = match.groups()
     return (int(year), MESES[month], int(day))
 
 

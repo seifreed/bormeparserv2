@@ -68,6 +68,53 @@ class ProvinciaEqTestCase(unittest.TestCase):
         self.assertFalse(PROVINCIA.MADRID.__eq__(None))
 
 
+class BormeToJsonExtensionTestCase(unittest.TestCase):
+    """Regresión: ``borme_to_json`` derivaba el nombre del JSON con
+    ``re.sub(r"(\\.pdf)$", ...)`` sensible a mayúsculas. Un PDF
+    renombrado como ``BORME-A-2015-27-10.PDF`` salía como
+    ``BORME-A-2015-27-10.PDF`` (sin extensión .json)."""
+
+    def setUp(self):
+        import os
+
+        self._cwd = os.getcwd()
+
+    def tearDown(self):
+        import os
+
+        os.chdir(self._cwd)
+
+    def _run_to_json(self, pdf_filename):
+        import os
+        import tempfile
+        from bormeparser.borme import Borme
+        from bormeparser.provincia import PROVINCIA
+        from bormeparser.seccion import SECCION
+
+        borme = Borme(
+            datetime.date(2015, 2, 10),
+            SECCION.A,
+            PROVINCIA.CACERES,
+            27,
+            "BORME-A-2015-27-10",
+            anuncios=[],
+            filename=pdf_filename,
+        )
+        with tempfile.TemporaryDirectory() as d:
+            os.chdir(d)
+            return borme.to_json(include_url=False)
+
+    def test_lowercase_pdf(self):
+        self.assertEqual(
+            self._run_to_json("BORME-A-2015-27-10.pdf"), "BORME-A-2015-27-10.json"
+        )
+
+    def test_uppercase_pdf(self):
+        self.assertEqual(
+            self._run_to_json("BORME-A-2015-27-10.PDF"), "BORME-A-2015-27-10.json"
+        )
+
+
 class CleanEmpresaUTETestCase(unittest.TestCase):
     """Regresión: ``UNION TEMPORAL DE EMPRESAS [LEY 18 1982 …]`` se
     abreviaba a sí misma (no estaba en SIGLAS), produciendo nombres
