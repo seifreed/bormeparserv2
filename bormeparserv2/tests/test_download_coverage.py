@@ -314,5 +314,86 @@ class DownloadMultithreadLiveTestCase(unittest.TestCase):
                 self.assertGreater(os.path.getsize(f), 1000)
 
 
+class FindPdfUrlDirectDefensiveChecksTestCase(unittest.TestCase):
+    """``_find_pdf_url_in_sumario`` valida ``<diario>`` y ``numero``
+    aunque normalmente lo haga la capa superior."""
+
+    def test_sumario_without_diario_raises(self):
+        from lxml import etree
+
+        from bormeparserv2.download import _find_pdf_url_in_sumario
+
+        sumario = etree.fromstring(b"<sumario><metadatos/></sumario>")
+        with self.assertRaises(BormeDoesntExistException) as ctx:
+            _find_pdf_url_in_sumario(sumario, SECCION.A, "10")
+        self.assertIn("<diario>", str(ctx.exception))
+
+    def test_diario_without_numero_attr_raises(self):
+        from lxml import etree
+
+        from bormeparserv2.download import _find_pdf_url_in_sumario
+
+        sumario = etree.fromstring(b"<sumario><diario/></sumario>")
+        with self.assertRaises(BormeDoesntExistException) as ctx:
+            _find_pdf_url_in_sumario(sumario, SECCION.A, "10")
+        self.assertIn("numero", str(ctx.exception))
+
+
+class GetUrlSeccionCBadFormatTestCase(unittest.TestCase):
+    """``get_url_seccion_c`` con format desconocido → ValueError."""
+
+    def test_unknown_format_raises_valueerror(self):
+        from bormeparserv2.download import get_url_seccion_c
+
+        with self.assertRaises(ValueError):
+            get_url_seccion_c(datetime.date(2015, 2, 10), format="docx")
+
+
+class DownloadUrlRetryTestCase(unittest.TestCase):
+    """``download_url`` reintenta hasta 3 veces ante ``RequestException``."""
+
+    def test_unresolvable_host_raises_after_retries(self):
+        from bormeparserv2.download import download_url
+
+        # ``example.invalid`` está reservado por la IANA y nunca resuelve.
+        # Cualquier intento dispara ``requests.RequestException`` (DNS
+        # failure), forzando los reintentos (líneas 303-306).
+        with tempfile.TemporaryDirectory() as tmp:
+            target = os.path.join(tmp, "noexiste.pdf")
+            import requests as _requests
+
+            with self.assertRaises(_requests.RequestException):
+                download_url("https://example.invalid/whatever.pdf", target)
+
+
+@require_live
+class GetUrlPdfsOnlyProvinciaLiveTestCase(unittest.TestCase):
+    """``get_url_pdfs(provincia=only)`` toca la rama 266 (live)."""
+
+    def test_only_provincia_returns_seccion_keyed_dict(self):
+        from bormeparserv2.download import get_url_pdfs
+
+        urls = get_url_pdfs(datetime.date(2015, 9, 24), provincia=PROVINCIA.MADRID)
+        self.assertIn("A", urls)
+
+
+@require_live
+class GetUrlPdfsCombinedFilterMissingProvinciaTestCase(unittest.TestCase):
+    """Rama 285: pedir A+provincia que no aparece en el sumario del día."""
+
+    def test_provincia_not_in_sumario_raises(self):
+        from bormeparserv2.download import get_url_pdfs
+
+        # 2015-09-24 no incluye sección A para MELILLA en el sumario;
+        # el filtro combinado falla con ``No PDF for seccion=A provincia=52``.
+        with self.assertRaises(BormeDoesntExistException) as ctx:
+            get_url_pdfs(
+                datetime.date(2015, 9, 24),
+                seccion=SECCION.A,
+                provincia=PROVINCIA.MELILLA,
+            )
+        self.assertIn("No PDF", str(ctx.exception))
+
+
 if __name__ == "__main__":
     unittest.main()

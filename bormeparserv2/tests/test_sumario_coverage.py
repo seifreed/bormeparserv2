@@ -138,6 +138,120 @@ class SumarioLivePropertiesTestCase(unittest.TestCase):
         bxml = BormeXML.from_date(datetime.date(2015, 2, 10))
         self.assertIsNotNone(bxml.next_borme)
 
+    def test_find_adjacent_borme_skips_weekend(self):
+        """Desde un viernes, ``next_borme`` debe saltar sábado/domingo.
+
+        Activa la rama ``continue`` (línea 310) al menos dos veces antes
+        de devolver el lunes con BORME.
+        """
+        bxml = BormeXML.from_date(datetime.date(2015, 2, 6))  # viernes
+        # Sábado 7 y domingo 8 no tienen BORME → continue, continue;
+        # lunes 9 sí → return.
+        self.assertEqual(bxml.next_borme, datetime.date(2015, 2, 9))
+
+    def test_find_adjacent_borme_returns_none_past_search_window(self):
+        """Tras 14 días sin BORME ``_find_adjacent_borme`` devuelve None.
+
+        Usamos un rango futuro (año 2099) — la API responde 404 para todas
+        las fechas, así que cada iteración entra en ``except`` y al
+        agotarse el rango se devuelve None (línea 313).
+        """
+        from bormeparserv2.sumario import _find_adjacent_borme
+
+        self.assertIsNone(_find_adjacent_borme(datetime.date(2099, 1, 1), step=1))
+
+
+class SumarioBadDiarioNumeroTestCase(unittest.TestCase):
+    """``BormeXML._load`` rechaza ``<diario>`` sin atributo ``numero``.
+
+    Cubre la línea 87 que el corpus normal no toca.
+    """
+
+    def test_diario_without_numero_attr_raises(self):
+        body = (
+            '<?xml version="1.0"?>'
+            "<sumario>"
+            "<metadatos><fecha_publicacion>20150210</fecha_publicacion></metadatos>"
+            "<diario/>"  # sin atributo numero
+            "</sumario>"
+        )
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".xml", delete=False, encoding="utf-8"
+        ) as fp:
+            fp.write(body)
+            path = fp.name
+        try:
+            with self.assertRaises(BormeDoesntExistException) as ctx:
+                BormeXML.from_file(path)
+            self.assertIn("numero", str(ctx.exception))
+        finally:
+            os.unlink(path)
+
+
+class SumarioItemWithoutUrlPdfTestCase(unittest.TestCase):
+    """``_get_url_borme_a`` salta items sin ``<url_pdf>`` (línea 268)."""
+
+    def _build_xml_with_item_without_url(self):
+        return (
+            '<?xml version="1.0"?>'
+            "<sumario>"
+            "<metadatos><fecha_publicacion>20150210</fecha_publicacion></metadatos>"
+            '<diario numero="27">'
+            '<seccion codigo="A">'
+            "<item>"
+            "<identificador>BORME-A-2015-27-99</identificador>"
+            "<titulo>FAKE PROVINCIA</titulo>"
+            # SIN <url_pdf>
+            "</item>"
+            "<item>"
+            "<identificador>BORME-A-2015-27-10</identificador>"
+            "<titulo>CÁCERES</titulo>"
+            "<url_pdf szBytes='100'>https://example.com/x.pdf</url_pdf>"
+            "</item>"
+            "</seccion>"
+            "</diario>"
+            "</sumario>"
+        )
+
+    def test_items_without_url_are_skipped(self):
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".xml", delete=False, encoding="utf-8"
+        ) as fp:
+            fp.write(self._build_xml_with_item_without_url())
+            path = fp.name
+        try:
+            bxml = BormeXML.from_file(path)
+            urls = bxml.get_url_pdfs(seccion=SECCION.A)
+            # Solo el item con url_pdf debe aparecer; el otro se salta
+            # silenciosamente (línea 268).
+            self.assertIn("CÁCERES", urls)
+            self.assertNotIn("FAKE PROVINCIA", urls)
+        finally:
+            os.unlink(path)
+
+
+@require_live
+class DownloadBormeLiveTestCase(unittest.TestCase):
+    """``BormeXML.download_borme`` descarga el conjunto completo del día."""
+
+    def test_download_borme_seccion_a_one_provincia(self):
+        bxml = BormeXML.from_date(datetime.date(2015, 2, 10))
+        with tempfile.TemporaryDirectory() as tmp:
+            ok, files = bxml.download_borme(
+                tmp, provincia=PROVINCIA.CACERES, seccion=SECCION.A
+            )
+            self.assertTrue(ok)
+            self.assertEqual(len(files), 1)
+            self.assertTrue(files[0].endswith(".pdf"))
+
+    def test_download_borme_seccion_c(self):
+        bxml = BormeXML.from_date(datetime.date(2015, 2, 10))
+        with tempfile.TemporaryDirectory() as tmp:
+            ok, files = bxml.download_borme(tmp, seccion=SECCION.C)
+            self.assertTrue(ok)
+            # 2015-02-10 publicó múltiples anuncios de sección C.
+            self.assertGreater(len(files), 0)
+
 
 if __name__ == "__main__":
     unittest.main()
