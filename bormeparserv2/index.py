@@ -30,6 +30,7 @@ DEFAULT_SQLITE_FILENAME = "borme.sqlite"
 DEFAULT_QDRANT_COLLECTION = "borme_anuncios"
 DEFAULT_VECTOR_SIZE = 384
 HTTP_TIMEOUT = 30
+RELATIONAL_INSERT_BATCH_SIZE = 500
 
 
 def normalize_text(value: object) -> str:
@@ -279,25 +280,33 @@ class RelationalBormeIndex:
         self._upsert_document(document)
         self._delete_document_children(data["cve"])
 
-        anuncio_rows = []
-        acto_rows = []
-        for anuncio_id, anuncio in sorted(
-            data["anuncios"].items(), key=lambda item: int(item[0])
-        ):
-            anuncio_id_int = int(anuncio_id)
-            anuncio_rows.append(
-                self._build_anuncio_row(data["cve"], anuncio_id_int, anuncio)
+        anuncios = [
+            (int(anuncio_id), anuncio)
+            for anuncio_id, anuncio in sorted(
+                data["anuncios"].items(), key=lambda item: int(item[0])
             )
-            acto_rows.extend(
-                self._build_acto_rows(data["cve"], anuncio_id_int, anuncio)
-            )
+        ]
+        anuncio_rows = [
+            self._build_anuncio_row(data["cve"], anuncio_id, anuncio)
+            for anuncio_id, anuncio in anuncios
+        ]
 
         self._insert_anuncio_rows(anuncio_rows)
+
+        acto_count = 0
+        acto_rows = []
+        for anuncio_id, anuncio in anuncios:
+            for row in self._iter_acto_rows(data["cve"], anuncio_id, anuncio):
+                acto_rows.append(row)
+                acto_count += 1
+                if len(acto_rows) >= RELATIONAL_INSERT_BATCH_SIZE:
+                    self._insert_acto_rows(acto_rows)
+                    acto_rows = []
         self._insert_acto_rows(acto_rows)
 
         if commit:
             self.connection.commit()
-        return IndexStats(1, len(anuncio_rows), len(acto_rows))
+        return IndexStats(1, len(anuncio_rows), acto_count)
 
     def index_json_root(
         self, json_root: str, *, borme_root: str | None = None
@@ -416,25 +425,19 @@ class RelationalBormeIndex:
         )
         self._executemany(sql, rows)
 
-    def _build_acto_rows(
+    def _iter_acto_rows(
         self, cve: str, anuncio_id: int, anuncio: dict[str, Any]
-    ) -> list[tuple[object, ...]]:
-        rows = []
+    ) -> Iterable[tuple[object, ...]]:
         for acto_doc in anuncio.get("actos", []):
             for acto, value in acto_doc.items():
                 if isinstance(value, dict):
                     for cargo, nombres in value.items():
                         for nombre in sorted(_iter_names(nombres)):
-                            rows.append(
-                                self._build_acto_row(
-                                    cve, anuncio_id, acto, value, cargo, nombre
-                                )
+                            yield self._build_acto_row(
+                                cve, anuncio_id, acto, value, cargo, nombre
                             )
                 else:
-                    rows.append(
-                        self._build_acto_row(cve, anuncio_id, acto, value, None, None)
-                    )
-        return rows
+                    yield self._build_acto_row(cve, anuncio_id, acto, value, None, None)
 
     def _build_acto_row(
         self,
@@ -445,12 +448,15 @@ class RelationalBormeIndex:
         cargo: str | None,
         nombre: str | None,
     ) -> tuple[object, ...]:
+        valor_text = (
+            "" if cargo is not None or nombre is not None else _as_json_text(value)
+        )
         return (
             cve,
             anuncio_id,
             acto,
             normalize_text(acto),
-            _as_json_text(value),
+            valor_text,
             cargo,
             normalize_text(cargo),
             nombre,

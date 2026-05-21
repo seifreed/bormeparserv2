@@ -131,6 +131,15 @@ class BormeIndexTestCase(unittest.TestCase):
                 self.assertEqual(len(index.search(nombre="garcia maria")), 1)
                 self.assertEqual(len(index.search(provincia="madrid")), 1)
                 self.assertEqual(len(index.search(date_from="2024-01-03")), 0)
+
+                structured_value = index.connection.execute(
+                    "SELECT valor_text FROM actos WHERE cargo = ?", ("Adm. Unico",)
+                ).fetchone()[0]
+                text_value = index.connection.execute(
+                    "SELECT valor_text FROM actos WHERE acto = ?", ("Objeto social",)
+                ).fetchone()[0]
+                self.assertEqual(structured_value, "")
+                self.assertEqual(text_value, "Servicios de ingeniería industrial")
             finally:
                 index.close()
 
