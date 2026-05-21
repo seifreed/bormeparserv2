@@ -29,7 +29,9 @@
 
 ## Overview
 
-**bormeparserv2** is a Python library to download, parse and serialise Spain's [Boletín Oficial del Registro Mercantil](https://www.boe.es/diario_borme/) (BORME). It turns section A/B PDFs (company acts) and section C XML/HTML (legal announcements) into typed Python objects or ready-to-consume JSON.
+**bormeparserv2** is a Python library to download, parse, serialise and index Spain's [Boletín Oficial del Registro Mercantil](https://www.boe.es/diario_borme/) (BORME). It turns section A/B PDFs (company acts) and section C XML/HTML (legal announcements) into typed Python objects, ready-to-consume JSON or searchable indexes for OSINT workflows.
+
+The supported data flow uses `pdf/` as the cache for original documents, `json/` as structured data, SQLite/MariaDB as relational indexes and Qdrant as a vector store for similarity or relationship analysis across announcements.
 
 It is a modernised fork of [PabloCastellano/bormeparser](https://github.com/PabloCastellano/bormeparser), maintained by [Marc Rivero López](https://github.com/seifreed). See the **[Acknowledgements](#acknowledgements)** section for context.
 
@@ -42,6 +44,9 @@ It is a modernised fork of [PabloCastellano/bormeparser](https://github.com/Pabl
 | **Section C (XML/HTML)** | `lxml`-based backend for legal notices and meeting calls |
 | **Download API** | HTTP client against `boe.es/datosabiertos/api/borme/sumario`, multi-threaded, idempotent |
 | **JSON serialisation** | `Borme ↔ JSON` roundtrip with schema versioning |
+| **Local cache** | `pdf/YYYY/MM/DD/` for original files and `json/YYYY/MM/DD/` for structured data |
+| **Relational search** | SQLite or MariaDB indexes for companies, acts, roles, provincias and dates |
+| **Vector stores** | JSONL export and Qdrant upsert with company, act, provincia, date and CVE payloads |
 | **CLI** | `borme_to_json`, `borme_info`, `check_bormes`, `download_borme_pdfs`, … |
 | **Boundary validation** | `PROVINCIA.coerce(...)` accepts ASCII attribute, accented name, or bilingual XML form |
 | **Officially supported** | Python 3.13 and 3.14 |
@@ -126,9 +131,9 @@ borme_info.py -n 57315 /tmp/bormes/pdf/2015/02/10/BORME-A-2015-27-10.pdf
 
 Every script accepts `--help`.
 
-### Recommended OSINT flow
+### Storage and Indexing
 
-The supported local layout is:
+The project works naturally with this local layout:
 
 ```text
 data/
@@ -137,7 +142,9 @@ data/
   borme.sqlite
 ```
 
-Full example:
+PDFs are kept as the original source, JSON files are the structured representation, and indexes are rebuilt from `json/` without reparsing PDFs. The relational index stores documents, announcements and acts, and supports filters by company, act, role, provincia and date range.
+
+SQLite flow:
 
 ```bash
 download_borme_pdfs.py -d ./data -f 2024-01-01 -t 2024-12-31
@@ -146,14 +153,26 @@ borme_index.py index -d ./data --sqlite ./data/borme.sqlite
 borme_index.py search -d ./data --sqlite ./data/borme.sqlite --empresa "TECNICAS"
 ```
 
-MariaDB:
+More searches:
+
+```bash
+borme_index.py search -d ./data --sqlite ./data/borme.sqlite --acto "Nombramientos"
+borme_index.py search -d ./data --sqlite ./data/borme.sqlite --cargo "Adm. Unico"
+borme_index.py search -d ./data --sqlite ./data/borme.sqlite --provincia Madrid -f 2024-01-01 -t 2024-03-31
+```
+
+The same index can live in MariaDB:
 
 ```bash
 borme_index.py index -d ./data --backend mariadb \
   --mariadb-url 'mariadb://user:pass@localhost:3306/borme'
+
+borme_index.py search -d ./data --backend mariadb \
+  --mariadb-url 'mariadb://user:pass@localhost:3306/borme' \
+  --empresa "TECNICAS"
 ```
 
-For relationships/similarity in vector stores:
+For similarity or relationship analysis across announcements, records can be exported as JSONL or uploaded to Qdrant:
 
 ```bash
 borme_index.py vector-jsonl -d ./data -o ./data/vectors.jsonl
@@ -164,6 +183,19 @@ The Qdrant upsert uses a local deterministic lexical hashing embedding. It is
 useful for grouping similar announcements without external services; for
 high-quality semantic embeddings, export `vector-jsonl` and re-embed the text
 with your preferred model.
+
+Support services with Docker:
+
+```bash
+docker run -d --name borme-mariadb \
+  -e MARIADB_ROOT_PASSWORD=rootpass \
+  -e MARIADB_DATABASE=borme \
+  -e MARIADB_USER=borme \
+  -e MARIADB_PASSWORD=bormepass \
+  mariadb:11.4
+
+docker run -d --name borme-qdrant -p 6333:6333 qdrant/qdrant:latest
+```
 
 ---
 

@@ -29,7 +29,9 @@
 
 ## Resumen
 
-**bormeparserv2** es una librería de Python para descargar, parsear y serializar el [Boletín Oficial del Registro Mercantil](https://www.boe.es/diario_borme/) (BORME) de España. Convierte los PDFs de la sección A/B (actos inscritos) y los XML/HTML de la sección C (convocatorias) en objetos Python tipados o en JSON listo para consumir desde otra aplicación.
+**bormeparserv2** es una librería de Python para descargar, parsear, serializar e indexar el [Boletín Oficial del Registro Mercantil](https://www.boe.es/diario_borme/) (BORME) de España. Convierte los PDFs de la sección A/B (actos inscritos) y los XML/HTML de la sección C (convocatorias) en objetos Python tipados, JSON listo para consumir desde otra aplicación o índices consultables para búsquedas OSINT.
+
+El flujo de datos soporta `pdf/` como caché de documentos originales, `json/` como datos estructurados, SQLite/MariaDB como índices relacionales y Qdrant como vector store para similitud o relación entre anuncios.
 
 Es un fork modernizado de [PabloCastellano/bormeparser](https://github.com/PabloCastellano/bormeparser), mantenido por [Marc Rivero López](https://github.com/seifreed). Ver la sección **[Agradecimientos](#agradecimientos)** para el contexto.
 
@@ -42,6 +44,9 @@ Es un fork modernizado de [PabloCastellano/bormeparser](https://github.com/Pablo
 | **Sección C (XML/HTML)** | Backend `lxml` para convocatorias y avisos legales |
 | **API de descarga** | Cliente HTTP contra `boe.es/datosabiertos/api/borme/sumario`, multi-thread, idempotente |
 | **Serialización JSON** | Roundtrip `Borme ↔ JSON` con versionado de esquema |
+| **Caché local** | Estructura `pdf/AAAA/MM/DD/` para originales y `json/AAAA/MM/DD/` para datos estructurados |
+| **Búsqueda relacional** | Índices SQLite o MariaDB para buscar por empresa, acto, cargo, provincia y fecha |
+| **Vector stores** | Exportación JSONL y upsert a Qdrant con payloads de empresa, acto, provincia, fecha y CVE |
 | **CLI** | Scripts `borme_to_json`, `borme_info`, `check_bormes`, `download_borme_pdfs`, … |
 | **Validación en frontera** | `PROVINCIA.coerce(...)` acepta atributo ASCII, nombre acentuado o forma bilingüe del sumario |
 | **Soporte oficial** | Python 3.13 y 3.14 |
@@ -126,9 +131,9 @@ borme_info.py -n 57315 /tmp/bormes/pdf/2015/02/10/BORME-A-2015-27-10.pdf
 
 Cada script acepta `--help` para ver todas sus opciones.
 
-### Flujo OSINT recomendado
+### Almacenamiento e indexación
 
-La estructura local soportada es:
+El proyecto trabaja de forma natural con esta estructura local:
 
 ```text
 data/
@@ -137,7 +142,9 @@ data/
   borme.sqlite
 ```
 
-Ejemplo completo:
+Los PDFs se conservan como fuente original, los JSON son la representación estructurada y los índices se reconstruyen desde `json/` sin volver a parsear PDFs. El índice relacional guarda documentos, anuncios y actos, y permite filtrar por empresa, acto, cargo, provincia y rango de fechas.
+
+Flujo completo con SQLite:
 
 ```bash
 download_borme_pdfs.py -d ./data -f 2024-01-01 -t 2024-12-31
@@ -146,14 +153,26 @@ borme_index.py index -d ./data --sqlite ./data/borme.sqlite
 borme_index.py search -d ./data --sqlite ./data/borme.sqlite --empresa "TECNICAS"
 ```
 
-Para MariaDB:
+Más búsquedas:
+
+```bash
+borme_index.py search -d ./data --sqlite ./data/borme.sqlite --acto "Nombramientos"
+borme_index.py search -d ./data --sqlite ./data/borme.sqlite --cargo "Adm. Unico"
+borme_index.py search -d ./data --sqlite ./data/borme.sqlite --provincia Madrid -f 2024-01-01 -t 2024-03-31
+```
+
+El mismo índice puede residir en MariaDB:
 
 ```bash
 borme_index.py index -d ./data --backend mariadb \
   --mariadb-url 'mariadb://user:pass@localhost:3306/borme'
+
+borme_index.py search -d ./data --backend mariadb \
+  --mariadb-url 'mariadb://user:pass@localhost:3306/borme' \
+  --empresa "TECNICAS"
 ```
 
-También puede preparar datos para relaciones/similitud en vector stores:
+Para similitud o relación entre anuncios, los registros pueden exportarse como JSONL o subirse a Qdrant:
 
 ```bash
 borme_index.py vector-jsonl -d ./data -o ./data/vectors.jsonl
@@ -164,6 +183,19 @@ El upsert a Qdrant usa un embedding léxico local y determinista basado en
 hashing. Es útil para agrupar anuncios parecidos sin servicios externos; si
 necesitas embeddings semánticos de alta calidad, exporta `vector-jsonl` y
 re-embebe esos textos con tu modelo preferido.
+
+Ejemplo de servicios de apoyo con Docker:
+
+```bash
+docker run -d --name borme-mariadb \
+  -e MARIADB_ROOT_PASSWORD=rootpass \
+  -e MARIADB_DATABASE=borme \
+  -e MARIADB_USER=borme \
+  -e MARIADB_PASSWORD=bormepass \
+  mariadb:11.4
+
+docker run -d --name borme-qdrant -p 6333:6333 qdrant/qdrant:latest
+```
 
 ---
 
