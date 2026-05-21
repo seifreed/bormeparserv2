@@ -283,6 +283,20 @@ class BormeparserRegexBoldTestCase(unittest.TestCase):
         )
         self.assertEqual(nombreacto, "Datos registrales")
 
+    def test_regex_soc_unip_with_society_suffix_colon_before_datos_registrales(self):
+        data = (
+            "Sociedad unipersonal. Cambio de identidad del socio único: "
+            "MERCHANT INDUSTRIAL COMMERCIAL M.I.C. & CO S.A: Datos registrales"
+        )
+        acto_colon, arg_colon, nombreacto = regex_bold_acto(data)
+        self.assertEqual(acto_colon, "Sociedad unipersonal")
+        self.assertEqual(
+            arg_colon,
+            "Cambio de identidad del socio único: MERCHANT INDUSTRIAL "
+            "COMMERCIAL M.I.C. & CO S.A",
+        )
+        self.assertEqual(nombreacto, "Datos registrales")
+
     def test_regex_decl_unip_with_cif_joined_to_next_act(self):
         data = (
             "Declaración de unipersonalidad. Socio único: GRUPO CORPORATIVO "

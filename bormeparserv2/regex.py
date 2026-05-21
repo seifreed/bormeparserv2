@@ -84,7 +84,9 @@ RE_CARGOS_MATCH = RE_CARGOS_KEYWORDS + r" (.*?)\.?" + RE_CARGOS_KEYWORDS2
 
 REGEX_NOARG = re.compile(RE_NOARG_KEYWORDS + r"\.\s*(.*)", re.UNICODE)
 REGEX_ARGCOLON = re.compile(RE_COLON_KEYWORDS + r": (.*?)(?:\.\s+)(.*)", re.UNICODE)
-RE_BOLD_NEXT_ACT_SEPARATOR = r"(?:\.\s*|-\s*|(?<=Cif:[A-Z0-9]{9})\s*)"
+RE_BOLD_NEXT_ACT_SEPARATOR = (
+    r"(?:\.\s*|-\s*|(?<=[A-Z]\.[A-Z]):\s*|(?<=Cif:[A-Z0-9]{9})\s*)"
+)
 REGEX_BOLD = re.compile(
     RE_BOLD_KEYWORDS
     + r"\. (.*?)"
