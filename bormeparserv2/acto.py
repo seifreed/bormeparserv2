@@ -85,6 +85,7 @@ class ACTO:
         "Cambio de objeto social": CAMBIO_DE_OBJETO_SOCIAL,
         "Cambio de denominación social": CAMBIO_DE_DENOMINACION_SOCIAL,
         "Cambio de domicilio social": CAMBIO_DE_DOMICILIO_SOCIAL,
+        "Ampliación del objeto social": AMPLIACION_DEL_OBJETO_SOCIAL,
         "Ampliacion del objeto social": AMPLIACION_DEL_OBJETO_SOCIAL,
         "Disolución": DISOLUCION,
         "Reelecciones": REELECCIONES,

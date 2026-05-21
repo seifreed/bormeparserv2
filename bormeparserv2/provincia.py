@@ -116,13 +116,12 @@ class PROVINCIA:
 
     @staticmethod
     def from_title(title):
-        try:
-            if title == "ARABA/ÁLAVA":
-                return PROVINCIA.ALAVA
-            normalized = remove_accents(title).replace(" ", "_")
-            return getattr(PROVINCIA, normalized)
-        except AttributeError as exc:
-            raise ValueError(f"InvalidProvince: {title}") from exc
+        for candidate in str(title).split("/"):
+            normalized = remove_accents(candidate).upper().replace(" ", "_")
+            prov = getattr(PROVINCIA, normalized, None)
+            if isinstance(prov, Provincia):
+                return prov
+        raise ValueError(f"InvalidProvince: {title}")
 
     @staticmethod
     def coerce(value):

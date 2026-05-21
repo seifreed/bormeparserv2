@@ -230,6 +230,46 @@ class BormeparserRegexBoldTestCase(unittest.TestCase):
             "Sociedad unipersonal. Cambio de identidad del socio único: GRUPO ANTALA MEDIA SL. Datos registrales.",
         )
 
+    def test_regex_decl_unip_with_accented_object_extension(self):
+        data = (
+            "Declaración de unipersonalidad. Socio único: BONFILL SOROLLA OSCAR. "
+            "Ampliación del objeto social"
+        )
+        acto_colon, arg_colon, nombreacto = regex_bold_acto(data)
+        self.assertEqual(acto_colon, "Declaración de unipersonalidad")
+        self.assertEqual(arg_colon, "Socio único: BONFILL SOROLLA OSCAR")
+        self.assertEqual(nombreacto, "Ampliación del objeto social")
+
+    def test_regex_decl_unip_with_hyphen_separator_before_next_act(self):
+        data = (
+            "Declaración de unipersonalidad. Socio único: "
+            "PILATUS FLUGZEUGWERKE AG - PILATUS AIRCRAFT LTD- Nombramientos"
+        )
+        acto_colon, arg_colon, nombreacto = regex_bold_acto(data)
+        self.assertEqual(acto_colon, "Declaración de unipersonalidad")
+        self.assertEqual(
+            arg_colon,
+            "Socio único: PILATUS FLUGZEUGWERKE AG - PILATUS AIRCRAFT LTD",
+        )
+        self.assertEqual(nombreacto, "Nombramientos")
+
+    def test_regex_bold_act_can_be_followed_by_bold_act(self):
+        data = (
+            "Sociedad unipersonal. Cambio de identidad del socio único: "
+            "ENVIROTECH POWER SOCIEDAD LIMITADA. Escisión total. "
+            "Sociedades beneficiarias de la escisión"
+        )
+        acto_colon, arg_colon, nombreacto = regex_bold_acto(data)
+        self.assertEqual(acto_colon, "Sociedad unipersonal")
+        self.assertEqual(
+            arg_colon,
+            "Cambio de identidad del socio único: ENVIROTECH POWER SOCIEDAD LIMITADA",
+        )
+        self.assertEqual(
+            nombreacto,
+            "Escisión total. Sociedades beneficiarias de la escisión",
+        )
+
 
 class BormeparserRegexBormeC(unittest.TestCase):
     titulo1 = "PARQUE EMPRESARIAL OMEGA, S.L.U, SOCIEDAD ABSORBENTE\nFGLG OMEGA 2, S.L.U.\nFGLG OMEGA 5, S.L.U.(SOCIEDADES ABSORBIDAS)"

@@ -53,17 +53,19 @@ esc_cargos_keywords = _re_escape_keywords(CARGO.KEYWORDS)
 # -- ACTOS --
 # OR de las palabras clave con argumentos
 RE_ARG_KEYWORDS = "(%s)" % "|".join(esc_arg_keywords)
-RE_ALL_KEYWORDS = "(%s|%s|%s|%s)" % (
+RE_ALL_KEYWORDS = "(%s|%s|%s|%s|%s)" % (
     "|".join(esc_arg_keywords),
     "|".join(esc_colon_keywords),
     "|".join(esc_noarg_keywords),
+    "|".join(esc_bold_keywords),
     esc_ending_keywords[0],
 )
 # OR de las palabras clave, "non grouping"
-RE_ALL_KEYWORDS_NG = "(?:%s|%s|%s|%s)" % (
+RE_ALL_KEYWORDS_NG = "(?:%s|%s|%s|%s|%s)" % (
     "|".join(esc_arg_keywords),
     "|".join(esc_colon_keywords),
     "|".join(esc_noarg_keywords),
+    "|".join(esc_bold_keywords),
     esc_ending_keywords[0],
 )
 # OR de las palabras clave sin argumentos
@@ -83,7 +85,7 @@ RE_CARGOS_MATCH = RE_CARGOS_KEYWORDS + r" (.*?)\.?" + RE_CARGOS_KEYWORDS2
 REGEX_NOARG = re.compile(RE_NOARG_KEYWORDS + r"\.\s*(.*)", re.UNICODE)
 REGEX_ARGCOLON = re.compile(RE_COLON_KEYWORDS + r": (.*?)(?:\.\s+)(.*)", re.UNICODE)
 REGEX_BOLD = re.compile(
-    RE_BOLD_KEYWORDS + r"\. (.*?)\.\s*" + RE_ALL_KEYWORDS + r"(.*)\.?",
+    RE_BOLD_KEYWORDS + r"\. (.*?)(?:\.\s*|-\s*)" + RE_ALL_KEYWORDS + r"(.*)\.?",
     re.UNICODE,
 )
 

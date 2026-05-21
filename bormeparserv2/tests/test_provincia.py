@@ -56,6 +56,11 @@ class ProvinciaCoerceTestCase(unittest.TestCase):
         # Mismo nombre que ``Provincia.__str__``.
         self.assertIs(PROVINCIA.coerce("Cáceres"), PROVINCIA.CACERES)
 
+    def test_from_title_accepts_bilingual_xml_forms(self):
+        self.assertIs(PROVINCIA.from_title("VALENCIA/VALÈNCIA"), PROVINCIA.VALENCIA)
+        self.assertIs(PROVINCIA.from_title("ALICANTE/ALACANT"), PROVINCIA.ALICANTE)
+        self.assertIs(PROVINCIA.from_title("CASTELLÓN/CASTELLÓ"), PROVINCIA.CASTELLON)
+
     def test_bilingual_xml_form(self):
         # Bilingüe tal y como aparece en BORME-S: VALENCIA/VALÈNCIA,
         # ALICANTE/ALACANT, ARABA/ÁLAVA, CASTELLÓN/CASTELLÓ.
