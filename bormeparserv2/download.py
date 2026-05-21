@@ -146,6 +146,12 @@ def download_pdfs(date, path, provincia=None, seccion=None, secure=USE_HTTPS):
 
 def download_pdf(date, filename, seccion, provincia, parse=False):
     """Descarga un único BORME-A/B PDF."""
+    if os.path.exists(filename):
+        logger.debug("File already exists: %s", filename)
+        if parse:
+            return parse_borme(filename, seccion)
+        return False
+
     provincia = PROVINCIA.coerce(provincia)
     url = get_url_pdf(date, seccion, provincia)
     downloaded = download_url(url, filename)

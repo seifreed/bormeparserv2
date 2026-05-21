@@ -27,7 +27,7 @@ import re
 from typing import Iterable
 
 from .acto import ACTO
-from .download import download_pdf, get_url_pdf, get_url_pdf_from_xml
+from .download import download_pdf, get_url_pdf_from_xml
 from .exceptions import BormeAlreadyDownloadedException, BormeAnuncioNotFound
 from .provincia import Provincia
 from .regex import is_acto_cargo
@@ -48,6 +48,14 @@ TH_FILE_VERSION = "2"
 # The file version depends on parser one and parser two. It is coded to avoid
 # that the parser one changes and the parser two does not.
 FILE_VERSION = "{}".format(int(RAW_FILE_VERSION) + 1000 * int(TH_FILE_VERSION))
+
+
+def _standard_pdf_url(date: datetime.date, cve: str, *, secure: bool = True) -> str:
+    protocol = "https" if secure else "http"
+    return (
+        f"{protocol}://www.boe.es/borme/dias/"
+        f"{date.year}/{date.month:02d}/{date.day:02d}/pdfs/{cve}.pdf"
+    )
 
 
 class BormeActo:
@@ -260,7 +268,7 @@ class Borme:
                 self.date, self.seccion, self.provincia, xml_path
             )
         else:
-            self._url = get_url_pdf(self.date, self.seccion, self.provincia)
+            self._url = _standard_pdf_url(self.date, self.cve)
 
     @property
     def url(self):
