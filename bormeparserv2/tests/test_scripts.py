@@ -187,14 +187,11 @@ class BormeJsonAllScriptTestCase(unittest.TestCase):
             shutil.copy(PDF_FIXTURE, day_dir)
             result = run_main("borme_json_all.py", "-d", tmp)
             self.assertEqual(result.returncode, 0, msg=f"stderr={result.stderr!r}")
-            # ``json_<git-sha>/2015/02/10/BORME-A-2015-27-10.json`` debe existir.
-            produced = []
-            for root, _dirs, files in os.walk(tmp):
-                for fname in files:
-                    if fname.endswith(".json"):
-                        produced.append(os.path.join(root, fname))
-            self.assertEqual(len(produced), 1, msg=f"produced={produced!r}")
-            with open(produced[0], encoding="utf-8") as fp:
+            out_path = os.path.join(
+                tmp, "json", "2015", "02", "10", "BORME-A-2015-27-10.json"
+            )
+            self.assertTrue(os.path.isfile(out_path), msg=f"stdout={result.stdout!r}")
+            with open(out_path, encoding="utf-8") as fp:
                 data = json.load(fp)
             self.assertEqual(data["cve"], "BORME-A-2015-27-10")
 
@@ -239,6 +236,49 @@ class BormeJsonDateScriptTestCase(unittest.TestCase):
             )
             self.assertEqual(result.returncode, 0, msg=f"stderr={result.stderr!r}")
             self.assertIn("No existe", result.stdout)
+
+
+class BormeIndexScriptTestCase(unittest.TestCase):
+    """``scripts/borme_index.py`` indexa json/ y busca por empresa."""
+
+    def test_index_search_and_vector_export(self):
+        from bormeparserv2.tests.test_index import _write_sample
+
+        with tempfile.TemporaryDirectory() as tmp:
+            _write_sample(tmp)
+            db_path = os.path.join(tmp, "borme.sqlite")
+
+            result = run_main("borme_index.py", "index", "-d", tmp, "--sqlite", db_path)
+            self.assertEqual(result.returncode, 0, msg=f"stderr={result.stderr!r}")
+            self.assertIn("Indexed 1 documents", result.stdout)
+
+            result = run_main(
+                "borme_index.py",
+                "search",
+                "-d",
+                tmp,
+                "--sqlite",
+                db_path,
+                "--empresa",
+                "tecnicas",
+            )
+            self.assertEqual(result.returncode, 0, msg=f"stderr={result.stderr!r}")
+            self.assertIn("Técnicas Reunidas", result.stdout)
+
+            out_path = os.path.join(tmp, "vectors.jsonl")
+            result = run_main(
+                "borme_index.py",
+                "vector-jsonl",
+                "-d",
+                tmp,
+                "-o",
+                out_path,
+            )
+            self.assertEqual(result.returncode, 0, msg=f"stderr={result.stderr!r}")
+            with open(out_path, encoding="utf-8") as fp:
+                rows = [json.loads(line) for line in fp]
+            self.assertEqual(len(rows), 1)
+            self.assertIn("text", rows[0])
 
 
 class CheckBormesScriptTestCase(unittest.TestCase):

@@ -25,7 +25,6 @@ from threading import Thread
 
 import bormeparserv2
 import bormeparserv2.borme
-from common import get_git_revision_short_hash
 
 BORME_ROOT = bormeparserv2.CONFIG["borme_root"]
 THREADS = 6
@@ -109,6 +108,10 @@ def main(argv: list[str] | None = None) -> int:
         default=BORME_ROOT,
         help="Directory to download files (default is {})".format(BORME_ROOT),
     )
+    parser.add_argument(
+        "--json-root",
+        help="Directorio de salida JSON (default: <directory>/json)",
+    )
     args = parser.parse_args(argv)
 
     start_time = time.time()
@@ -121,11 +124,7 @@ def main(argv: list[str] | None = None) -> int:
         t.start()
         workers.append(t)
 
-    json_folder = "json_" + get_git_revision_short_hash()
-    json_root = os.path.join(args.directory, json_folder)
-    if os.path.exists(json_root):
-        print("{} already exists".format(json_root))
-        return 1
+    json_root = args.json_root or os.path.join(args.directory, "json")
 
     try:
         items = list(walk_borme_root(args.directory, json_root))

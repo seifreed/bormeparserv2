@@ -1,6 +1,7 @@
 # Runtime dependencies. setup.py reads only this section for install_requires.
 lxml>=5.3,<7
 pdfminer.six>=20250506
+PyMySQL>=1.2,<2
 pypdf>=5.0,<7
 requests>=2.32,<3
 

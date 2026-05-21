@@ -120,10 +120,50 @@ borme_info.py -n 57315 /tmp/bormes/pdf/2015/02/10/BORME-A-2015-27-10.pdf
 | `borme_info.py` | Imprime los anuncios de un BORME (filtrable con `-n <id>`) |
 | `borme_json_all.py` | Convierte recursivamente toda una jerarquía `pdf/AAAA/MM/DD/` |
 | `borme_json_date.py` | Convierte solo el rango de fechas indicado |
+| `borme_index.py` | Indexa `json/` en SQLite/MariaDB, busca por empresa/acto/cargo y exporta vectores |
 | `debug_content_pdf.py` | Vuelca el content stream del PDF (debug del backend pypdf) |
 | `borme_poller.py` | Daemon que espera a que el sumario del día esté publicado |
 
 Cada script acepta `--help` para ver todas sus opciones.
+
+### Flujo OSINT recomendado
+
+La estructura local soportada es:
+
+```text
+data/
+  pdf/     # caché de PDFs originales del BOE
+  json/    # datos estructurados producidos desde los PDFs
+  borme.sqlite
+```
+
+Ejemplo completo:
+
+```bash
+download_borme_pdfs.py -d ./data -f 2024-01-01 -t 2024-12-31
+borme_json_all.py -d ./data
+borme_index.py index -d ./data --sqlite ./data/borme.sqlite
+borme_index.py search -d ./data --sqlite ./data/borme.sqlite --empresa "TECNICAS"
+```
+
+Para MariaDB:
+
+```bash
+borme_index.py index -d ./data --backend mariadb \
+  --mariadb-url 'mariadb://user:pass@localhost:3306/borme'
+```
+
+También puede preparar datos para relaciones/similitud en vector stores:
+
+```bash
+borme_index.py vector-jsonl -d ./data -o ./data/vectors.jsonl
+borme_index.py qdrant-upsert -d ./data --qdrant-url http://localhost:6333
+```
+
+El upsert a Qdrant usa un embedding léxico local y determinista basado en
+hashing. Es útil para agrupar anuncios parecidos sin servicios externos; si
+necesitas embeddings semánticos de alta calidad, exporta `vector-jsonl` y
+re-embebe esos textos con tu modelo preferido.
 
 ---
 
@@ -179,6 +219,7 @@ assert borme2.cve == borme.cve
 - `pypdf >= 5.0`
 - `pdfminer.six >= 20250506`
 - `requests >= 2.32`
+- `PyMySQL >= 1.2` para indexación MariaDB
 
 Ver [`requirements.txt`](requirements.txt) para dependencias runtime y tooling; `setup.py` usa sólo la sección runtime al empaquetar.
 

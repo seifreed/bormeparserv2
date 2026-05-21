@@ -120,10 +120,50 @@ borme_info.py -n 57315 /tmp/bormes/pdf/2015/02/10/BORME-A-2015-27-10.pdf
 | `borme_info.py` | Print announcements (filter with `-n <id>`) |
 | `borme_json_all.py` | Walk a full `pdf/YYYY/MM/DD/` tree and convert everything |
 | `borme_json_date.py` | Convert only the requested date range |
+| `borme_index.py` | Index `json/` into SQLite/MariaDB, search companies/acts/roles and export vectors |
 | `debug_content_pdf.py` | Dump the PDF content stream (debug the pypdf backend) |
 | `borme_poller.py` | Daemon that waits until the daily sumario is published |
 
 Every script accepts `--help`.
+
+### Recommended OSINT flow
+
+The supported local layout is:
+
+```text
+data/
+  pdf/     # cache of original BOE PDFs
+  json/    # structured data produced from PDFs
+  borme.sqlite
+```
+
+Full example:
+
+```bash
+download_borme_pdfs.py -d ./data -f 2024-01-01 -t 2024-12-31
+borme_json_all.py -d ./data
+borme_index.py index -d ./data --sqlite ./data/borme.sqlite
+borme_index.py search -d ./data --sqlite ./data/borme.sqlite --empresa "TECNICAS"
+```
+
+MariaDB:
+
+```bash
+borme_index.py index -d ./data --backend mariadb \
+  --mariadb-url 'mariadb://user:pass@localhost:3306/borme'
+```
+
+For relationships/similarity in vector stores:
+
+```bash
+borme_index.py vector-jsonl -d ./data -o ./data/vectors.jsonl
+borme_index.py qdrant-upsert -d ./data --qdrant-url http://localhost:6333
+```
+
+The Qdrant upsert uses a local deterministic lexical hashing embedding. It is
+useful for grouping similar announcements without external services; for
+high-quality semantic embeddings, export `vector-jsonl` and re-embed the text
+with your preferred model.
 
 ---
 
@@ -179,6 +219,7 @@ assert borme2.cve == borme.cve
 - `pypdf >= 5.0`
 - `pdfminer.six >= 20250506`
 - `requests >= 2.32`
+- `PyMySQL >= 1.2` for MariaDB indexing
 
 See [`requirements.txt`](requirements.txt) for runtime dependencies and tooling; `setup.py` uses only the runtime section when packaging.
 
