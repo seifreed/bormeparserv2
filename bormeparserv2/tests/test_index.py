@@ -2,6 +2,7 @@
 
 import json
 import os
+import sqlite3
 import tempfile
 import unittest
 
@@ -57,6 +58,30 @@ def _write_sample(root):
     return json_path, pdf_path
 
 
+class _CountingConnection:
+    def __init__(self, connection):
+        self.connection = connection
+        self.commits = 0
+        self.rollbacks = 0
+
+    def execute(self, *args, **kwargs):
+        return self.connection.execute(*args, **kwargs)
+
+    def executescript(self, *args, **kwargs):
+        return self.connection.executescript(*args, **kwargs)
+
+    def commit(self):
+        self.commits += 1
+        self.connection.commit()
+
+    def rollback(self):
+        self.rollbacks += 1
+        self.connection.rollback()
+
+    def close(self):
+        self.connection.close()
+
+
 class BormeIndexTestCase(unittest.TestCase):
     def test_sqlite_index_supports_company_acto_and_cargo_search(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -85,6 +110,35 @@ class BormeIndexTestCase(unittest.TestCase):
                 self.assertEqual(len(index.search(nombre="garcia maria")), 1)
                 self.assertEqual(len(index.search(provincia="madrid")), 1)
                 self.assertEqual(len(index.search(date_from="2024-01-03")), 0)
+            finally:
+                index.close()
+
+    def test_sqlite_root_index_uses_one_bulk_commit(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            _write_sample(tmp)
+            second_dir = os.path.join(tmp, "json", "2024", "01", "03")
+            os.makedirs(second_dir)
+            second = _sample_document()
+            second["cve"] = "BORME-A-2024-2-28"
+            second["date"] = "2024-01-03"
+            with open(
+                os.path.join(second_dir, "BORME-A-2024-2-28.json"),
+                "w",
+                encoding="utf-8",
+            ) as fp:
+                json.dump(second, fp)
+
+            raw = sqlite3.connect(os.path.join(tmp, "borme.sqlite"))
+            raw.execute("PRAGMA foreign_keys = ON")
+            connection = _CountingConnection(raw)
+            index = SQLiteBormeIndex(connection)
+            try:
+                index.init_schema()
+                connection.commits = 0
+                stats = index.index_json_root(os.path.join(tmp, "json"))
+
+                self.assertEqual(stats.documents, 2)
+                self.assertEqual(connection.commits, 1)
             finally:
                 index.close()
 

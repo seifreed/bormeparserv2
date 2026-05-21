@@ -41,10 +41,45 @@ BORME_SUMARIO_URL = (
 USE_HTTPS = True
 THREADS = 8
 HTTP_TIMEOUT = 30
+HTTP_RETRIES = 3
+HTTP_RETRY_BACKOFF = 0.5
+TRANSIENT_HTTP_STATUS = {429, 500, 502, 503, 504}
 _API_HEADERS = {"Accept": "application/xml"}
 
 # Kept for backwards compatibility — callers used to import it.
 URL_BASE = "%s://www.boe.es"
+
+
+def _sleep_before_retry(attempt):
+    time.sleep(HTTP_RETRY_BACKOFF * (2**attempt))
+
+
+def _is_transient_http_status(status_code):
+    return status_code in TRANSIENT_HTTP_STATUS
+
+
+def _get_with_retries(url, **kwargs):
+    timeout = kwargs.pop("timeout", HTTP_TIMEOUT)
+    last_error = None
+    for attempt in range(HTTP_RETRIES + 1):
+        try:
+            response = requests.get(url, timeout=timeout, **kwargs)
+        except requests.RequestException as exc:
+            last_error = exc
+            if attempt < HTTP_RETRIES:
+                _sleep_before_retry(attempt)
+                continue
+            raise
+
+        if _is_transient_http_status(response.status_code) and attempt < HTTP_RETRIES:
+            response.close()
+            _sleep_before_retry(attempt)
+            continue
+        return response
+
+    if last_error is not None:
+        raise last_error
+    raise RuntimeError(f"Could not GET {url}")
 
 
 def _coerce_date(date):
@@ -69,7 +104,7 @@ def _fetch_sumario_tree(source):
     publicado, o si la API devuelve un código de estado distinto de 200.
     """
     if isinstance(source, str) and source.startswith("http"):
-        response = requests.get(source, headers=_API_HEADERS, timeout=HTTP_TIMEOUT)
+        response = _get_with_retries(source, headers=_API_HEADERS)
         # La API responde con 404 cuando no hay BORME publicado en esa fecha
         # (festivos, domingos). Lo traducimos a una excepción de dominio.
         if response.status_code == 404:
@@ -129,7 +164,7 @@ def download_xml(date, filename, secure=USE_HTTPS):
     url = get_url_xml(date, secure=secure)
     if os.path.exists(filename):
         return False
-    response = requests.get(url, headers=_API_HEADERS, timeout=HTTP_TIMEOUT)
+    response = _get_with_retries(url, headers=_API_HEADERS)
     response.raise_for_status()
     _atomic_write_bytes(filename, response.content)
     return True
@@ -306,18 +341,22 @@ def download_url(url, filename, try_again=0):
         return False
     try:
         response = requests.get(url, stream=True, timeout=HTTP_TIMEOUT)
-    except requests.RequestException:
-        if try_again < 3:
-            return download_url(url, filename, try_again=try_again + 1)
-        raise
-
-    response.raise_for_status()
-    try:
+        if _is_transient_http_status(response.status_code):
+            response.close()
+            raise requests.HTTPError(
+                "{} Server Error for url: {}".format(response.status_code, url),
+                response=response,
+            )
+        response.raise_for_status()
         _atomic_write_response(filename, response)
     except requests.RequestException:
-        if try_again < 3:
+        if try_again < HTTP_RETRIES:
+            _sleep_before_retry(try_again)
             return download_url(url, filename, try_again=try_again + 1)
         raise
+    finally:
+        if "response" in locals():
+            response.close()
     return True
 
 
@@ -377,10 +416,10 @@ def _named_download_tasks(urls, path):
     return [(url, safe_join(path, filename)) for filename, url in urls.items()]
 
 
-def _start_workers(queue, files, threads):
+def _start_workers(queue, files, errors, threads):
     workers = []
     for thread_id in range(threads):
-        worker = _DownloadWorker(thread_id, queue, files)
+        worker = _DownloadWorker(thread_id, queue, files, errors)
         worker.daemon = True
         worker.start()
         workers.append(worker)
@@ -404,11 +443,13 @@ def download_urls_multi(urls, path, threads=THREADS):
     tasks = _url_download_tasks(urls, path)
     queue: Queue = Queue()
     files: list[str] = []
-    workers = _start_workers(queue, files, threads)
+    errors = []
+    workers = _start_workers(queue, files, errors, threads)
     for task in tasks:
         queue.put(task)
     queue.join()
     _stop_workers(queue, workers)
+    _raise_worker_errors(errors)
     return files
 
 
@@ -417,23 +458,33 @@ def download_urls_multi_names(urls, path, threads=THREADS):
     tasks = _named_download_tasks(urls, path)
     queue: Queue = Queue()
     files: list[str] = []
-    workers = _start_workers(queue, files, threads)
+    errors = []
+    workers = _start_workers(queue, files, errors, threads)
     for task in tasks:
         queue.put(task)
     queue.join()
     _stop_workers(queue, workers)
+    _raise_worker_errors(errors)
     return files
+
+
+def _raise_worker_errors(errors):
+    if not errors:
+        return
+    url, full_path, exc = errors[0]
+    raise RuntimeError(f"Failed to download {url} to {full_path}") from exc
 
 
 class _DownloadWorker(Thread):
     """Worker thread que descarga URLs de una cola compartida hasta recibir
     el centinela ``None``."""
 
-    def __init__(self, thread_id, queue, files):
+    def __init__(self, thread_id, queue, files, errors):
         super().__init__()
         self.thread_id = thread_id
         self.queue = queue
         self.files = files
+        self.errors = errors
 
     def run(self):
         while True:
@@ -447,5 +498,8 @@ class _DownloadWorker(Thread):
                 if download_url(url, full_path):
                     self.files.append(full_path)
                     logger.info("Downloaded %s", os.path.basename(full_path))
+            except Exception as exc:
+                self.errors.append((url, full_path, exc))
+                logger.debug("Failed to download %s", url, exc_info=True)
             finally:
                 self.queue.task_done()

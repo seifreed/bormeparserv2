@@ -259,7 +259,7 @@ class RelationalBormeIndex:
         raise NotImplementedError
 
     def index_json_file(
-        self, path: str, *, borme_root: str | None = None
+        self, path: str, *, borme_root: str | None = None, commit: bool = True
     ) -> IndexStats:
         data = load_json_document(path)
         pdf_path = infer_pdf_path(path, borme_root)
@@ -288,15 +288,23 @@ class RelationalBormeIndex:
             anuncio_count += 1
             acto_count += self._insert_actos(data["cve"], int(anuncio_id), anuncio)
 
-        self.connection.commit()
+        if commit:
+            self.connection.commit()
         return IndexStats(1, anuncio_count, acto_count)
 
     def index_json_root(
         self, json_root: str, *, borme_root: str | None = None
     ) -> IndexStats:
         stats = IndexStats()
-        for path in iter_json_paths(json_root):
-            stats += self.index_json_file(path, borme_root=borme_root)
+        try:
+            for path in iter_json_paths(json_root):
+                stats += self.index_json_file(path, borme_root=borme_root, commit=False)
+        except Exception:
+            rollback = getattr(self.connection, "rollback", None)
+            if rollback is not None:
+                rollback()
+            raise
+        self.connection.commit()
         return stats
 
     def search(
@@ -707,6 +715,9 @@ class _MariaDBConnection:
 
     def commit(self) -> None:
         self._connection.commit()
+
+    def rollback(self) -> None:
+        self._connection.rollback()
 
     def close(self) -> None:
         self._connection.close()

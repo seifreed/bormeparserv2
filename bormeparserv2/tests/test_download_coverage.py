@@ -23,6 +23,7 @@ import tempfile
 import threading
 import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from unittest.mock import patch
 
 from bormeparserv2 import PROVINCIA, SECCION
 from bormeparserv2.exceptions import (
@@ -53,8 +54,37 @@ class _TruncatedDownloadHandler(BaseHTTPRequestHandler):
         pass
 
 
+class _SequencedDownloadHandler(BaseHTTPRequestHandler):
+    def do_GET(self):  # noqa: N802
+        responses = self.server.responses  # type: ignore[attr-defined]
+        request_count = self.server.request_count  # type: ignore[attr-defined]
+        if request_count < len(responses):
+            status, content_type, body = responses[request_count]
+        else:
+            status, content_type, body = responses[-1]
+        self.server.request_count = request_count + 1  # type: ignore[attr-defined]
+
+        self.send_response(status)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, *_args, **_kwargs):  # noqa: N802
+        pass
+
+
 def _serve_truncated_download():
     server = ThreadingHTTPServer(("127.0.0.1", 0), _TruncatedDownloadHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    return server, f"http://127.0.0.1:{server.server_port}/file.pdf"
+
+
+def _serve_sequence(responses):
+    server = ThreadingHTTPServer(("127.0.0.1", 0), _SequencedDownloadHandler)
+    server.responses = responses  # type: ignore[attr-defined]
+    server.request_count = 0  # type: ignore[attr-defined]
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     return server, f"http://127.0.0.1:{server.server_port}/file.pdf"
@@ -441,6 +471,73 @@ class GetUrlSeccionCBadFormatTestCase(unittest.TestCase):
 
 class DownloadUrlRetryTestCase(unittest.TestCase):
     """``download_url`` reintenta hasta 3 veces ante ``RequestException``."""
+
+    def test_http_503_is_retried(self):
+        from bormeparserv2.download import download_url
+
+        server, url = _serve_sequence(
+            [
+                (503, "text/plain", b"busy"),
+                (200, "application/pdf", b"%PDF-1.4 ok"),
+            ]
+        )
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                target = os.path.join(tmp, "retry.pdf")
+                with patch("bormeparserv2.download.time.sleep", return_value=None):
+                    result = download_url(url, target)
+                self.assertTrue(result)
+                with open(target, "rb") as fp:
+                    self.assertEqual(fp.read(), b"%PDF-1.4 ok")
+                self.assertEqual(server.request_count, 2)  # type: ignore[attr-defined]
+        finally:
+            server.shutdown()
+            server.server_close()
+
+    def test_multi_download_propagates_worker_failure(self):
+        from bormeparserv2.download import download_urls_multi
+
+        server, url = _serve_sequence(
+            [(503, "text/plain", b"busy")] * 4,
+        )
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                with patch("bormeparserv2.download.time.sleep", return_value=None):
+                    with self.assertRaises(RuntimeError) as ctx:
+                        download_urls_multi({"x": url}, tmp, threads=1)
+                self.assertIn("Failed to download", str(ctx.exception))
+                self.assertEqual(server.request_count, 4)  # type: ignore[attr-defined]
+        finally:
+            server.shutdown()
+            server.server_close()
+
+    def test_fetch_sumario_retries_http_502(self):
+        from bormeparserv2.download import _fetch_sumario_tree
+
+        body = (
+            b'<?xml version="1.0"?>'
+            b"<response>"
+            b"<status><code>200</code><text>ok</text></status>"
+            b"<data><sumario>"
+            b"<metadatos><fecha_publicacion>20150210</fecha_publicacion></metadatos>"
+            b'<diario numero="27"/>'
+            b"</sumario></data>"
+            b"</response>"
+        )
+        server, url = _serve_sequence(
+            [
+                (502, "text/plain", b"bad gateway"),
+                (200, "application/xml", body),
+            ]
+        )
+        try:
+            with patch("bormeparserv2.download.time.sleep", return_value=None):
+                sumario = _fetch_sumario_tree(url)
+            self.assertEqual(sumario.find("diario").attrib["numero"], "27")
+            self.assertEqual(server.request_count, 2)  # type: ignore[attr-defined]
+        finally:
+            server.shutdown()
+            server.server_close()
 
     def test_unresolvable_host_raises_after_retries(self):
         from bormeparserv2.download import download_url

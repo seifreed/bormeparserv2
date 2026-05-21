@@ -253,6 +253,51 @@ class BormeparserRegexBoldTestCase(unittest.TestCase):
         )
         self.assertEqual(nombreacto, "Nombramientos")
 
+    def test_regex_decl_unip_with_cif_space_before_datos_registrales(self):
+        data = (
+            "Declaración de unipersonalidad. Socio único: LONGOFIN SOCIEDAD "
+            "COMANDITARIA POR ACCIONES DE GIUSEPPE LONGO & C. Cif:077343510 "
+            "Datos registrales"
+        )
+        acto_colon, arg_colon, nombreacto = regex_bold_acto(data)
+        self.assertEqual(acto_colon, "Declaración de unipersonalidad")
+        self.assertEqual(
+            arg_colon,
+            "Socio único: LONGOFIN SOCIEDAD COMANDITARIA POR ACCIONES DE "
+            "GIUSEPPE LONGO & C. Cif:077343510",
+        )
+        self.assertEqual(nombreacto, "Datos registrales")
+
+    def test_regex_soc_unip_with_cif_space_before_datos_registrales(self):
+        data = (
+            "Sociedad unipersonal. Cambio de identidad del socio único: GRUPO "
+            "CORPORATIVO EMPRESARIAL DE LA CAJA DE AHORROS Y MONTE DE PI. "
+            "Cif:A31691538 Datos registrales"
+        )
+        acto_colon, arg_colon, nombreacto = regex_bold_acto(data)
+        self.assertEqual(acto_colon, "Sociedad unipersonal")
+        self.assertEqual(
+            arg_colon,
+            "Cambio de identidad del socio único: GRUPO CORPORATIVO EMPRESARIAL "
+            "DE LA CAJA DE AHORROS Y MONTE DE PI. Cif:A31691538",
+        )
+        self.assertEqual(nombreacto, "Datos registrales")
+
+    def test_regex_decl_unip_with_cif_joined_to_next_act(self):
+        data = (
+            "Declaración de unipersonalidad. Socio único: GRUPO CORPORATIVO "
+            "EMPRESARIAL DE LA CAJA DE AHORROS Y MONTE DE PI. "
+            "Cif:A31691538Nombramientos"
+        )
+        acto_colon, arg_colon, nombreacto = regex_bold_acto(data)
+        self.assertEqual(acto_colon, "Declaración de unipersonalidad")
+        self.assertEqual(
+            arg_colon,
+            "Socio único: GRUPO CORPORATIVO EMPRESARIAL DE LA CAJA DE AHORROS "
+            "Y MONTE DE PI. Cif:A31691538",
+        )
+        self.assertEqual(nombreacto, "Nombramientos")
+
     def test_regex_bold_act_can_be_followed_by_bold_act(self):
         data = (
             "Sociedad unipersonal. Cambio de identidad del socio único: "
