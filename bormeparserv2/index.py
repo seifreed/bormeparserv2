@@ -279,18 +279,25 @@ class RelationalBormeIndex:
         self._upsert_document(document)
         self._delete_document_children(data["cve"])
 
-        anuncio_count = 0
-        acto_count = 0
+        anuncio_rows = []
+        acto_rows = []
         for anuncio_id, anuncio in sorted(
             data["anuncios"].items(), key=lambda item: int(item[0])
         ):
-            self._insert_anuncio(data["cve"], int(anuncio_id), anuncio)
-            anuncio_count += 1
-            acto_count += self._insert_actos(data["cve"], int(anuncio_id), anuncio)
+            anuncio_id_int = int(anuncio_id)
+            anuncio_rows.append(
+                self._build_anuncio_row(data["cve"], anuncio_id_int, anuncio)
+            )
+            acto_rows.extend(
+                self._build_acto_rows(data["cve"], anuncio_id_int, anuncio)
+            )
+
+        self._insert_anuncio_rows(anuncio_rows)
+        self._insert_acto_rows(acto_rows)
 
         if commit:
             self.connection.commit()
-        return IndexStats(1, anuncio_count, acto_count)
+        return IndexStats(1, len(anuncio_rows), len(acto_rows))
 
     def index_json_root(
         self, json_root: str, *, borme_root: str | None = None
@@ -376,46 +383,60 @@ class RelationalBormeIndex:
         self.connection.execute("DELETE FROM actos WHERE cve = ?", (cve,))
         self.connection.execute("DELETE FROM anuncios WHERE cve = ?", (cve,))
 
-    def _insert_anuncio(
+    def _executemany(self, sql: str, rows: list[tuple[object, ...]]) -> None:
+        if not rows:
+            return
+        executemany = getattr(self.connection, "executemany", None)
+        if executemany is not None:
+            executemany(sql, rows)
+            return
+        for row in rows:
+            self.connection.execute(sql, row)
+
+    def _build_anuncio_row(
         self, cve: str, anuncio_id: int, anuncio: dict[str, Any]
-    ) -> None:
+    ) -> tuple[object, ...]:
+        return (
+            cve,
+            anuncio_id,
+            anuncio.get("empresa", ""),
+            normalize_text(anuncio.get("empresa", "")),
+            anuncio.get("registro", ""),
+            int(bool(anuncio.get("sucursal"))),
+            int(bool(anuncio.get("liquidacion"))),
+            anuncio.get("datos registrales", ""),
+        )
+
+    def _insert_anuncio_rows(self, rows: list[tuple[object, ...]]) -> None:
         sql = (
             "INSERT INTO anuncios "
             "(cve, anuncio_id, empresa, empresa_norm, registro, sucursal, "
             "liquidacion, datos_registrales) "
             "VALUES (?,?,?,?,?,?,?,?)"
         )
-        self.connection.execute(
-            sql,
-            (
-                cve,
-                anuncio_id,
-                anuncio.get("empresa", ""),
-                normalize_text(anuncio.get("empresa", "")),
-                anuncio.get("registro", ""),
-                int(bool(anuncio.get("sucursal"))),
-                int(bool(anuncio.get("liquidacion"))),
-                anuncio.get("datos registrales", ""),
-            ),
-        )
+        self._executemany(sql, rows)
 
-    def _insert_actos(self, cve: str, anuncio_id: int, anuncio: dict[str, Any]) -> int:
-        count = 0
+    def _build_acto_rows(
+        self, cve: str, anuncio_id: int, anuncio: dict[str, Any]
+    ) -> list[tuple[object, ...]]:
+        rows = []
         for acto_doc in anuncio.get("actos", []):
             for acto, value in acto_doc.items():
                 if isinstance(value, dict):
                     for cargo, nombres in value.items():
                         for nombre in sorted(_iter_names(nombres)):
-                            self._insert_acto(
-                                cve, anuncio_id, acto, value, cargo, nombre
+                            rows.append(
+                                self._build_acto_row(
+                                    cve, anuncio_id, acto, value, cargo, nombre
+                                )
                             )
-                            count += 1
                 else:
-                    self._insert_acto(cve, anuncio_id, acto, value, None, None)
-                    count += 1
-        return count
+                    rows.append(
+                        self._build_acto_row(cve, anuncio_id, acto, value, None, None)
+                    )
+        return rows
 
-    def _insert_acto(
+    def _build_acto_row(
         self,
         cve: str,
         anuncio_id: int,
@@ -423,27 +444,27 @@ class RelationalBormeIndex:
         value: object,
         cargo: str | None,
         nombre: str | None,
-    ) -> None:
+    ) -> tuple[object, ...]:
+        return (
+            cve,
+            anuncio_id,
+            acto,
+            normalize_text(acto),
+            _as_json_text(value),
+            cargo,
+            normalize_text(cargo),
+            nombre,
+            normalize_text(nombre),
+        )
+
+    def _insert_acto_rows(self, rows: list[tuple[object, ...]]) -> None:
         sql = (
             "INSERT INTO actos "
             "(cve, anuncio_id, acto, acto_norm, valor_text, cargo, cargo_norm, "
             "nombre, nombre_norm) "
             "VALUES (?,?,?,?,?,?,?,?,?)"
         )
-        self.connection.execute(
-            sql,
-            (
-                cve,
-                anuncio_id,
-                acto,
-                normalize_text(acto),
-                _as_json_text(value),
-                cargo,
-                normalize_text(cargo),
-                nombre,
-                normalize_text(nombre),
-            ),
-        )
+        self._executemany(sql, rows)
 
 
 class SQLiteBormeIndex(RelationalBormeIndex):
@@ -611,13 +632,13 @@ class MariaDBBormeIndex(RelationalBormeIndex):
               cve VARCHAR(64) NOT NULL,
               anuncio_id INTEGER NOT NULL,
               empresa TEXT NOT NULL,
-              empresa_norm VARCHAR(512) NOT NULL,
+              empresa_norm TEXT NOT NULL,
               registro TEXT,
               sucursal BOOLEAN NOT NULL DEFAULT 0,
               liquidacion BOOLEAN NOT NULL DEFAULT 0,
               datos_registrales TEXT,
               UNIQUE KEY uq_anuncio (cve, anuncio_id),
-              INDEX idx_anuncios_empresa (empresa_norm),
+              INDEX idx_anuncios_empresa (empresa_norm(255)),
               CONSTRAINT fk_anuncios_documents
                 FOREIGN KEY (cve) REFERENCES documents(cve) ON DELETE CASCADE
             ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
@@ -628,16 +649,16 @@ class MariaDBBormeIndex(RelationalBormeIndex):
               cve VARCHAR(64) NOT NULL,
               anuncio_id INTEGER NOT NULL,
               acto TEXT NOT NULL,
-              acto_norm VARCHAR(512) NOT NULL,
-              valor_text TEXT,
+              acto_norm TEXT NOT NULL,
+              valor_text LONGTEXT,
               cargo TEXT,
-              cargo_norm VARCHAR(512),
+              cargo_norm TEXT,
               nombre TEXT,
-              nombre_norm VARCHAR(512),
+              nombre_norm TEXT,
               INDEX idx_actos_anuncio (cve, anuncio_id),
-              INDEX idx_actos_acto (acto_norm),
-              INDEX idx_actos_cargo (cargo_norm),
-              INDEX idx_actos_nombre (nombre_norm),
+              INDEX idx_actos_acto (acto_norm(255)),
+              INDEX idx_actos_cargo (cargo_norm(255)),
+              INDEX idx_actos_nombre (nombre_norm(255)),
               CONSTRAINT fk_actos_anuncios
                 FOREIGN KEY (cve, anuncio_id)
                 REFERENCES anuncios(cve, anuncio_id) ON DELETE CASCADE
@@ -711,6 +732,12 @@ class _MariaDBConnection:
         cursor = self._connection.cursor()
         sql = sql.replace("?", "%s")
         cursor.execute(sql, tuple(params))
+        return cursor
+
+    def executemany(self, sql: str, params: Iterable[Iterable[object]]):
+        cursor = self._connection.cursor()
+        sql = sql.replace("?", "%s")
+        cursor.executemany(sql, [tuple(row) for row in params])
         return cursor
 
     def commit(self) -> None:

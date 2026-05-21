@@ -7,6 +7,7 @@ import tempfile
 import unittest
 
 from bormeparserv2.index import (
+    MariaDBBormeIndex,
     SQLiteBormeIndex,
     build_vector_records,
     hash_embedding,
@@ -63,9 +64,14 @@ class _CountingConnection:
         self.connection = connection
         self.commits = 0
         self.rollbacks = 0
+        self.executemany_calls = 0
 
     def execute(self, *args, **kwargs):
         return self.connection.execute(*args, **kwargs)
+
+    def executemany(self, *args, **kwargs):
+        self.executemany_calls += 1
+        return self.connection.executemany(*args, **kwargs)
 
     def executescript(self, *args, **kwargs):
         return self.connection.executescript(*args, **kwargs)
@@ -80,6 +86,21 @@ class _CountingConnection:
 
     def close(self):
         self.connection.close()
+
+
+class _RecordingConnection:
+    def __init__(self):
+        self.statements = []
+        self.commits = 0
+
+    def execute(self, sql, params=()):
+        self.statements.append(sql)
+
+    def commit(self):
+        self.commits += 1
+
+    def close(self):
+        pass
 
 
 class BormeIndexTestCase(unittest.TestCase):
@@ -113,7 +134,7 @@ class BormeIndexTestCase(unittest.TestCase):
             finally:
                 index.close()
 
-    def test_sqlite_root_index_uses_one_bulk_commit(self):
+    def test_sqlite_root_index_uses_batched_inserts_and_one_bulk_commit(self):
         with tempfile.TemporaryDirectory() as tmp:
             _write_sample(tmp)
             second_dir = os.path.join(tmp, "json", "2024", "01", "03")
@@ -139,8 +160,27 @@ class BormeIndexTestCase(unittest.TestCase):
 
                 self.assertEqual(stats.documents, 2)
                 self.assertEqual(connection.commits, 1)
+                self.assertGreater(connection.executemany_calls, 0)
             finally:
                 index.close()
+
+    def test_mariadb_schema_allows_long_act_values(self):
+        connection = _RecordingConnection()
+        index = MariaDBBormeIndex(connection)
+
+        index.init_schema()
+
+        schema = "\n".join(connection.statements)
+        self.assertIn("empresa_norm TEXT NOT NULL", schema)
+        self.assertIn("INDEX idx_anuncios_empresa (empresa_norm(255))", schema)
+        self.assertIn("acto_norm TEXT NOT NULL", schema)
+        self.assertIn("valor_text LONGTEXT", schema)
+        self.assertIn("INDEX idx_actos_acto (acto_norm(255))", schema)
+        self.assertIn("cargo_norm TEXT", schema)
+        self.assertIn("INDEX idx_actos_cargo (cargo_norm(255))", schema)
+        self.assertIn("nombre_norm TEXT", schema)
+        self.assertIn("INDEX idx_actos_nombre (nombre_norm(255))", schema)
+        self.assertEqual(connection.commits, 1)
 
     def test_vector_records_are_stable_and_embed_text(self):
         with tempfile.TemporaryDirectory() as tmp:
