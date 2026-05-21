@@ -32,6 +32,7 @@ from typing import Iterator
 
 from pypdf import PdfReader
 
+from bormeparserv2.acto import ACTO
 from bormeparserv2.backends.base import BormeAParserBackend
 from bormeparserv2.regex import (
     REGEX_ARGCOLON,
@@ -351,6 +352,9 @@ class PyPDFParser(BormeAParserBackend):
         fuente. Devuelve ``(end, nombreacto_restante)``: cuando ``end`` es
         True, el llamador debe parar de iterar."""
         if is_acto_bold_mix(nombreacto):
+            return True, nombreacto
+
+        if nombreacto in ACTO.BOLD_KEYWORDS:
             return True, nombreacto
 
         if is_acto_bold(nombreacto):

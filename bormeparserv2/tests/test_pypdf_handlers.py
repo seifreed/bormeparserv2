@@ -227,3 +227,21 @@ class ParseActoBoldVariantsTestCase(unittest.TestCase):
         self.assertEqual(len(parser.actos), 1)
         acto_dict = parser.actos[0]
         self.assertIn("Modificación de duración", acto_dict)
+
+    def test_exact_bold_keyword_returns_as_act_header(self):
+        """Un BOLD_KEYWORD exacto puede ser la cabecera completa del acto.
+
+        Regresión real: BORME-A-2024-132-28 contiene
+        ``Acuerdo de ampliación de capital social sin ejecutar. Importe del acuerdo``
+        como cabecera exacta; no debe pasar por ``regex_bold_acto()``, que
+        solo parsea los bold con argumento y siguiente acto en la misma cadena.
+        """
+        parser = _make_parser()
+        parser.actos = []
+        acto = (
+            "Acuerdo de ampliación de capital social sin ejecutar. Importe del acuerdo"
+        )
+        end, remaining = parser._parse_acto_bold(acto, "ignore")
+        self.assertTrue(end)
+        self.assertEqual(remaining, acto)
+        self.assertEqual(parser.actos, [])
