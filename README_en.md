@@ -142,7 +142,7 @@ data/
   borme.sqlite
 ```
 
-PDFs are kept as the original source, JSON files are the structured representation, and indexes are rebuilt from `json/` without reparsing PDFs. The relational index stores documents, announcements and acts, and supports filters by company, act, role, provincia and date range.
+PDFs are kept as the original source, JSON files are the structured representation, and indexes are rebuilt from `json/` without reparsing PDFs. The relational index stores documents, announcements and acts, and supports filters by company, act, role, named person, provincia and date range.
 
 SQLite flow:
 
@@ -158,8 +158,11 @@ More searches:
 ```bash
 borme_index.py search -d ./data --sqlite ./data/borme.sqlite --acto "Nombramientos"
 borme_index.py search -d ./data --sqlite ./data/borme.sqlite --cargo "Adm. Unico"
+borme_index.py search -d ./data --sqlite ./data/borme.sqlite --nombre "Marc Rivero Lopez"
 borme_index.py search -d ./data --sqlite ./data/borme.sqlite --provincia Madrid -f 2024-01-01 -t 2024-03-31
 ```
+
+The `--nombre` filter normalizes case and accents, and also accepts the common `first-name surnames` order even when BORME publishes many roles as `surnames first-name`.
 
 The same index can live in MariaDB:
 

@@ -142,7 +142,7 @@ data/
   borme.sqlite
 ```
 
-Los PDFs se conservan como fuente original, los JSON son la representación estructurada y los índices se reconstruyen desde `json/` sin volver a parsear PDFs. El índice relacional guarda documentos, anuncios y actos, y permite filtrar por empresa, acto, cargo, provincia y rango de fechas.
+Los PDFs se conservan como fuente original, los JSON son la representación estructurada y los índices se reconstruyen desde `json/` sin volver a parsear PDFs. El índice relacional guarda documentos, anuncios y actos, y permite filtrar por empresa, acto, cargo, persona nombrada, provincia y rango de fechas.
 
 Flujo completo con SQLite:
 
@@ -158,8 +158,11 @@ Más búsquedas:
 ```bash
 borme_index.py search -d ./data --sqlite ./data/borme.sqlite --acto "Nombramientos"
 borme_index.py search -d ./data --sqlite ./data/borme.sqlite --cargo "Adm. Unico"
+borme_index.py search -d ./data --sqlite ./data/borme.sqlite --nombre "Marc Rivero Lopez"
 borme_index.py search -d ./data --sqlite ./data/borme.sqlite --provincia Madrid -f 2024-01-01 -t 2024-03-31
 ```
+
+El filtro `--nombre` normaliza mayúsculas y acentos, y también acepta el orden habitual `nombre apellidos` aunque el BORME publique muchos cargos como `apellidos nombre`.
 
 El mismo índice puede residir en MariaDB:
 

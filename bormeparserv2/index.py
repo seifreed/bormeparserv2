@@ -305,6 +305,7 @@ class RelationalBormeIndex:
         empresa: str | None = None,
         acto: str | None = None,
         cargo: str | None = None,
+        nombre: str | None = None,
         provincia: str | None = None,
         date_from: str | None = None,
         date_to: str | None = None,
@@ -313,6 +314,13 @@ class RelationalBormeIndex:
         empresa_pattern = f"%{normalize_text(empresa)}%" if empresa else None
         acto_pattern = f"%{normalize_text(acto)}%" if acto else None
         cargo_pattern = f"%{normalize_text(cargo)}%" if cargo else None
+        nombre_norm = normalize_text(nombre) if nombre else ""
+        nombre_pattern = f"%{nombre_norm}%" if nombre_norm else None
+        nombre_parts = nombre_norm.split()
+        nombre_borme_order = " ".join(nombre_parts[1:] + nombre_parts[:1])
+        nombre_borme_pattern = (
+            f"%{nombre_borme_order}%" if len(nombre_parts) > 1 else nombre_pattern
+        )
         provincia_pattern = f"%{normalize_text(provincia)}%" if provincia else None
         date_from_value = _date_or_none(date_from)
         date_to_value = _date_or_none(date_to)
@@ -323,6 +331,9 @@ class RelationalBormeIndex:
             acto_pattern,
             cargo_pattern,
             cargo_pattern,
+            nombre_pattern,
+            nombre_pattern,
+            nombre_borme_pattern,
             provincia_pattern,
             provincia_pattern,
             date_from_value,
@@ -485,6 +496,7 @@ class SQLiteBormeIndex(RelationalBormeIndex):
             CREATE INDEX IF NOT EXISTS idx_anuncios_empresa ON anuncios(empresa_norm);
             CREATE INDEX IF NOT EXISTS idx_actos_acto ON actos(acto_norm);
             CREATE INDEX IF NOT EXISTS idx_actos_cargo ON actos(cargo_norm);
+            CREATE INDEX IF NOT EXISTS idx_actos_nombre ON actos(nombre_norm);
             """)
         self.connection.commit()
 
@@ -498,6 +510,7 @@ class SQLiteBormeIndex(RelationalBormeIndex):
             "WHERE (? IS NULL OR a.empresa_norm LIKE ?) "
             "AND (? IS NULL OR ac.acto_norm LIKE ?) "
             "AND (? IS NULL OR ac.cargo_norm LIKE ?) "
+            "AND (? IS NULL OR ac.nombre_norm LIKE ? OR ac.nombre_norm LIKE ?) "
             "AND (? IS NULL OR d.provincia_norm LIKE ?) "
             "AND (? IS NULL OR d.date >= ?) "
             "AND (? IS NULL OR d.date <= ?) "
@@ -616,6 +629,7 @@ class MariaDBBormeIndex(RelationalBormeIndex):
               INDEX idx_actos_anuncio (cve, anuncio_id),
               INDEX idx_actos_acto (acto_norm),
               INDEX idx_actos_cargo (cargo_norm),
+              INDEX idx_actos_nombre (nombre_norm),
               CONSTRAINT fk_actos_anuncios
                 FOREIGN KEY (cve, anuncio_id)
                 REFERENCES anuncios(cve, anuncio_id) ON DELETE CASCADE
@@ -637,6 +651,7 @@ class MariaDBBormeIndex(RelationalBormeIndex):
             "WHERE (? IS NULL OR a.empresa_norm LIKE ?) "
             "AND (? IS NULL OR ac.acto_norm LIKE ?) "
             "AND (? IS NULL OR ac.cargo_norm LIKE ?) "
+            "AND (? IS NULL OR ac.nombre_norm LIKE ? OR ac.nombre_norm LIKE ?) "
             "AND (? IS NULL OR d.provincia_norm LIKE ?) "
             "AND (? IS NULL OR d.date >= ?) "
             "AND (? IS NULL OR d.date <= ?) "

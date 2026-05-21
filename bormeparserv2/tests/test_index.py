@@ -81,6 +81,8 @@ class BormeIndexTestCase(unittest.TestCase):
 
                 self.assertEqual(len(index.search(acto="nombramientos")), 1)
                 self.assertEqual(len(index.search(cargo="adm unico")), 1)
+                self.assertEqual(len(index.search(nombre="maria garcia")), 1)
+                self.assertEqual(len(index.search(nombre="garcia maria")), 1)
                 self.assertEqual(len(index.search(provincia="madrid")), 1)
                 self.assertEqual(len(index.search(date_from="2024-01-03")), 0)
             finally:

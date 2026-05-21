@@ -88,6 +88,7 @@ def _cmd_search(args) -> int:
             empresa=args.empresa,
             acto=args.acto,
             cargo=args.cargo,
+            nombre=args.nombre,
             provincia=args.provincia,
             date_from=args.fromdate,
             date_to=args.to,
@@ -168,6 +169,7 @@ def main(argv: list[str] | None = None) -> int:
     search_parser.add_argument("--empresa", help="Filtro por nombre de empresa")
     search_parser.add_argument("--acto", help="Filtro por acto mercantil")
     search_parser.add_argument("--cargo", help="Filtro por cargo")
+    search_parser.add_argument("--nombre", help="Filtro por persona nombrada")
     search_parser.add_argument("--provincia", help="Filtro por provincia")
     search_parser.add_argument("-f", "--fromdate", help="Fecha mínima YYYY-MM-DD")
     search_parser.add_argument("-t", "--to", help="Fecha máxima YYYY-MM-DD")

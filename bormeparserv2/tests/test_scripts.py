@@ -265,6 +265,19 @@ class BormeIndexScriptTestCase(unittest.TestCase):
             self.assertEqual(result.returncode, 0, msg=f"stderr={result.stderr!r}")
             self.assertIn("Técnicas Reunidas", result.stdout)
 
+            result = run_main(
+                "borme_index.py",
+                "search",
+                "-d",
+                tmp,
+                "--sqlite",
+                db_path,
+                "--nombre",
+                "garcia maria",
+            )
+            self.assertEqual(result.returncode, 0, msg=f"stderr={result.stderr!r}")
+            self.assertIn("Técnicas Reunidas", result.stdout)
+
             out_path = os.path.join(tmp, "vectors.jsonl")
             result = run_main(
                 "borme_index.py",
