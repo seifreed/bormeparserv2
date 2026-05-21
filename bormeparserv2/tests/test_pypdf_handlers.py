@@ -101,6 +101,32 @@ class CommitAnuncioEarlyReturnTestCase(unittest.TestCase):
         self.assertIn(99999, data_out)
         self.assertEqual(data_out[99999]["Empresa"], "TEST SL")
 
+    def test_commits_correction_header_without_id_from_text_act_number(self):
+        parser = _make_parser()
+        state = _ParseState()
+        state.cabecera = True
+        state.data = " - SOCIEDAD ESTATAL LOTERIAS Y APUESTAS DEL ESTADO SA."
+        parser._close_text_block(state)
+
+        self.assertIsNone(state.anuncio_id)
+        self.assertEqual(
+            state.empresa, "SOCIEDAD ESTATAL LOTERIAS Y APUESTAS DEL ESTADO SA"
+        )
+
+        state.data = (
+            "Advertido error en la publicación del acto número 138.028 de fecha "
+            "28 de marzo de 2011."
+        )
+        parser.actos = [{"Corrección de errores": state.data}]
+        data_out: dict = {}
+        parser._commit_anuncio(state, data_out)
+
+        self.assertIn(138028, data_out)
+        self.assertEqual(
+            data_out[138028]["Empresa"],
+            "SOCIEDAD ESTATAL LOTERIAS Y APUESTAS DEL ESTADO SA",
+        )
+
 
 class HandleFontNormalChangingPageTestCase(unittest.TestCase):
     """``_handle_font_normal`` durante cambio de página (líneas 264-267)."""

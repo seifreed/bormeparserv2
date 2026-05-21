@@ -224,8 +224,8 @@ class PyPDFParser(BormeAParserBackend):
         if state.cabecera:
             state.cabecera = False
             cabecera_text = self._clean_data(state.data)
-            state.anuncio_id, state.empresa, state.extra = regex_empresa(
-                cabecera_text, sanitize=self.sanitize
+            state.anuncio_id, state.empresa, state.extra = self._parse_company_header(
+                cabecera_text
             )
             logger.debug("anuncio_id=%s empresa=%s", state.anuncio_id, state.empresa)
             state.data = ""
@@ -315,6 +315,8 @@ class PyPDFParser(BormeAParserBackend):
         """Persiste el anuncio actual en ``data_out`` si la cabecera ha sido
         procesada. No hace nada si todavía no ha aparecido un
         ``/Cabecera_acto`` (PDF anómalo)."""
+        if state.anuncio_id is None and state.empresa is not None:
+            state.anuncio_id = self._extract_correction_act_number(state.data)
         if state.anuncio_id is None:
             return
         data_out[state.anuncio_id] = {
@@ -328,6 +330,10 @@ class PyPDFParser(BormeAParserBackend):
     # ------------------------------------------------------------------
 
     _COLLAPSE_SPACES = re.compile(r" {2,}")
+    _HEADER_WITHOUT_ID = re.compile(r"^-\s*(.*?)\.?$")
+    _CORRECTION_ACT_NUMBER = re.compile(
+        r"\bacto n[úu]mero\s+(\d{1,3}(?:\.\d{3})*)\b", re.IGNORECASE
+    )
 
     def _clean_data(self, data: str) -> str:
         """Deshace los escapes ``\\(`` / ``\\)`` del PDF y colapsa cualquier
@@ -335,6 +341,24 @@ class PyPDFParser(BormeAParserBackend):
         pisa una vez la cadena y deja triples y mayores intactos)."""
         data = data.replace(r"\(", "(").replace(r"\)", ")")
         return self._COLLAPSE_SPACES.sub(" ", data).strip()
+
+    def _parse_company_header(self, data: str) -> tuple[int | None, str, dict]:
+        try:
+            return regex_empresa(data, sanitize=self.sanitize)
+        except ValueError:
+            match = self._HEADER_WITHOUT_ID.match(data)
+            if match is None:
+                raise
+            _ignored_id, empresa, extra = regex_empresa(
+                f"0 - {match.group(1)}", sanitize=self.sanitize
+            )
+            return None, empresa, extra
+
+    def _extract_correction_act_number(self, data: str) -> int | None:
+        match = self._CORRECTION_ACT_NUMBER.search(self._clean_data(data))
+        if match is None:
+            return None
+        return int(match.group(1).replace(".", ""))
 
     def _parse_acto(self, nombreacto: str, data: str, prefix: str = "") -> None:
         data = self._clean_data(data)
