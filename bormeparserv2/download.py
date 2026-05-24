@@ -68,12 +68,10 @@ def _is_transient_http_status(status_code):
 
 def _get_with_retries(url, **kwargs):
     timeout = kwargs.pop("timeout", HTTP_TIMEOUT)
-    last_error = None
     for attempt in range(HTTP_RETRIES + 1):
         try:
             response = requests.get(url, timeout=timeout, **kwargs)
-        except requests.RequestException as exc:
-            last_error = exc
+        except requests.RequestException:
             if attempt < HTTP_RETRIES:
                 _sleep_before_retry(attempt)
                 continue
@@ -84,10 +82,6 @@ def _get_with_retries(url, **kwargs):
             _sleep_before_retry(attempt)
             continue
         return response
-
-    if last_error is not None:
-        raise last_error
-    raise RuntimeError(f"Could not GET {url}")
 
 
 def _coerce_date(date):

@@ -126,7 +126,9 @@ jobs:
           pip install -r requirements.txt
           pip install -e .
       - name: Run tests
-        run: coverage run --source=bormeparserv2 -m unittest discover bormeparserv2.tests
+        run: coverage run -m unittest discover bormeparserv2.tests
+      - name: Enforce 100% coverage
+        run: coverage report
       - name: Generate coverage XML
         if: matrix.python-version == '3.13'
         run: coverage xml -o coverage.xml
