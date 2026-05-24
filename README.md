@@ -216,7 +216,8 @@ python -m pip install -e .
 cargo install sbom-tools --version 0.1.21 --locked
 python scripts/generate_sbom.py -o build/sbom/bormeparserv2.cdx.json
 ~/.cargo/bin/sbom-tools validate build/sbom/bormeparserv2.cdx.json --standard ntia --fail-on-warning
-python scripts/check_sbom_rating.py build/sbom/bormeparserv2.cdx.json --tool ~/.cargo/bin/sbom-tools
+~/.cargo/bin/sbom-tools quality build/sbom/bormeparserv2.cdx.json --profile standard -o json -O build/sbom/bormeparserv2.quality.json
+python scripts/check_sbom_rating.py build/sbom/bormeparserv2.quality.json
 ```
 
 El score numérico es el que calcula `sbom-tools`; el proyecto no añade CPEs ni

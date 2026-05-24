@@ -78,8 +78,10 @@ jobs:
         run: python scripts/generate_sbom.py -o build/sbom/bormeparserv2.cdx.json
       - name: Validate SBOM
         run: ~/.cargo/bin/sbom-tools validate build/sbom/bormeparserv2.cdx.json --standard ntia --fail-on-warning
+      - name: Assess SBOM quality
+        run: ~/.cargo/bin/sbom-tools quality build/sbom/bormeparserv2.cdx.json --profile standard -o json -O build/sbom/bormeparserv2.quality.json
       - name: Check SBOM rating
-        run: python scripts/check_sbom_rating.py build/sbom/bormeparserv2.cdx.json --tool ~/.cargo/bin/sbom-tools --profile standard --min-score 90 --min-grade A
+        run: python scripts/check_sbom_rating.py build/sbom/bormeparserv2.quality.json --profile standard --min-score 90 --min-grade A
 
   hadolint:
     name: 'Dockerfile lint'
