@@ -47,6 +47,7 @@ Es un fork modernizado de [PabloCastellano/bormeparser](https://github.com/Pablo
 | **Caché local** | Estructura `pdf/AAAA/MM/DD/` para originales y `json/AAAA/MM/DD/` para datos estructurados |
 | **Búsqueda relacional** | Índices SQLite o MariaDB para buscar por empresa, acto, cargo, provincia y fecha |
 | **Vector stores** | Exportación JSONL y upsert a Qdrant con payloads de empresa, acto, provincia, fecha y CVE |
+| **SBOM** | Generación CycloneDX 1.7, validación `sbom-tools` NTIA y gate de rating mínimo A en CI |
 | **CLI** | Scripts `borme_to_json`, `borme_info`, `check_bormes`, `download_borme_pdfs`, … |
 | **Validación en frontera** | `PROVINCIA.coerce(...)` acepta atributo ASCII, nombre acentuado o forma bilingüe del sumario |
 | **Soporte oficial** | Python 3.13 y 3.14 |
@@ -199,6 +200,27 @@ docker run -d --name borme-mariadb \
 
 docker run -d --name borme-qdrant -p 6333:6333 qdrant/qdrant:latest
 ```
+
+### SBOM y rating
+
+El repositorio incluye un generador de SBOM CycloneDX 1.7 basado en las
+dependencias runtime de `requirements.txt` y la metadata instalada del entorno
+Python. La CI instala `sbom-tools 0.1.21`, valida el SBOM contra NTIA con
+`--fail-on-warning` y exige rating mínimo A en el perfil `standard`.
+
+Uso local:
+
+```bash
+python -m pip install -r requirements.txt
+python -m pip install -e .
+cargo install sbom-tools --version 0.1.21 --locked
+python scripts/generate_sbom.py -o build/sbom/bormeparserv2.cdx.json
+~/.cargo/bin/sbom-tools validate build/sbom/bormeparserv2.cdx.json --standard ntia --fail-on-warning
+python scripts/check_sbom_rating.py build/sbom/bormeparserv2.cdx.json --tool ~/.cargo/bin/sbom-tools
+```
+
+El score numérico es el que calcula `sbom-tools`; el proyecto no añade CPEs ni
+firmas inventadas para inflar la nota. El gate operativo es `A` o superior.
 
 ---
 

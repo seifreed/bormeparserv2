@@ -56,6 +56,31 @@ jobs:
       - name: pip-audit
         run: pip-audit --strict -r requirements.txt
 
+  sbom:
+    name: 'SBOM quality gate'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+      - name: Install sbom-tools
+        run: cargo install sbom-tools --version 0.1.21 --locked
+      - name: Generate SBOM
+        run: python scripts/generate_sbom.py -o build/sbom/bormeparserv2.cdx.json
+      - name: Validate SBOM
+        run: ~/.cargo/bin/sbom-tools validate build/sbom/bormeparserv2.cdx.json --standard ntia --fail-on-warning
+      - name: Check SBOM rating
+        run: python scripts/check_sbom_rating.py build/sbom/bormeparserv2.cdx.json --tool ~/.cargo/bin/sbom-tools --profile standard --min-score 90 --min-grade A
+
   hadolint:
     name: 'Dockerfile lint'
     runs-on: ubuntu-latest
