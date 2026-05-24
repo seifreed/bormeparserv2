@@ -77,6 +77,16 @@ class DockerfileSecurityTestCase(unittest.TestCase):
         self.assertIn("USER borme", lines)
 
 
+class PackageDiscoveryTestCase(unittest.TestCase):
+    """Los subpaquetes con datos runtime deben declararse sin ambigüedad."""
+
+    def test_examples_is_an_explicit_package(self):
+        from setuptools import find_packages  # type: ignore[import-untyped]
+
+        packages = find_packages(REPO_ROOT, exclude=["*.tests"])
+        self.assertIn("bormeparserv2.examples", packages)
+
+
 def _build(distribution: DistType) -> str:
     """Construye ``sdist`` o ``wheel`` invocando ``build.ProjectBuilder``
     en proceso (no usa ``subprocess`` para no disparar B404/B603 en
