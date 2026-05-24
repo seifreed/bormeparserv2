@@ -80,11 +80,12 @@ class DockerfileSecurityTestCase(unittest.TestCase):
 class PackageDiscoveryTestCase(unittest.TestCase):
     """Los subpaquetes con datos runtime deben declararse sin ambigüedad."""
 
-    def test_examples_is_an_explicit_package(self):
-        from setuptools import find_packages  # type: ignore[import-untyped]
-
-        packages = find_packages(REPO_ROOT, exclude=["*.tests"])
-        self.assertIn("bormeparserv2.examples", packages)
+    def test_examples_has_init_file(self):
+        self.assertTrue(
+            os.path.isfile(
+                os.path.join(REPO_ROOT, "bormeparserv2", "examples", "__init__.py")
+            )
+        )
 
 
 def _build(distribution: DistType) -> str:
@@ -165,6 +166,7 @@ class WheelShipsRuntimeFixturesTestCase(unittest.TestCase):
         with zipfile.ZipFile(self.wheel) as zf:
             names = zf.namelist()
         for fixture in (
+            "bormeparserv2/examples/__init__.py",
             "bormeparserv2/examples/BORME-A-2015-27-10.pdf",
             "bormeparserv2/examples/BORME-C-2011-20488.html",
             "bormeparserv2/examples/BORME-C-2011-20488.xml",
