@@ -31,6 +31,7 @@ DEFAULT_QDRANT_COLLECTION = "borme_anuncios"
 DEFAULT_VECTOR_SIZE = 384
 HTTP_TIMEOUT = 30
 RELATIONAL_INSERT_BATCH_SIZE = 500
+_QDRANT_COLLECTION = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.-]{0,254}$")
 
 
 def normalize_text(value: object) -> str:
@@ -202,8 +203,10 @@ class QdrantVectorSink:
         api_key: str | None = None,
         vector_size: int = DEFAULT_VECTOR_SIZE,
     ) -> None:
-        self.url = url.rstrip("/")
-        self.collection = collection
+        self.url = _validate_qdrant_url(url)
+        self.collection = _validate_qdrant_collection(collection)
+        if vector_size <= 0:
+            raise ValueError("vector_size must be positive")
         self.vector_size = vector_size
         self.headers = {"Content-Type": "application/json"}
         if api_key:
@@ -219,6 +222,8 @@ class QdrantVectorSink:
         response.raise_for_status()
 
     def upsert(self, records: Iterable[VectorRecord], *, batch_size: int = 64) -> int:
+        if batch_size <= 0:
+            raise ValueError("batch_size must be positive")
         self.ensure_collection()
         batch: list[dict[str, Any]] = []
         total = 0
@@ -247,6 +252,21 @@ class QdrantVectorSink:
         )
         response.raise_for_status()
         return len(points)
+
+
+def _validate_qdrant_url(url: str) -> str:
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise ValueError("Qdrant URL must be http(s)://host[:port]")
+    return url.rstrip("/")
+
+
+def _validate_qdrant_collection(collection: str) -> str:
+    if not _QDRANT_COLLECTION.match(collection):
+        raise ValueError(
+            "Qdrant collection must be 1-255 chars: letters, digits, '_', '-' or '.'"
+        )
+    return collection
 
 
 class RelationalBormeIndex:

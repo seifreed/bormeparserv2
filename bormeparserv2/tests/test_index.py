@@ -8,6 +8,7 @@ import unittest
 
 from bormeparserv2.index import (
     MariaDBBormeIndex,
+    QdrantVectorSink,
     SQLiteBormeIndex,
     build_vector_records,
     hash_embedding,
@@ -204,6 +205,19 @@ class BormeIndexTestCase(unittest.TestCase):
             vector = hash_embedding(records[0].text, size=16)
             self.assertEqual(len(vector), 16)
             self.assertAlmostEqual(sum(v * v for v in vector), 1.0)
+
+    def test_qdrant_sink_rejects_invalid_connection_settings(self):
+        with self.assertRaises(ValueError):
+            QdrantVectorSink("ftp://localhost:6333")
+        with self.assertRaises(ValueError):
+            QdrantVectorSink("http://localhost:6333", "bad/name")
+        with self.assertRaises(ValueError):
+            QdrantVectorSink("http://localhost:6333", vector_size=0)
+
+    def test_qdrant_upsert_rejects_invalid_batch_size_before_network(self):
+        sink = QdrantVectorSink("http://localhost:6333")
+        with self.assertRaises(ValueError):
+            sink.upsert([], batch_size=0)
 
     def test_infer_pdf_path_from_canonical_json_layout(self):
         path = os.path.join(
