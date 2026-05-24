@@ -13,6 +13,7 @@
   <a href="https://pypi.org/project/bormeparserv2/"><img src="https://img.shields.io/pypi/pyversions/bormeparserv2?style=flat-square&logo=python&logoColor=white" alt="Versiones de Python"></a>
   <a href="https://github.com/seifreed/bormeparserv2/blob/master/LICENSE.txt"><img src="https://img.shields.io/badge/licencia-GPL--3.0--or--later-green?style=flat-square" alt="Licencia"></a>
   <a href="https://github.com/seifreed/bormeparserv2/actions"><img src="https://img.shields.io/github/actions/workflow/status/seifreed/bormeparserv2/bormeparserv2_ci.yml?style=flat-square&logo=github&label=CI" alt="Estado CI"></a>
+  <a href="https://codecov.io/gh/seifreed/bormeparserv2"><img src="https://codecov.io/gh/seifreed/bormeparserv2/branch/master/graph/badge.svg" alt="Cobertura Codecov"></a>
 </p>
 
 <p align="center">
