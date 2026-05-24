@@ -16,6 +16,9 @@ Changelog for bormeparserv2
   arquitectura y del trabajo previo a la versión 0.5.0 es suyo. La
   variable de entorno para los tests live cambia de ``BORMEPARSER_LIVE``
   a ``BORMEPARSERV2_LIVE``.
+- docs(licensing): añadidas cabeceras SPDX en el código Python,
+  atribución explícita de ficheros heredados/nuevos y política clara de
+  mantener todo el fork integrado bajo ``GPL-3.0-or-later``.
 - fix(docker): pin ``wheel==0.47.0`` y ``--no-cache-dir`` en ambos ``pip
   install`` para cerrar los avisos ``DL3013``/``DL3042`` de hadolint.
 - fix(scripts): los scripts CLI ahora exponen ``main(argv=None) -> int``

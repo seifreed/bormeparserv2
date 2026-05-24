@@ -310,9 +310,16 @@ Si te resulta útil:
 
 Distribuido bajo licencia **GPL-3.0-or-later**. Ver [LICENSE.txt](LICENSE.txt).
 
+El paquete completo se distribuye como GPL-3.0-or-later. El código heredado
+mantiene la autoría de Pablo Castellano; los cambios y ficheros nuevos del fork
+mantienen la autoría de Marc Rivero López. Las cabeceras SPDX de los ficheros
+Python reflejan esa atribución. No se relicencia a MIT ninguna parte integrada
+del fork para evitar ambigüedad sobre el alcance de la GPL.
+
 **Atribución**
 - Mantenedor del fork: **Marc Rivero López** | [mriverolopez@gmail.com](mailto:mriverolopez@gmail.com) | [@seifreed](https://github.com/seifreed)
 - Repositorio: [github.com/seifreed/bormeparserv2](https://github.com/seifreed/bormeparserv2)
+- Proyecto original: [github.com/PabloCastellano/bormeparser](https://github.com/PabloCastellano/bormeparser)
 
 ---
 

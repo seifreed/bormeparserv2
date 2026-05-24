@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 #
+# SPDX-FileCopyrightText: 2026 Marc Rivero Lopez <mriverolopez@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
 # test_coverage_completeness.py - Cubre líneas que el resto de tests no tocan.
-# Copyright (C) 2015-2026 Marc Rivero López <mriverolopez@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

@@ -1,5 +1,8 @@
+# SPDX-FileCopyrightText: 2015-2022 Pablo Castellano <pablo@anche.no>
+# SPDX-FileCopyrightText: 2026 Marc Rivero Lopez <mriverolopez@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
 # bormeparserv2.backends.pypdf.parser
-# Copyright (C) 2015-2022 Pablo Castellano <pablo@anche.no>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

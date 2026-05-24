@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 #
+# SPDX-FileCopyrightText: 2026 Marc Rivero Lopez <mriverolopez@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
 # test_sbom.py - Regressions for SBOM tooling.
 
 """Tests for the generated SBOM and rating helper."""
@@ -43,6 +46,16 @@ class GenerateSbomTestCase(unittest.TestCase):
             data["metadata"]["component"]["licenses"][0]["license"]["id"],
             "GPL-3.0-or-later",
         )
+        self.assertEqual(
+            [author["name"] for author in data["metadata"]["authors"]],
+            ["Pablo Castellano", "Marc Rivero Lopez"],
+        )
+        original_refs = [
+            ref
+            for ref in data["metadata"]["component"]["externalReferences"]
+            if ref["url"] == "https://github.com/PabloCastellano/bormeparser"
+        ]
+        self.assertEqual(len(original_refs), 1)
         component_names = {
             component["name"].lower() for component in data["components"]
         }

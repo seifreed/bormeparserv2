@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+# SPDX-FileCopyrightText: 2015-2022 Pablo Castellano <pablo@anche.no>
+# SPDX-FileCopyrightText: 2026 Marc Rivero Lopez <mriverolopez@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
 
 from setuptools import find_packages, setup
 
@@ -55,7 +59,8 @@ setup(
         "Programming Language :: Python :: 3.14",
     ],
     python_requires=">=3.13,<3.15",
-    license="GPLv3+",
+    license="GPL-3.0-or-later",
+    license_files=["LICENSE.txt", "AUTHORS"],
     include_package_data=True,
     zip_safe=False,
     install_requires=get_install_requires(),

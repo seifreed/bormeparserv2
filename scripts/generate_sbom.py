@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 #
+# SPDX-FileCopyrightText: 2026 Marc Rivero Lopez <mriverolopez@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
 # generate_sbom.py - Generate a CycloneDX SBOM for bormeparserv2.
 
 """Generate a high-quality CycloneDX SBOM from installed package metadata."""
@@ -29,6 +32,8 @@ PROJECT_DESCRIPTION = (
 PROJECT_AUTHOR = "Marc Rivero Lopez"
 PROJECT_EMAIL = "mriverolopez@gmail.com"
 PROJECT_URL = "https://github.com/seifreed/bormeparserv2"
+ORIGINAL_PROJECT_AUTHOR = "Pablo Castellano"
+ORIGINAL_PROJECT_URL = "https://github.com/PabloCastellano/bormeparser"
 PROJECT_LICENSE = "GPL-3.0-or-later"
 TOOLING_MARKER = "# Development, test, lint, security and documentation tooling."
 GENERATOR_VERSION = "1.0.0"
@@ -359,6 +364,11 @@ def project_component(source_root: Path, version: str) -> dict[str, Any]:
         external_refs=[
             {"type": "website", "url": PROJECT_URL},
             {"type": "vcs", "url": PROJECT_URL},
+            {
+                "type": "other",
+                "url": ORIGINAL_PROJECT_URL,
+                "comment": "Original upstream project",
+            },
             {"type": "issue-tracker", "url": f"{PROJECT_URL}/issues"},
             {"type": "advisories", "url": f"{PROJECT_URL}/security/advisories"},
             {"type": "security-contact", "url": f"mailto:{PROJECT_EMAIL}"},
@@ -466,7 +476,10 @@ def build_sbom(
                     }
                 ]
             },
-            "authors": [{"name": PROJECT_AUTHOR, "email": PROJECT_EMAIL}],
+            "authors": [
+                {"name": ORIGINAL_PROJECT_AUTHOR},
+                {"name": PROJECT_AUTHOR, "email": PROJECT_EMAIL},
+            ],
             "component": primary,
             "lifecycles": [{"phase": "build"}],
         },

@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 #
+# SPDX-FileCopyrightText: 2026 Marc Rivero Lopez <mriverolopez@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
 # test_fetch_sumario_http.py - Cubre ramas HTTP de _fetch_sumario_tree.
-# Copyright (C) 2015-2026 Marc Rivero López <mriverolopez@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

@@ -7,3 +7,10 @@ proyecto:
 
     Pablo Castellano <pablo@anche.no>
     https://github.com/PabloCastellano/bormeparser
+
+Política de licencia del fork:
+
+    El paquete completo se distribuye bajo GPL-3.0-or-later.
+    Los ficheros Python usan cabeceras SPDX para distinguir código
+    heredado, cambios del fork y código nuevo sin relicenciar el
+    conjunto fuera de GPL.

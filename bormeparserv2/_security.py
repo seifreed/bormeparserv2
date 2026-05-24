@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 #
+# SPDX-FileCopyrightText: 2026 Marc Rivero Lopez <mriverolopez@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
 # bormeparserv2._security - Helpers de hardening para parseo y filesystem.
 
 import ntpath

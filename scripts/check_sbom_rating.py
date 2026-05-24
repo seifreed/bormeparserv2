@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 #
+# SPDX-FileCopyrightText: 2026 Marc Rivero Lopez <mriverolopez@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
 # check_sbom_rating.py - Gate sbom-tools quality score.
 
 """Check an SBOM quality score with sbom-tools and enforce a letter grade."""

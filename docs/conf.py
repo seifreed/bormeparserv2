@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 #
+# SPDX-FileCopyrightText: 2015-2022 Pablo Castellano <pablo@anche.no>
+# SPDX-FileCopyrightText: 2026 Marc Rivero Lopez <mriverolopez@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
 # bormeparserv2 documentation build configuration file, created by
 # sphinx-quickstart on Sat Jun 27 16:25:25 2015.
 #

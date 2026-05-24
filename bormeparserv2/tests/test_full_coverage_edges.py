@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 #
+# SPDX-FileCopyrightText: 2026 Marc Rivero Lopez <mriverolopez@gmail.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
 # test_full_coverage_edges.py - Offline edge coverage for production modules.
 #
 # This program is free software: you can redistribute it and/or modify
