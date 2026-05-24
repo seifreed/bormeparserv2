@@ -237,8 +237,8 @@ La publicación a PyPI usa el environment `pypi` y espera un secret llamado
 de PyPI; después conviene reemplazarlo por un token limitado al proyecto.
 
 ```bash
-git tag v0.5.1
-git push origin v0.5.1
+git tag v1.0.0
+git push origin v1.0.0
 ```
 
 Assets adjuntos a la release:

@@ -239,8 +239,8 @@ The PyPI publication uses the `pypi` environment and expects a secret named
 it should be replaced by a project-scoped token.
 
 ```bash
-git tag v0.5.1
-git push origin v0.5.1
+git tag v1.0.0
+git push origin v1.0.0
 ```
 
 Assets attached to the release:

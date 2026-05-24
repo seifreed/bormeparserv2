@@ -1,7 +1,7 @@
 Changelog for bormeparserv2
 ===========================
 
-0.5.1 (unreleased)
+1.0.0 (2026-05-24)
 ------------------
 
 - **Fork bormeparserv2.** El paquete pasa a llamarse ``bormeparserv2``,

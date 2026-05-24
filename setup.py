@@ -9,7 +9,7 @@ from pathlib import Path
 
 from setuptools import find_packages, setup
 
-VERSION = "0.5.1.dev0"
+VERSION = "1.0.0"
 VERSION_ENV_VAR = "BORMEPARSERV2_VERSION"
 
 
