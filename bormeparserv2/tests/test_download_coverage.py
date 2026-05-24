@@ -74,6 +74,18 @@ class _SequencedDownloadHandler(BaseHTTPRequestHandler):
         pass
 
 
+class _NoLengthDownloadHandler(BaseHTTPRequestHandler):
+    def do_GET(self):  # noqa: N802
+        body = self.server.body  # type: ignore[attr-defined]
+        self.send_response(200)
+        self.send_header("Content-Type", "application/pdf")
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, *_args, **_kwargs):  # noqa: N802
+        pass
+
+
 def _serve_truncated_download():
     server = ThreadingHTTPServer(("127.0.0.1", 0), _TruncatedDownloadHandler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -85,6 +97,14 @@ def _serve_sequence(responses):
     server = ThreadingHTTPServer(("127.0.0.1", 0), _SequencedDownloadHandler)
     server.responses = responses  # type: ignore[attr-defined]
     server.request_count = 0  # type: ignore[attr-defined]
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    return server, f"http://127.0.0.1:{server.server_port}/file.pdf"
+
+
+def _serve_no_length(body):
+    server = ThreadingHTTPServer(("127.0.0.1", 0), _NoLengthDownloadHandler)
+    server.body = body  # type: ignore[attr-defined]
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     return server, f"http://127.0.0.1:{server.server_port}/file.pdf"
@@ -594,6 +614,22 @@ class DownloadUrlRetryTestCase(unittest.TestCase):
                 target = os.path.join(tmp, "partial.pdf")
                 with self.assertRaises(_requests.RequestException):
                     download_url(url, target)
+                self.assertFalse(os.path.exists(target))
+                self.assertEqual(os.listdir(tmp), [])
+        finally:
+            server.shutdown()
+            server.server_close()
+
+    def test_oversized_stream_removes_temporary_file(self):
+        from bormeparserv2.download import download_url
+
+        server, url = _serve_no_length(b"%PDF-1.4 " + b"x" * 32)
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                target = os.path.join(tmp, "too-large.pdf")
+                with self.assertRaises(ValueError) as ctx:
+                    download_url(url, target, max_bytes=8)
+                self.assertIn("Download too large", str(ctx.exception))
                 self.assertFalse(os.path.exists(target))
                 self.assertEqual(os.listdir(tmp), [])
         finally:

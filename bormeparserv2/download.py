@@ -49,6 +49,7 @@ THREADS = 8
 HTTP_TIMEOUT = 30
 HTTP_RETRIES = 3
 HTTP_RETRY_BACKOFF = 0.5
+MAX_DOWNLOAD_BYTES = 100 * 1024 * 1024
 TRANSIENT_HTTP_STATUS = {429, 500, 502, 503, 504}
 _API_HEADERS = {"Accept": "application/xml"}
 
@@ -342,14 +343,20 @@ def get_url_pdfs(date, seccion=None, provincia=None, secure=USE_HTTPS):
     raise MissingFilterException("You must specify either provincia or seccion or both")
 
 
-def download_url(url, filename, try_again=0):
+def download_url(url, filename, try_again=0, max_bytes=MAX_DOWNLOAD_BYTES):
     """Descarga ``url`` y escribe el contenido en ``filename``. Si el fichero
     ya existe se considera idempotente y devuelve False sin volver a
-    descargar. Reintenta hasta 3 veces ante errores transitorios."""
+    descargar. Reintenta hasta 3 veces ante errores transitorios.
+
+    ``max_bytes`` limita el tamaño del cuerpo descargado para evitar que
+    una respuesta inesperada consuma el disco. Puede pasarse ``None`` para
+    desactivar el límite en usos explícitamente controlados.
+    """
     logger.debug("Downloading URL: %s", url)
     if os.path.exists(filename):
         logger.debug("%s already exists!", os.path.basename(filename))
         return False
+    _validate_max_bytes(max_bytes)
     try:
         response = requests.get(url, stream=True, timeout=HTTP_TIMEOUT)
         if _is_transient_http_status(response.status_code):
@@ -359,11 +366,14 @@ def download_url(url, filename, try_again=0):
                 response=response,
             )
         response.raise_for_status()
-        _atomic_write_response(filename, response)
+        _raise_if_response_too_large(response, max_bytes)
+        _atomic_write_response(filename, response, max_bytes=max_bytes)
     except requests.RequestException:
         if try_again < HTTP_RETRIES:
             _sleep_before_retry(try_again)
-            return download_url(url, filename, try_again=try_again + 1)
+            return download_url(
+                url, filename, try_again=try_again + 1, max_bytes=max_bytes
+            )
         raise
     finally:
         if "response" in locals():
@@ -371,13 +381,44 @@ def download_url(url, filename, try_again=0):
     return True
 
 
-def _atomic_write_response(filename, response):
+def _validate_max_bytes(max_bytes):
+    if max_bytes is not None and max_bytes <= 0:
+        raise ValueError("max_bytes must be positive or None")
+
+
+def _raise_if_response_too_large(response, max_bytes):
+    if max_bytes is None:
+        return
+    content_length = response.headers.get("Content-Length")
+    if not content_length:
+        return
+    try:
+        expected_size = int(content_length)
+    except ValueError:
+        return
+    if expected_size > max_bytes:
+        raise ValueError(
+            "Download too large: {} bytes exceeds limit {}".format(
+                expected_size, max_bytes
+            )
+        )
+
+
+def _atomic_write_response(filename, response, *, max_bytes=MAX_DOWNLOAD_BYTES):
     tmp_path = None
+    written = 0
     try:
         with _temporary_download_file(filename) as fp:
             tmp_path = fp.name
             for chunk in response.iter_content(chunk_size=8192):
                 if chunk:
+                    written += len(chunk)
+                    if max_bytes is not None and written > max_bytes:
+                        raise ValueError(
+                            "Download too large: {} bytes exceeds limit {}".format(
+                                written, max_bytes
+                            )
+                        )
                     fp.write(chunk)
         os.replace(tmp_path, filename)
     except Exception:
