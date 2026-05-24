@@ -13,6 +13,7 @@
   <a href="https://pypi.org/project/bormeparserv2/"><img src="https://img.shields.io/pypi/pyversions/bormeparserv2?style=flat-square&logo=python&logoColor=white" alt="Python versions"></a>
   <a href="https://github.com/seifreed/bormeparserv2/blob/master/LICENSE.txt"><img src="https://img.shields.io/badge/license-GPL--3.0--or--later-green?style=flat-square" alt="License"></a>
   <a href="https://github.com/seifreed/bormeparserv2/actions"><img src="https://img.shields.io/github/actions/workflow/status/seifreed/bormeparserv2/bormeparserv2_ci.yml?style=flat-square&logo=github&label=CI" alt="CI"></a>
+  <a href="https://codecov.io/gh/seifreed/bormeparserv2"><img src="https://codecov.io/gh/seifreed/bormeparserv2/branch/master/graph/badge.svg" alt="Codecov coverage"></a>
 </p>
 
 <p align="center">
@@ -47,6 +48,7 @@ It is a modernised fork of [PabloCastellano/bormeparser](https://github.com/Pabl
 | **Local cache** | `pdf/YYYY/MM/DD/` for original files and `json/YYYY/MM/DD/` for structured data |
 | **Relational search** | SQLite or MariaDB indexes for companies, acts, roles, provincias and dates |
 | **Vector stores** | JSONL export and Qdrant upsert with company, act, provincia, date and CVE payloads |
+| **SBOM** | CycloneDX 1.7 generation, `sbom-tools` NTIA validation and minimum A rating gate in CI |
 | **CLI** | `borme_to_json`, `borme_info`, `check_bormes`, `download_borme_pdfs`, … |
 | **Boundary validation** | `PROVINCIA.coerce(...)` accepts ASCII attribute, accented name, or bilingual XML form |
 | **Officially supported** | Python 3.13 and 3.14 |
@@ -200,6 +202,59 @@ docker run -d --name borme-mariadb \
 docker run -d --name borme-qdrant -p 6333:6333 qdrant/qdrant:latest
 ```
 
+### SBOM and rating
+
+The repository includes a CycloneDX 1.7 SBOM generator based on the runtime
+dependencies in `requirements.txt` and the installed metadata of the Python
+environment. CI installs `sbom-tools 0.1.21`, validates the SBOM against NTIA
+with `--fail-on-warning`, and requires a minimum A rating in the `standard`
+profile.
+
+Local usage:
+
+```bash
+python -m pip install -r requirements.txt
+python -m pip install -e .
+cargo install sbom-tools --version 0.1.21 --locked
+python scripts/generate_sbom.py -o build/sbom/bormeparserv2.cdx.json
+~/.cargo/bin/sbom-tools validate build/sbom/bormeparserv2.cdx.json --standard ntia --fail-on-warning
+~/.cargo/bin/sbom-tools quality build/sbom/bormeparserv2.cdx.json --profile standard -o json -O build/sbom/bormeparserv2.quality.json
+python scripts/check_sbom_rating.py build/sbom/bormeparserv2.quality.json
+```
+
+The numeric score is the one calculated by `sbom-tools`; the project does not
+add invented CPEs or signatures to inflate the grade. The operational gate is
+`A` or better.
+
+### Tag-based releases
+
+The repository publishes releases from Git tags using the `vX.Y.Z` format, or
+an equivalent PEP 440 version such as `vX.Y.Zrc1`. When the tag is pushed,
+GitHub Actions runs `.github/workflows/release.yml`, validates the suite with
+100% coverage, builds the packages, creates or updates the GitHub Release, and
+publishes the wheel and sdist to PyPI.
+
+The PyPI publication uses the `pypi` environment and expects a secret named
+`PYPI_API_TOKEN`. The first upload may require a PyPI account token; afterwards,
+it should be replaced by a project-scoped token.
+
+```bash
+git tag v0.5.1
+git push origin v0.5.1
+```
+
+Assets attached to the release:
+
+- `bormeparserv2-X.Y.Z-py3-none-any.whl`
+- `bormeparserv2-X.Y.Z.tar.gz`
+- `bormeparserv2-X.Y.Z.cdx.json`
+- `bormeparserv2-X.Y.Z.quality.json`
+- `SHA256SUMS`
+
+During the release, the workflow injects `BORMEPARSERV2_VERSION` from the tag
+so the wheel, sdist and SBOM use the published version even while the main
+branch keeps declaring a development version.
+
 ---
 
 ## Library usage
@@ -286,9 +341,16 @@ If you find it useful:
 
 Distributed under the **GPL-3.0-or-later** license. See [LICENSE.txt](LICENSE.txt).
 
+The complete package is distributed as GPL-3.0-or-later. The inherited code
+keeps Pablo Castellano's authorship; the fork changes and new files keep Marc
+Rivero López's authorship. The SPDX headers in Python files reflect that
+attribution. No integrated part of the fork is relicensed to MIT, to avoid
+ambiguity about the GPL scope.
+
 **Attribution**
 - Fork maintainer: **Marc Rivero López** | [mriverolopez@gmail.com](mailto:mriverolopez@gmail.com) | [@seifreed](https://github.com/seifreed)
 - Repository: [github.com/seifreed/bormeparserv2](https://github.com/seifreed/bormeparserv2)
+- Original project: [github.com/PabloCastellano/bormeparser](https://github.com/PabloCastellano/bormeparser)
 
 ---
 
