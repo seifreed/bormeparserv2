@@ -271,3 +271,117 @@ class ParseActoBoldVariantsTestCase(unittest.TestCase):
         self.assertTrue(end)
         self.assertEqual(remaining, acto)
         self.assertEqual(parser.actos, [])
+
+
+class ExtractedTextLayoutTestCase(unittest.TestCase):
+    """Fallback para PDFs BOE nuevos que usan ``Identity-H``/``ToUnicode``.
+
+    Regresión real: desde BORME-A-2025-39-02 el content stream ya no
+    contiene ``(texto)Tj`` bajo marcadores ``/Fecha``; ``pypdf.extract_text``
+    sí devuelve el texto visible y los metadatos vienen en ``/Keywords``.
+    """
+
+    def test_parses_numbered_announcements_from_extracted_text(self):
+        parser = _make_parser()
+        text = """SECCIÓN PRIMERA
+Empresarios
+Actos inscritos
+ALBACETE
+93634 - PRIUS SAM SOCIEDAD LIMITADA.
+Ceses/Dimisiones. Adm. Solid.: SANCHEZ MULITERNO GARCIA ALONSO;SANCHEZ-MULITERNO GARCIA JOSE CARLOS.
+Fusión por absorción. Sociedades absorbidas: PRIUS ENERGY SOCIEDAD LIMITADA. Disolución. Fusion. Extinción. Datos registrales. S 8 , H AB 14638, I/A 8 (18.02.25).
+BOLETÍN OFICIAL DEL REGISTRO MERCANTIL
+Núm. 39 Miércoles 26 de febrero de 2025 Pág. 9616
+cve: BORME-A-2025-39-02
+Verificable en https://www.boe.es
+93635 - PRIUS ENERGY SOCIEDAD LIMITADA.
+Revocaciones. Apoderado: ALGARRA INIESTA OSCAR. Datos registrales. S 8 , H AB 16329, I/A 12 (18.02.25).
+"""
+        raw = parser._parse_extracted_text_document(
+            text,
+            {
+                "/Keywords": (
+                    "BORME-A-2025-39-02;BORME 39 de 2025;" "ALBACETE;26/02/2025"
+                )
+            },
+        )
+
+        self.assertEqual(raw["borme_fecha"], "Miércoles 26 de febrero de 2025")
+        self.assertEqual(raw["borme_num"], 39)
+        self.assertEqual(raw["borme_cve"], "BORME-A-2025-39-02")
+        self.assertEqual(raw["borme_seccion"], "SECCIÓN PRIMERA")
+        self.assertEqual(raw["borme_subseccion"], "Actos inscritos")
+        self.assertEqual(raw["borme_provincia"], "ALBACETE")
+        self.assertEqual(raw[93634]["Empresa"], "PRIUS SAM SL")
+        self.assertIn(
+            {
+                "Ceses/Dimisiones": {
+                    "Adm. Solid.": {
+                        "SANCHEZ MULITERNO GARCIA ALONSO",
+                        "SANCHEZ-MULITERNO GARCIA JOSE CARLOS",
+                    }
+                }
+            },
+            raw[93634]["Actos"],
+        )
+        self.assertIn(
+            {"Datos registrales": "S 8 , H AB 14638, I/A 8 (18.02.25)"},
+            raw[93634]["Actos"],
+        )
+        self.assertEqual(raw[93635]["Empresa"], "PRIUS ENERGY SL")
+
+    def test_prefers_visible_province_over_lossy_keywords(self):
+        parser = _make_parser()
+        text = """SECCIÓN PRIMERA
+Empresarios
+Actos inscritos
+ALMERÍA
+208574 - GRUPO AGF FASHION SL.
+Nombramientos. Auditor: BNFIX AMB AUDITORES SLP. Datos registrales. S 8 , H AL 39803, I/A 30 (23.04.26).
+"""
+        raw = parser._parse_extracted_text_document(
+            text,
+            {"/Keywords": ("BORME-A-2026-82-04;BORME 82 de 2026;" "ALMERA;30/04/2026")},
+        )
+
+        self.assertEqual(raw["borme_subseccion"], "Actos inscritos")
+        self.assertEqual(raw["borme_provincia"], "ALMERÍA")
+        self.assertEqual(raw[208574]["Empresa"], "GRUPO AGF FASHION SL")
+
+    def test_parses_correction_without_numbered_header(self):
+        parser = _make_parser()
+        text = """BOLETÍN OFICIAL DEL REGISTRO MERCANTIL
+Núm. 39 Miércoles 26 de febrero de 2025 Pág. 9873
+cve: BORME-B-2025-39-31
+Verificable en https://www.boe.es
+SECCIÓN PRIMERA
+Empresarios
+Otros actos publicados en el Registro Mercantil
+NAVARRA
+Corrección de errores
+La sociedad HERMANOS PERNAUT SL estaba inscrita en la hoja 6960.
+"""
+        raw = parser._parse_extracted_text_document(
+            text,
+            {
+                "/Keywords": (
+                    "BORME-B-2025-39-31;BORME 39 de 2025;" "NAVARRA;26/02/2025"
+                )
+            },
+        )
+
+        self.assertEqual(
+            raw["borme_subseccion"], "Otros actos publicados en el Registro Mercantil"
+        )
+        self.assertEqual(raw[31]["Empresa"], "Corrección de errores")
+        self.assertEqual(
+            raw[31]["Actos"],
+            [
+                {
+                    "Otros conceptos": (
+                        "Corrección de errores La sociedad HERMANOS PERNAUT SL "
+                        "estaba inscrita en la hoja 6960."
+                    )
+                }
+            ],
+        )

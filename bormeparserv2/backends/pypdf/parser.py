@@ -28,7 +28,8 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass
-from typing import Iterator
+from datetime import date
+from typing import Any, Iterator
 
 from pypdf import PdfReader
 
@@ -106,6 +107,43 @@ class PyPDFParser(BormeAParserBackend):
         "borme_provincia": None,
         "borme_cve": None,
     }
+    _METADATA_KEYWORDS = re.compile(
+        r"^(BORME-[AB]-\d{4}-\d+-\d+);BORME\s+(\d+)\s+de\s+(\d{4});([^;]+);(\d{2}/\d{2}/\d{4})$"
+    )
+    _EXTRACTED_HEADER = re.compile(r"^(\d{1,7})\s+-\s+(.+?)\.?$")
+    _PLAIN_ACTO_RE = re.compile(
+        r"(?<!\w)("
+        + "|".join(
+            re.escape(keyword)
+            for keyword in sorted(ACTO.ALL_KEYWORDS, key=len, reverse=True)
+        )
+        + r")(?=[\.:])",
+        re.UNICODE,
+    )
+    _WEEKDAYS = (
+        "Lunes",
+        "Martes",
+        "Miércoles",
+        "Jueves",
+        "Viernes",
+        "Sábado",
+        "Domingo",
+    )
+    _MONTHS = (
+        "",
+        "enero",
+        "febrero",
+        "marzo",
+        "abril",
+        "mayo",
+        "junio",
+        "julio",
+        "agosto",
+        "septiembre",
+        "octubre",
+        "noviembre",
+        "diciembre",
+    )
 
     def __init__(self, filename, *, sanitize=False, log_level=logging.WARN):
         super().__init__(filename)
@@ -122,12 +160,16 @@ class PyPDFParser(BormeAParserBackend):
         state = _ParseState()
         self.actos = []
 
-        for content in self._iter_page_contents():
+        pages = list(self._iter_page_contents())
+        for content in pages:
             logger.debug("---- BEGIN OF PAGE ----")
             for line in content.split("\n"):
                 self._handle_line(line, state, data_out)
             logger.debug("---- END OF PAGE ----")
             state.changing_page = True
+
+        if data_out["borme_fecha"] is None:
+            return self._parse_extracted_text_layout()
 
         if state.nombreacto:
             self._parse_acto(state.nombreacto, state.data, prefix="END")
@@ -400,3 +442,215 @@ class PyPDFParser(BormeAParserBackend):
             return False, nombreacto
 
         return True, nombreacto
+
+    # ------------------------------------------------------------------
+    # Fallback para PDFs BOE nuevos con texto Identity-H/ToUnicode
+    # ------------------------------------------------------------------
+
+    def _parse_extracted_text_layout(self) -> dict:
+        with open(self.filename, "rb") as fp:
+            reader = PdfReader(fp)
+            text = "\n".join(page.extract_text() or "" for page in reader.pages)
+            metadata = dict(reader.metadata or {})
+        return self._parse_extracted_text_document(text, metadata)
+
+    def _parse_extracted_text_document(
+        self, text: str, metadata: dict[str, Any]
+    ) -> dict:
+        data_out = self._metadata_from_keywords(metadata)
+        section, subsection, province = self._section_from_extracted_text(
+            text, data_out["borme_provincia"]
+        )
+        data_out["borme_seccion"] = section
+        data_out["borme_subseccion"] = subsection
+        data_out["borme_provincia"] = province
+
+        found = False
+        for anuncio_id, empresa, body in self._iter_extracted_announcements(
+            text,
+            seccion=section,
+            subseccion=subsection,
+            provincia=data_out["borme_provincia"],
+        ):
+            found = True
+            _ignored_id, clean_empresa, extra = regex_empresa(
+                f"{anuncio_id} - {empresa}", sanitize=self.sanitize
+            )
+            data_out[anuncio_id] = {
+                "Empresa": clean_empresa,
+                "Extra": extra,
+                "Actos": self._parse_plain_actos(body),
+            }
+
+        if not found:
+            fallback_body = self._fallback_body_from_extracted_text(
+                text,
+                seccion=section,
+                subseccion=subsection,
+                provincia=data_out["borme_provincia"],
+            )
+            if fallback_body:
+                fallback_id = self._fallback_anuncio_id(data_out["borme_cve"])
+                data_out[fallback_id] = {
+                    "Empresa": "Corrección de errores",
+                    "Extra": {"registro": "", "sucursal": False, "liquidacion": False},
+                    "Actos": [{"Otros conceptos": fallback_body}],
+                }
+
+        return data_out
+
+    def _metadata_from_keywords(self, metadata: dict[str, Any]) -> dict:
+        keywords = str(metadata.get("/Keywords") or metadata.get("Keywords") or "")
+        match = self._METADATA_KEYWORDS.match(keywords)
+        if match is None:
+            raise ValueError(
+                f"No se pudo parsear metadatos BORME del PDF: {keywords!r}"
+            )
+        cve, num, _year, province, ddmmyyyy = match.groups()
+        day, month, year = (int(part) for part in ddmmyyyy.split("/"))
+        parsed_date = date(year, month, day)
+        return {
+            "borme_fecha": self._format_borme_date(parsed_date),
+            "borme_num": int(num),
+            "borme_seccion": None,
+            "borme_subseccion": None,
+            "borme_provincia": province,
+            "borme_cve": cve,
+        }
+
+    def _format_borme_date(self, value: date) -> str:
+        return (
+            f"{self._WEEKDAYS[value.weekday()]} {value.day} "
+            f"de {self._MONTHS[value.month]} de {value.year}"
+        )
+
+    def _section_from_extracted_text(
+        self, text: str, provincia: str
+    ) -> tuple[str, str, str]:
+        lines = self._clean_extracted_lines(text)
+        for index, line in enumerate(lines):
+            if not line.startswith("SECCIÓN "):
+                continue
+            header: list[str] = []
+            for candidate in lines[index + 1 : index + 10]:
+                if candidate == "Empresarios" or self._is_extracted_page_marker(
+                    candidate
+                ):
+                    continue
+                header.append(candidate)
+                if len(header) == 2:
+                    break
+            if header:
+                province = header[1] if len(header) > 1 else provincia
+                return line, header[0], province
+            return line, "Actos inscritos", provincia
+        raise ValueError("No se pudo localizar la sección del PDF extraído")
+
+    def _iter_extracted_announcements(
+        self, text: str, *, seccion: str, subseccion: str, provincia: str
+    ) -> Iterator[tuple[int, str, str]]:
+        current_id: int | None = None
+        current_empresa = ""
+        current_body: list[str] = []
+
+        def flush() -> tuple[int, str, str] | None:
+            if current_id is None:
+                return None
+            return current_id, current_empresa, self._clean_data(" ".join(current_body))
+
+        for line in self._clean_extracted_lines(text):
+            if self._is_extracted_boilerplate(
+                line, seccion=seccion, subseccion=subseccion, provincia=provincia
+            ):
+                continue
+            match = self._EXTRACTED_HEADER.match(line)
+            if match:
+                previous = flush()
+                if previous is not None:
+                    yield previous
+                current_id = int(match.group(1))
+                current_empresa = match.group(2)
+                current_body = []
+                continue
+            if current_id is not None:
+                current_body.append(line)
+
+        previous = flush()
+        if previous is not None:
+            yield previous
+
+    def _fallback_body_from_extracted_text(
+        self, text: str, *, seccion: str, subseccion: str, provincia: str
+    ) -> str:
+        body = [
+            line
+            for line in self._clean_extracted_lines(text)
+            if not self._is_extracted_boilerplate(
+                line, seccion=seccion, subseccion=subseccion, provincia=provincia
+            )
+        ]
+        return self._clean_data(" ".join(body))
+
+    def _clean_extracted_lines(self, text: str) -> list[str]:
+        return [
+            self._clean_data(line)
+            for line in text.splitlines()
+            if self._clean_data(line)
+        ]
+
+    def _is_extracted_boilerplate(
+        self, line: str, *, seccion: str, subseccion: str, provincia: str
+    ) -> bool:
+        return line in {
+            seccion,
+            subseccion,
+            provincia,
+            "Empresarios",
+        } or self._is_extracted_page_marker(line)
+
+    def _is_extracted_page_marker(self, line: str) -> bool:
+        return (
+            line.startswith("BOLETÍN OFICIAL DEL REGISTRO MERCANTIL")
+            or line.startswith("Núm. ")
+            or line.startswith("cve: ")
+            or line.startswith("Verificable en ")
+            or line.startswith("https://www.boe.es ")
+        )
+
+    def _fallback_anuncio_id(self, cve: str) -> int:
+        try:
+            return int(cve.rsplit("-", 1)[1])
+        except (IndexError, ValueError):
+            return 0
+
+    def _parse_plain_actos(self, text: str) -> list[dict]:
+        text = self._clean_data(text)
+        if not text:
+            return []
+
+        matches = list(self._PLAIN_ACTO_RE.finditer(text))
+        if not matches:
+            return [self._unknown_plain_acto(text)]
+
+        actos: list[dict] = []
+        if matches[0].start() > 0:
+            actos.append(self._unknown_plain_acto(text[: matches[0].start()]))
+
+        for index, match in enumerate(matches):
+            next_start = (
+                matches[index + 1].start() if index + 1 < len(matches) else len(text)
+            )
+            name = match.group(1)
+            value = text[match.end() + 1 : next_start].strip(" .")
+            if is_acto_cargo(name):
+                parsed_value: object = regex_cargos(value, sanitize=self.sanitize)
+                if not parsed_value:
+                    logger.warning("No se encontraron cargos en la cadena: %s", value)
+            else:
+                parsed_value = value or None
+            actos.append({name: parsed_value})
+        return actos
+
+    def _unknown_plain_acto(self, text: str) -> dict:
+        text = self._clean_data(text)
+        return {"Otros conceptos": text or None}
