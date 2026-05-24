@@ -24,6 +24,8 @@ Changelog for bormeparserv2
   tests/cobertura/SBOM, publica esos assets en la GitHub Release y sube
   wheel/sdist a PyPI desde el environment ``pypi`` usando
   ``PYPI_API_TOKEN``.
+- build: añadido ``pyproject.toml`` con ``setuptools.build_meta`` como
+  backend PEP 517 explícito.
 - fix(docker): pin ``wheel==0.47.0`` y ``--no-cache-dir`` en ambos ``pip
   install`` para cerrar los avisos ``DL3013``/``DL3042`` de hadolint.
 - fix(scripts): los scripts CLI ahora exponen ``main(argv=None) -> int``
