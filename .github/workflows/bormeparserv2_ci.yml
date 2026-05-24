@@ -127,8 +127,18 @@ jobs:
           pip install -e .
       - name: Run tests
         run: coverage run --source=bormeparserv2 -m unittest discover bormeparserv2.tests
+      - name: Generate coverage XML
+        if: matrix.python-version == '3.13'
+        run: coverage xml -o coverage.xml
       - name: Publish to coveralls.io
         if: matrix.python-version == '3.13'
         run: coveralls --service=github
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload coverage reports to Codecov
+        if: matrix.python-version == '3.13'
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: seifreed/bormeparserv2
+          files: ./coverage.xml
