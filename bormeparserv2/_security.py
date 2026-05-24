@@ -8,6 +8,9 @@ from urllib.parse import urlsplit
 
 from lxml import etree
 
+_BOE_HOSTS = frozenset({"boe.es", "www.boe.es"})
+_BOE_PATH_PREFIXES = ("/borme/", "/diario_borme/")
+
 
 def secure_xml_parser():
     """Parser XML defensivo para entradas BOE locales o remotas."""
@@ -58,3 +61,17 @@ def filename_from_url(url):
     """Extrae el último segmento del path de una URL y lo valida."""
     filename = urlsplit(url).path.rsplit("/", 1)[-1]
     return safe_filename(filename)
+
+
+def validate_boe_url(url):
+    """Devuelve ``url`` si apunta a un recurso BORME publicado por el BOE."""
+    if not isinstance(url, str):
+        raise TypeError(f"url must be str, got {type(url).__name__}")
+    parts = urlsplit(url)
+    if (
+        parts.scheme not in {"http", "https"}
+        or parts.hostname not in _BOE_HOSTS
+        or not parts.path.startswith(_BOE_PATH_PREFIXES)
+    ):
+        raise ValueError(f"Unexpected BOE URL: {url!r}")
+    return url

@@ -35,6 +35,7 @@ from .exceptions import (
     CveNotFound,
     MissingFilterException,
 )
+from ._security import validate_boe_url
 from .seccion import SECCION
 from .utils import remove_accents
 
@@ -143,10 +144,13 @@ class BormeXML:
         return bxml
 
     def get_urls_cve(self, seccion=None, provincia=None):
-        return {
-            item.findtext("identificador"): item.findtext("url_pdf")
-            for item in self._iter_items(seccion=seccion, provincia=provincia)
-        }
+        urls = {}
+        for item in self._iter_items(seccion=seccion, provincia=provincia):
+            cve = item.findtext("identificador")
+            url = item.findtext("url_pdf")
+            if cve and url:
+                urls[cve] = validate_boe_url(url)
+        return urls
 
     def get_url_pdfs(self, seccion=None, provincia=None):
         """URLs para descargar PDFs.
@@ -191,7 +195,7 @@ class BormeXML:
         """
         for item in self._all_items():
             if item.findtext("identificador") == cve:
-                return item.findtext("url_pdf")
+                return validate_boe_url(item.findtext("url_pdf"))
         raise CveNotFound(
             "CVE {!r} not found in BORME sumario {}".format(cve, self.date)
         )
@@ -257,7 +261,7 @@ class BormeXML:
             cve = item.findtext("identificador")
             url = item.findtext(tag)
             if cve and url:
-                urls["{}.{}".format(cve, format)] = url
+                urls["{}.{}".format(cve, format)] = validate_boe_url(url)
         return urls
 
     def _get_url_borme_a(self, seccion=None, provincia=None):
@@ -278,7 +282,7 @@ class BormeXML:
                 key = item.findtext("titulo")
             else:
                 key = item.getparent().get("codigo")
-            urls[key] = url_pdf
+            urls[key] = validate_boe_url(url_pdf)
         return urls
 
     def download_borme(self, path, provincia=None, seccion=None):

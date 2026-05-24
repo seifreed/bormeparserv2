@@ -21,7 +21,13 @@ from threading import Thread
 import requests
 from lxml import etree
 
-from ._security import filename_from_url, parse_xml_bytes, parse_xml_file, safe_join
+from ._security import (
+    filename_from_url,
+    parse_xml_bytes,
+    parse_xml_file,
+    safe_join,
+    validate_boe_url,
+)
 from .exceptions import BormeDoesntExistException, MissingFilterException
 from .parser import parse as parse_borme
 from .provincia import PROVINCIA
@@ -222,7 +228,7 @@ def _find_pdf_entry_in_sumario(sumario, seccion, provincia_code):
         if identificador.endswith(suffix):
             url = item.findtext("url_pdf")
             if url:
-                return identificador, url
+                return identificador, validate_boe_url(url)
     raise BormeDoesntExistException(
         "No PDF for seccion={} provincia={} in this sumario".format(
             seccion, provincia_code
@@ -268,8 +274,10 @@ def get_url_pdfs_provincia(date, provincia, secure=USE_HTTPS):
         if titulo != provincia:
             continue
         url = item.findtext("url_pdf")
+        if not url:
+            continue
         seccion = item.getparent().get("codigo")
-        urls[seccion] = url
+        urls[seccion] = validate_boe_url(url)
     return urls
 
 
@@ -280,10 +288,12 @@ def get_url_pdfs_seccion(date, seccion, secure=USE_HTTPS):
 
     sumario = _fetch_sumario_tree(get_url_xml(date, secure=secure))
     xpath = 'diario/seccion[@codigo="{}"]/item'.format(seccion)
-    return {
-        item.findtext("titulo"): item.findtext("url_pdf")
-        for item in sumario.iterfind(xpath)
-    }
+    urls = {}
+    for item in sumario.iterfind(xpath):
+        url = item.findtext("url_pdf")
+        if url:
+            urls[item.findtext("titulo")] = validate_boe_url(url)
+    return urls
 
 
 _C_URL_TAGS = {
@@ -305,10 +315,11 @@ def get_url_seccion_c(date, format="xml", secure=USE_HTTPS):
     urls = {}
     for apartado in sumario.iterfind('diario/seccion[@codigo="C"]/apartado'):
         nombre = apartado.get("nombre")
-        urls[nombre] = {
-            item.findtext("titulo"): item.findtext(tag)
-            for item in apartado.iterfind("item")
-        }
+        urls[nombre] = {}
+        for item in apartado.iterfind("item"):
+            url = item.findtext(tag)
+            if url:
+                urls[nombre][item.findtext("titulo")] = validate_boe_url(url)
     return urls
 
 

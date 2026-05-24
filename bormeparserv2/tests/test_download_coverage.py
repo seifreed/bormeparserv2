@@ -193,6 +193,38 @@ class GetUrlPdfFromXmlTestCase(unittest.TestCase):
                 datetime.date(2015, 9, 24), SECCION.A, "MELILLA", SUMARIO_FIXTURE
             )
 
+    def test_non_boe_pdf_url_in_sumario_is_rejected(self):
+        from bormeparserv2.download import get_url_pdf_from_xml
+
+        xml = (
+            '<?xml version="1.0"?>'
+            "<sumario>"
+            "<metadatos><fecha_publicacion>20150210</fecha_publicacion></metadatos>"
+            '<diario numero="27">'
+            '<seccion codigo="A">'
+            "<item>"
+            "<identificador>BORME-A-2015-27-10</identificador>"
+            "<titulo>CÁCERES</titulo>"
+            "<url_pdf>http://127.0.0.1/private.pdf</url_pdf>"
+            "</item>"
+            "</seccion>"
+            "</diario>"
+            "</sumario>"
+        )
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".xml", delete=False, encoding="utf-8"
+        ) as fp:
+            fp.write(xml)
+            path = fp.name
+        try:
+            with self.assertRaises(ValueError) as ctx:
+                get_url_pdf_from_xml(
+                    datetime.date(2015, 2, 10), SECCION.A, "CACERES", path
+                )
+            self.assertIn("Unexpected BOE URL", str(ctx.exception))
+        finally:
+            os.unlink(path)
+
 
 class GetUrlPdfsValidationTestCase(unittest.TestCase):
     """``get_url_pdfs`` y ``get_url_pdfs_seccion`` rechazan entradas inválidas."""

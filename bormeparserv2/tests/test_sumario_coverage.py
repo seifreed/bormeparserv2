@@ -206,7 +206,9 @@ class SumarioItemWithoutUrlPdfTestCase(unittest.TestCase):
             "<item>"
             "<identificador>BORME-A-2015-27-10</identificador>"
             "<titulo>CÁCERES</titulo>"
-            "<url_pdf szBytes='100'>https://example.com/x.pdf</url_pdf>"
+            "<url_pdf szBytes='100'>"
+            "https://www.boe.es/borme/dias/2015/02/10/pdfs/BORME-A-2015-27-10.pdf"
+            "</url_pdf>"
             "</item>"
             "</seccion>"
             "</diario>"
@@ -226,6 +228,39 @@ class SumarioItemWithoutUrlPdfTestCase(unittest.TestCase):
             # silenciosamente (línea 268).
             self.assertIn("CÁCERES", urls)
             self.assertNotIn("FAKE PROVINCIA", urls)
+        finally:
+            os.unlink(path)
+
+
+class SumarioUrlSafetyTestCase(unittest.TestCase):
+    """El sumario no debe poder apuntar las descargas a hosts no BOE."""
+
+    def test_non_boe_url_is_rejected_before_download(self):
+        xml = (
+            '<?xml version="1.0"?>'
+            "<sumario>"
+            "<metadatos><fecha_publicacion>20150210</fecha_publicacion></metadatos>"
+            '<diario numero="27">'
+            '<seccion codigo="A">'
+            "<item>"
+            "<identificador>BORME-A-2015-27-10</identificador>"
+            "<titulo>CÁCERES</titulo>"
+            "<url_pdf>http://127.0.0.1/private.pdf</url_pdf>"
+            "</item>"
+            "</seccion>"
+            "</diario>"
+            "</sumario>"
+        )
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".xml", delete=False, encoding="utf-8"
+        ) as fp:
+            fp.write(xml)
+            path = fp.name
+        try:
+            bxml = BormeXML.from_file(path)
+            with self.assertRaises(ValueError) as ctx:
+                bxml.get_url_pdfs(seccion=SECCION.A)
+            self.assertIn("Unexpected BOE URL", str(ctx.exception))
         finally:
             os.unlink(path)
 
