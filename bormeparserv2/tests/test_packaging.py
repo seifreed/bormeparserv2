@@ -36,6 +36,23 @@ from typing import Literal
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 DistType = Literal["sdist", "wheel"]
+RELEASE_VERSION_ENV_VAR = "BORMEPARSERV2_VERSION"
+
+
+def _set_release_version_override(version: str | None) -> str | None:
+    previous = os.environ.get(RELEASE_VERSION_ENV_VAR)
+    if version is None:
+        os.environ.pop(RELEASE_VERSION_ENV_VAR, None)
+    else:
+        os.environ[RELEASE_VERSION_ENV_VAR] = version
+    return previous
+
+
+def _restore_release_version_override(previous: str | None) -> None:
+    if previous is None:
+        os.environ.pop(RELEASE_VERSION_ENV_VAR, None)
+    else:
+        os.environ[RELEASE_VERSION_ENV_VAR] = previous
 
 
 class DockerIgnoreSecurityTestCase(unittest.TestCase):
@@ -216,15 +233,11 @@ class ReleaseVersionOverrideTestCase(unittest.TestCase):
     """Los assets de release deben poder tomar la versión desde el tag."""
 
     def test_wheel_metadata_uses_release_version_override(self):
-        previous = os.environ.get("BORMEPARSERV2_VERSION")
-        os.environ["BORMEPARSERV2_VERSION"] = "9.8.7"
+        previous = _set_release_version_override("9.8.7")
         try:
             wheel = _build("wheel")
         finally:
-            if previous is None:
-                os.environ.pop("BORMEPARSERV2_VERSION", None)
-            else:
-                os.environ["BORMEPARSERV2_VERSION"] = previous
+            _restore_release_version_override(previous)
 
         self.addCleanup(shutil.rmtree, os.path.dirname(wheel))
         self.assertIn("bormeparserv2-9.8.7-", os.path.basename(wheel))
@@ -238,25 +251,25 @@ class ReleaseVersionOverrideTestCase(unittest.TestCase):
         self.assertIn("Version: 9.8.7\n", metadata)
 
     def test_sdist_rebuild_keeps_release_version_without_environment(self):
-        previous = os.environ.get("BORMEPARSERV2_VERSION")
-        os.environ["BORMEPARSERV2_VERSION"] = "9.8.7"
+        previous = _set_release_version_override("9.8.7")
         try:
             sdist = _build("sdist")
         finally:
-            if previous is None:
-                os.environ.pop("BORMEPARSERV2_VERSION", None)
-            else:
-                os.environ["BORMEPARSERV2_VERSION"] = previous
+            _restore_release_version_override(previous)
 
-        self.addCleanup(shutil.rmtree, os.path.dirname(sdist))
-        extract_root = tempfile.mkdtemp(prefix="bormeparser_sdist_")
-        self.addCleanup(shutil.rmtree, extract_root)
-        with tarfile.open(sdist) as tar:
-            tar.extractall(extract_root)
+        previous = _set_release_version_override(None)
+        try:
+            self.addCleanup(shutil.rmtree, os.path.dirname(sdist))
+            extract_root = tempfile.mkdtemp(prefix="bormeparser_sdist_")
+            self.addCleanup(shutil.rmtree, extract_root)
+            with tarfile.open(sdist) as tar:
+                tar.extractall(extract_root)
 
-        extracted = os.path.join(extract_root, "bormeparserv2-9.8.7")
-        self.assertTrue(os.path.isdir(extracted))
-        wheel = _build("wheel", extracted)
-        self.addCleanup(shutil.rmtree, os.path.dirname(wheel))
+            extracted = os.path.join(extract_root, "bormeparserv2-9.8.7")
+            self.assertTrue(os.path.isdir(extracted))
+            wheel = _build("wheel", extracted)
+            self.addCleanup(shutil.rmtree, os.path.dirname(wheel))
+        finally:
+            _restore_release_version_override(previous)
 
         self.assertIn("bormeparserv2-9.8.7-", os.path.basename(wheel))
