@@ -108,6 +108,10 @@ def runtime_requirements(requirements_path: Path) -> list[Requirement]:
 
 
 def project_version(source_root: Path) -> str:
+    release_version = os.environ.get("BORMEPARSERV2_VERSION")
+    if release_version:
+        return release_version
+
     setup_py = source_root / "setup.py"
     tree = ast.parse(setup_py.read_text(encoding="utf-8"), filename=str(setup_py))
     for node in tree.body:

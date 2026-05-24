@@ -19,6 +19,9 @@ Changelog for bormeparserv2
 - docs(licensing): añadidas cabeceras SPDX en el código Python,
   atribución explícita de ficheros heredados/nuevos y política clara de
   mantener todo el fork integrado bajo ``GPL-3.0-or-later``.
+- ci(release): añadido workflow de releases por tags ``v*``. Construye
+  wheel, sdist, SBOM CycloneDX, informe de calidad y ``SHA256SUMS``, valida
+  tests/cobertura/SBOM y publica esos assets en la GitHub Release.
 - fix(docker): pin ``wheel==0.47.0`` y ``--no-cache-dir`` en ambos ``pip
   install`` para cerrar los avisos ``DL3013``/``DL3042`` de hadolint.
 - fix(scripts): los scripts CLI ahora exponen ``main(argv=None) -> int``

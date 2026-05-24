@@ -4,9 +4,27 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
+import os
+from pathlib import Path
+
 from setuptools import find_packages, setup
 
 VERSION = "0.5.1.dev0"
+VERSION_ENV_VAR = "BORMEPARSERV2_VERSION"
+
+
+def get_version() -> str:
+    release_version = os.environ.get(VERSION_ENV_VAR)
+    if release_version:
+        return release_version
+
+    pkg_info = Path(__file__).with_name("PKG-INFO")
+    if pkg_info.is_file():
+        for line in pkg_info.read_text(encoding="utf-8").splitlines():
+            if line.startswith("Version: "):
+                return line.removeprefix("Version: ").strip()
+
+    return VERSION
 
 
 def get_install_requires() -> list[str]:
@@ -31,7 +49,7 @@ setup(
     name="bormeparserv2",
     packages=find_packages(exclude=["*.tests"]),
     package_data={"bormeparserv2": ["examples/*"]},
-    version=VERSION,
+    version=get_version(),
     description="bormeparserv2 is a Python library for parsing BORME files",
     long_description=_read_long_description(),
     long_description_content_type="text/markdown",

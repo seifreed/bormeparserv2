@@ -1,0 +1,131 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and publish release assets
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip wheel
+          pip install -r requirements.txt
+
+      - name: Resolve release version
+        id: release
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          version="${tag#v}"
+          python - "$tag" "$version" <<'PY'
+          import sys
+          from packaging.version import InvalidVersion, Version
+
+          tag = sys.argv[1]
+          raw_version = sys.argv[2]
+          if not tag.startswith("v"):
+              raise SystemExit(f"Release tags must start with 'v': {tag}")
+          try:
+              version = Version(raw_version)
+          except InvalidVersion as exc:
+              raise SystemExit(f"Invalid PEP 440 version in tag {tag!r}: {exc}") from exc
+          if version.local is not None:
+              raise SystemExit("Release tags must not use local version segments")
+          if version.public != raw_version:
+              raise SystemExit(
+                  f"Release tag version must be normalized: {raw_version!r} != {version.public!r}"
+              )
+          PY
+          echo "BORMEPARSERV2_VERSION=${version}" >> "$GITHUB_ENV"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Install package
+        run: pip install -e .
+
+      - name: ruff
+        run: ruff check .
+
+      - name: black
+        run: black --check .
+
+      - name: mypy
+        run: mypy bormeparserv2
+
+      - name: bandit
+        run: bandit -r bormeparserv2 scripts -x bormeparserv2/tests
+
+      - name: pip-audit
+        run: pip-audit --strict -r requirements.txt
+
+      - name: Build docs
+        run: cd docs && make html SPHINXOPTS="-W"
+
+      - name: Run tests
+        run: coverage run -m unittest discover bormeparserv2.tests
+
+      - name: Enforce 100% coverage
+        run: coverage report
+
+      - name: Build Python distributions
+        run: python -m build
+
+      - name: Install sbom-tools
+        run: cargo install sbom-tools --version 0.1.21 --locked
+
+      - name: Generate SBOM
+        run: python scripts/generate_sbom.py -o "dist/bormeparserv2-${{ steps.release.outputs.version }}.cdx.json"
+
+      - name: Validate SBOM
+        run: ~/.cargo/bin/sbom-tools validate "dist/bormeparserv2-${{ steps.release.outputs.version }}.cdx.json" --standard ntia --fail-on-warning
+
+      - name: Assess SBOM quality
+        run: ~/.cargo/bin/sbom-tools quality "dist/bormeparserv2-${{ steps.release.outputs.version }}.cdx.json" --profile standard -o json -O "dist/bormeparserv2-${{ steps.release.outputs.version }}.quality.json"
+
+      - name: Check SBOM rating
+        run: python scripts/check_sbom_rating.py "dist/bormeparserv2-${{ steps.release.outputs.version }}.quality.json" --profile standard --min-score 90 --min-grade A
+
+      - name: Generate checksums
+        run: |
+          cd dist
+          checksums="$(mktemp)"
+          find . -maxdepth 1 -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 shasum -a 256 > "$checksums"
+          mv "$checksums" SHA256SUMS
+          ls -la
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          args=(--verify-tag --title "bormeparserv2 ${GITHUB_REF_NAME}" --generate-notes)
+          if [[ "${{ steps.release.outputs.version }}" == *[a-zA-Z]* ]]; then
+            args+=(--prerelease)
+          else
+            args+=(--latest)
+          fi
+
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release upload "${GITHUB_REF_NAME}" dist/* --clobber
+          else
+            gh release create "${GITHUB_REF_NAME}" dist/* "${args[@]}"
+          fi

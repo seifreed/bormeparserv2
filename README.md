@@ -224,6 +224,30 @@ python scripts/check_sbom_rating.py build/sbom/bormeparserv2.quality.json
 El score numérico es el que calcula `sbom-tools`; el proyecto no añade CPEs ni
 firmas inventadas para inflar la nota. El gate operativo es `A` o superior.
 
+### Releases por tag
+
+El repositorio publica releases desde tags Git con formato `vX.Y.Z` o una
+versión PEP 440 equivalente como `vX.Y.Zrc1`. Al empujar el tag, GitHub Actions
+ejecuta `.github/workflows/release.yml`, valida la suite con 100% de cobertura,
+construye los paquetes y crea o actualiza la GitHub Release.
+
+```bash
+git tag v0.5.1
+git push origin v0.5.1
+```
+
+Assets adjuntos a la release:
+
+- `bormeparserv2-X.Y.Z-py3-none-any.whl`
+- `bormeparserv2-X.Y.Z.tar.gz`
+- `bormeparserv2-X.Y.Z.cdx.json`
+- `bormeparserv2-X.Y.Z.quality.json`
+- `SHA256SUMS`
+
+Durante la release, el workflow inyecta `BORMEPARSERV2_VERSION` desde el tag
+para que la wheel, el sdist y el SBOM usen la versión publicada, aunque la rama
+principal siga declarando una versión de desarrollo.
+
 ---
 
 ## Uso como librería

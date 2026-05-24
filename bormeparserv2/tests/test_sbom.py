@@ -66,6 +66,36 @@ class GenerateSbomTestCase(unittest.TestCase):
         self.assertTrue(data["dependencies"])
         self.assertEqual(data["compositions"][0]["aggregate"], "complete")
 
+    def test_uses_release_version_override(self):
+        previous = os.environ.get("BORMEPARSERV2_VERSION")
+        os.environ["BORMEPARSERV2_VERSION"] = "9.8.7"
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                output = os.path.join(tmp, "bormeparserv2.cdx.json")
+                result = generate_sbom.main(
+                    [
+                        "--source-root",
+                        REPO_ROOT,
+                        "--requirements",
+                        os.path.join(REPO_ROOT, "requirements.txt"),
+                        "--timestamp",
+                        "2026-05-24T00:00:00Z",
+                        "-o",
+                        output,
+                    ]
+                )
+                self.assertEqual(result, 0)
+
+                with open(output, encoding="utf-8") as fp:
+                    data = json.load(fp)
+        finally:
+            if previous is None:
+                os.environ.pop("BORMEPARSERV2_VERSION", None)
+            else:
+                os.environ["BORMEPARSERV2_VERSION"] = previous
+
+        self.assertEqual(data["metadata"]["component"]["version"], "9.8.7")
+
 
 class CheckSbomRatingTestCase(unittest.TestCase):
     """The rating helper should parse sbom-tools JSON even with log noise."""
