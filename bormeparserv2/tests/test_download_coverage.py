@@ -391,6 +391,26 @@ class DownloadUrlsMultiOfflineTestCase(unittest.TestCase):
             files = download_urls_multi_names(urls, tmp, threads=2)
             self.assertEqual(files, [])
 
+    def test_multi_rejects_non_positive_thread_count(self):
+        from bormeparserv2.download import download_urls_multi
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(ValueError) as ctx:
+                download_urls_multi(
+                    {"x": "https://example.invalid/a.pdf"}, tmp, threads=0
+                )
+        self.assertIn("threads must be positive", str(ctx.exception))
+
+    def test_multi_names_rejects_non_positive_thread_count(self):
+        from bormeparserv2.download import download_urls_multi_names
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(ValueError) as ctx:
+                download_urls_multi_names(
+                    {"a.pdf": "https://example.invalid/a.pdf"}, tmp, threads=-1
+                )
+        self.assertIn("threads must be positive", str(ctx.exception))
+
 
 class DownloadFilenameSafetyTestCase(unittest.TestCase):
     """Las descargas no deben escribir fuera del directorio destino."""

@@ -498,6 +498,7 @@ def _named_download_tasks(urls, path):
 
 
 def _start_workers(queue, files, errors, threads):
+    _validate_threads(threads)
     workers = []
     for thread_id in range(threads):
         worker = _DownloadWorker(thread_id, queue, files, errors)
@@ -505,6 +506,11 @@ def _start_workers(queue, files, errors, threads):
         worker.start()
         workers.append(worker)
     return workers
+
+
+def _validate_threads(threads):
+    if threads <= 0:
+        raise ValueError("threads must be positive")
 
 
 def _stop_workers(queue, workers):
