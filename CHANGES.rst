@@ -21,7 +21,9 @@ Changelog for bormeparserv2
   mantener todo el fork integrado bajo ``GPL-3.0-or-later``.
 - ci(release): añadido workflow de releases por tags ``v*``. Construye
   wheel, sdist, SBOM CycloneDX, informe de calidad y ``SHA256SUMS``, valida
-  tests/cobertura/SBOM y publica esos assets en la GitHub Release.
+  tests/cobertura/SBOM, publica esos assets en la GitHub Release y sube
+  wheel/sdist a PyPI desde el environment ``pypi`` usando
+  ``PYPI_API_TOKEN``.
 - fix(docker): pin ``wheel==0.47.0`` y ``--no-cache-dir`` en ambos ``pip
   install`` para cerrar los avisos ``DL3013``/``DL3042`` de hadolint.
 - fix(scripts): los scripts CLI ahora exponen ``main(argv=None) -> int``

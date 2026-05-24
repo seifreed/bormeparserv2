@@ -229,7 +229,12 @@ firmas inventadas para inflar la nota. El gate operativo es `A` o superior.
 El repositorio publica releases desde tags Git con formato `vX.Y.Z` o una
 versión PEP 440 equivalente como `vX.Y.Zrc1`. Al empujar el tag, GitHub Actions
 ejecuta `.github/workflows/release.yml`, valida la suite con 100% de cobertura,
-construye los paquetes y crea o actualiza la GitHub Release.
+construye los paquetes, crea o actualiza la GitHub Release y publica el wheel y
+el sdist en PyPI.
+
+La publicación a PyPI usa el environment `pypi` y espera un secret llamado
+`PYPI_API_TOKEN`. Para la primera subida puede ser necesario un token de cuenta
+de PyPI; después conviene reemplazarlo por un token limitado al proyecto.
 
 ```bash
 git tag v0.5.1
