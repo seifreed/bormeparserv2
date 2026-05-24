@@ -297,6 +297,45 @@ class DownloadXmlIdempotentTestCase(unittest.TestCase):
             os.unlink(path)
 
 
+class SumarioXmlSizeLimitTestCase(unittest.TestCase):
+    """El XML remoto se lee en streaming y con límite de tamaño."""
+
+    def test_fetch_sumario_rejects_oversized_stream(self):
+        from bormeparserv2.download import _fetch_sumario_tree
+
+        server, url = _serve_no_length(b"<response>" + b"x" * 32)
+        try:
+            with patch("bormeparserv2.download.MAX_XML_BYTES", 8):
+                with self.assertRaises(ValueError) as ctx:
+                    _fetch_sumario_tree(url)
+            self.assertIn("Download too large", str(ctx.exception))
+        finally:
+            server.shutdown()
+            server.server_close()
+
+    def test_download_xml_rejects_large_content_length_without_file(self):
+        from bormeparserv2.download import download_xml
+
+        server, url = _serve_sequence(
+            [(200, "application/xml", b"<response>" + b"x" * 32)]
+        )
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                target = os.path.join(tmp, "sumario.xml")
+                with (
+                    patch("bormeparserv2.download.get_url_xml", return_value=url),
+                    patch("bormeparserv2.download.MAX_XML_BYTES", 8),
+                    self.assertRaises(ValueError) as ctx,
+                ):
+                    download_xml(datetime.date(2015, 2, 10), target)
+                self.assertIn("Download too large", str(ctx.exception))
+                self.assertFalse(os.path.exists(target))
+                self.assertEqual(os.listdir(tmp), [])
+        finally:
+            server.shutdown()
+            server.server_close()
+
+
 class DownloadUrlsTestCase(unittest.TestCase):
     """``download_urls`` itera URLs y solo escribe las que faltan en disco."""
 

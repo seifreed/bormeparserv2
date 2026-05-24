@@ -49,6 +49,7 @@ THREADS = 8
 HTTP_TIMEOUT = 30
 HTTP_RETRIES = 3
 HTTP_RETRY_BACKOFF = 0.5
+MAX_XML_BYTES = 10 * 1024 * 1024
 MAX_DOWNLOAD_BYTES = 100 * 1024 * 1024
 TRANSIENT_HTTP_STATUS = {429, 500, 502, 503, 504}
 _API_HEADERS = {"Accept": "application/xml"}
@@ -111,18 +112,25 @@ def _fetch_sumario_tree(source):
     publicado, o si la API devuelve un código de estado distinto de 200.
     """
     if isinstance(source, str) and source.startswith("http"):
-        response = _get_with_retries(source, headers=_API_HEADERS)
-        # La API responde con 404 cuando no hay BORME publicado en esa fecha
-        # (festivos, domingos). Lo traducimos a una excepción de dominio.
-        if response.status_code == 404:
-            raise BormeDoesntExistException("BOE has no BORME for {}".format(source))
-        response.raise_for_status()
         try:
-            root = parse_xml_bytes(response.content)
-        except etree.XMLSyntaxError as exc:
-            raise BormeDoesntExistException(
-                f"Malformed sumario XML from {source}: {exc}"
-            ) from exc
+            response = _get_with_retries(source, headers=_API_HEADERS, stream=True)
+            # La API responde con 404 cuando no hay BORME publicado en esa fecha
+            # (festivos, domingos). Lo traducimos a una excepción de dominio.
+            if response.status_code == 404:
+                raise BormeDoesntExistException(
+                    "BOE has no BORME for {}".format(source)
+                )
+            response.raise_for_status()
+            content = _read_response_bytes(response, MAX_XML_BYTES)
+            try:
+                root = parse_xml_bytes(content)
+            except etree.XMLSyntaxError as exc:
+                raise BormeDoesntExistException(
+                    f"Malformed sumario XML from {source}: {exc}"
+                ) from exc
+        finally:
+            if "response" in locals():
+                response.close()
     else:
         try:
             root = parse_xml_file(source).getroot()
@@ -171,9 +179,14 @@ def download_xml(date, filename, secure=USE_HTTPS):
     url = get_url_xml(date, secure=secure)
     if os.path.exists(filename):
         return False
-    response = _get_with_retries(url, headers=_API_HEADERS)
-    response.raise_for_status()
-    _atomic_write_bytes(filename, response.content)
+    try:
+        response = _get_with_retries(url, headers=_API_HEADERS, stream=True)
+        response.raise_for_status()
+        content = _read_response_bytes(response, MAX_XML_BYTES)
+        _atomic_write_bytes(filename, content)
+    finally:
+        if "response" in locals():
+            response.close()
     return True
 
 
@@ -402,6 +415,22 @@ def _raise_if_response_too_large(response, max_bytes):
                 expected_size, max_bytes
             )
         )
+
+
+def _read_response_bytes(response, max_bytes):
+    _validate_max_bytes(max_bytes)
+    _raise_if_response_too_large(response, max_bytes)
+    content = bytearray()
+    for chunk in response.iter_content(chunk_size=8192):
+        if chunk:
+            content.extend(chunk)
+            if max_bytes is not None and len(content) > max_bytes:
+                raise ValueError(
+                    "Download too large: {} bytes exceeds limit {}".format(
+                        len(content), max_bytes
+                    )
+                )
+    return bytes(content)
 
 
 def _atomic_write_response(filename, response, *, max_bytes=MAX_DOWNLOAD_BYTES):
